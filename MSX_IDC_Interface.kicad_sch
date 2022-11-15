@@ -6,9 +6,10 @@
 
   (title_block
     (title "MSX IDC Adapter")
-    (rev "0.1")
+    (rev "1.0")
     (company "RCC")
-    (comment 1 "Not ready for manufactoring (WIP)")
+    (comment 1 "to 3.3v systems with voltage conversion")
+    (comment 2 "Cartridge for MSX Computers that expose the BUS")
   )
 
   (lib_symbols
