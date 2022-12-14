@@ -5,12 +5,12 @@
   (paper "A4" portrait)
 
   (title_block
-    (title "MSX IDC Adapter")
-    (date "2022-12-13")
+    (title "MSX DE1 Hat")
+    (date "2022-12-14")
     (rev "1.1")
     (company "RCC")
     (comment 1 "to 3.3v systems with voltage conversion")
-    (comment 2 "Cartridge for MSX Computers that expose the BUS")
+    (comment 2 "Cartridge for MSX Computers that expose the MSX BUS")
   )
 
   (lib_symbols
