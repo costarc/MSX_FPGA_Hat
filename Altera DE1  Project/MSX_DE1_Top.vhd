@@ -114,12 +114,11 @@ signal BCDin3 : std_logic_vector(3 downto 0);
 signal msx_a : std_logic_vector(15 downto 0);
 signal msx_d : std_logic_vector(7 downto 0);
 
-signal reg : std_logic_vector(7 downto 0);
-
 begin
 
-reg <= D when A(7 downto 0) = x"94" and WR_n = '0' and RD_n = '1' and IORQ_n = '0';
-D <= reg when A(7 downto 0) = x"94" and WR_n = '1' and RD_n = '0' and  IORQ_n = '0' else "ZZZZZZZZ";
+msx_d <= D when A(7 downto 0) = x"94" and WR_n = '0' and RD_n = '1' and IORQ_n = '0';
+D <= msx_d when A(7 downto 0) = x"94" and WR_n = '1' and RD_n = '0' and  IORQ_n = '0' else
+     KEY & "1111" when A(7 downto 0) = x"95" and WR_n = '1' and RD_n = '0' and  IORQ_n = '0' else "ZZZZZZZZ";
 
 msx_a <= A when A > x"9500" AND A < x"9FFF";
 
@@ -133,7 +132,7 @@ BCDin1 <= msx_a(7 downto 4);
 BCDin2 <= msx_a(11 downto 8);
 BCDin3 <= msx_a(15 downto 12);
 
-LEDG <= reg;
+LEDG <= msx_d;
 LEDR <= SLTSL_n & IORQ_n & msx_d;
 
 SD_DAT		<= 'Z';

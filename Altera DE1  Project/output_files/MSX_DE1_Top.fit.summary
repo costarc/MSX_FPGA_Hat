@@ -1,12 +1,12 @@
-Fitter Status : Successful - Fri Dec 16 00:16:44 2022
+Fitter Status : Successful - Fri Dec 16 01:33:54 2022
 Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
 Revision Name : MSX_DE1_Top
 Top-level Entity Name : MSX_DE1_Top
 Family : Cyclone II
 Device : EP2C20F484C7
 Timing Models : Final
-Total logic elements : 56 / 18,752 ( < 1 % )
-    Total combinational functions : 56 / 18,752 ( < 1 % )
+Total logic elements : 67 / 18,752 ( < 1 % )
+    Total combinational functions : 67 / 18,752 ( < 1 % )
     Dedicated logic registers : 0 / 18,752 ( 0 % )
 Total registers : 0
 Total pins : 283 / 315 ( 90 % )
