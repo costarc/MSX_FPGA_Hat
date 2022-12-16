@@ -100,16 +100,41 @@ WAIT_n:			out std_logic);
 end MSX_DE1_Top;
 
 architecture rtl of MSX_DE1_Top is
+
+signal Seven_Segment0 : std_logic_vector(6 downto 0);
+signal Seven_Segment1 : std_logic_vector(6 downto 0);
+signal Seven_Segment2 : std_logic_vector(6 downto 0);
+signal Seven_Segment3 : std_logic_vector(6 downto 0);
+
+signal BCDin0 : std_logic_vector(3 downto 0);
+signal BCDin1 : std_logic_vector(3 downto 0);
+signal BCDin2 : std_logic_vector(3 downto 0);
+signal BCDin3 : std_logic_vector(3 downto 0);
+
+signal msx_a : std_logic_vector(15 downto 0);
+signal msx_d : std_logic_vector(7 downto 0);
+
+signal reg : std_logic_vector(7 downto 0);
+
 begin
 
-HEX0 <= "0000000";
-HEX1 <= "0000000";
-HEX2 <= "0000000";
-HEX3 <= "0000000";
-LEDG <= "11111111";
-LEDR <= "1111111111";
+reg <= D when A(7 downto 0) = x"94" and WR_n = '0' and RD_n = '1' and IORQ_n = '0';
+D <= reg when A(7 downto 0) = x"94" and WR_n = '1' and RD_n = '0' and  IORQ_n = '0' else "ZZZZZZZZ";
 
+msx_a <= A when A > x"9500" AND A < x"9FFF";
 
+HEX0 <= Seven_Segment0;
+HEX1 <= Seven_Segment1;
+HEX2 <= Seven_Segment2;
+HEX3 <= Seven_Segment3;
+
+BCDin0 <= msx_a(3 downto 0);
+BCDin1 <= msx_a(7 downto 4);
+BCDin2 <= msx_a(11 downto 8);
+BCDin3 <= msx_a(15 downto 12);
+
+LEDG <= reg;
+LEDR <= SLTSL_n & IORQ_n & msx_d;
 
 SD_DAT		<= 'Z';
 I2C_SDAT		<= 'Z';
@@ -121,13 +146,136 @@ FL_DQ			<= (others => 'Z');
 SRAM_DQ		<= (others => 'Z');
 GPIO_0		<= (others => 'Z');
 
-
 -- MSX Interfacing starts here
 D				<= (others => 'Z');
 WAIT_n		<= 'Z';
 INT_n			<= 'Z';
 BUSDIR_n		<= 'Z';
 
+-- 7SEG using Combinatinal Logic
+-- A <= B0 OR B2 OR (B1 AND B3) OR (NOT B1 AND NOT B3);
+-- B <= (NOT B1) OR (NOT B2 AND NOT B3) OR (B2 AND B3);
+-- C <= B1 OR NOT B2 OR B3;
+-- D <= (NOT B1 AND NOT B3) OR (B2 AND NOT B3) OR (B1 AND NOT B2 AND B3) OR (NOT B1 AND B2) OR B0;
+-- E <= (NOT B1 AND NOT B3) OR (B2 AND NOT B3);
+-- F <= B0 OR (NOT B2 AND NOT B3) OR (B1 AND NOT B2) OR (B1 AND NOT B3);
+-- G <= B0 OR (B1 AND NOT B2) OR ( NOT B1 AND B2) OR (B2 AND NOT B3);
 
+
+process(BCDin0)
+begin
+ 
+case BCDin0 is
+when "0000" =>
+	Seven_Segment0 <= "0000001"; -- 0
+when "0001" =>
+	Seven_Segment0 <= "1001111"; -- 1
+when "0010" =>
+	Seven_Segment0 <= "0010010"; -- 2
+when "0011" =>
+	Seven_Segment0 <= "0000110"; -- 3
+when "0100" =>
+	Seven_Segment0 <= "1001100"; -- 4
+when "0101" =>
+	Seven_Segment0 <= "0100100"; -- 5
+when "0110" =>
+	Seven_Segment0 <= "0100000"; -- 6
+when "0111" =>
+	Seven_Segment0 <= "0001111"; -- 7
+when "1000" =>
+	Seven_Segment0 <= "0000000"; -- 8
+when "1001" =>
+	Seven_Segment0 <= "0000100"; -- 9
+when others =>
+	Seven_Segment0 <= "1111111"; -- null
+end case;
+end process;
+
+process(BCDin1)
+begin
+ 
+case BCDin1 is
+when "0000" =>
+	Seven_Segment1 <= "0000001"; -- 0
+when "0001" =>
+	Seven_Segment1 <= "1001111"; -- 1
+when "0010" =>
+	Seven_Segment1 <= "0010010"; -- 2
+when "0011" =>
+	Seven_Segment1 <= "0000110"; -- 3
+when "0100" =>
+	Seven_Segment1 <= "1001100"; -- 4
+when "0101" =>
+	Seven_Segment1 <= "0100100"; -- 5
+when "0110" =>
+	Seven_Segment1 <= "0100000"; -- 6
+when "0111" =>
+	Seven_Segment1 <= "0001111"; -- 7
+when "1000" =>
+	Seven_Segment1 <= "0000000"; -- 8
+when "1001" =>
+	Seven_Segment1 <= "0000100"; -- 9
+when others =>
+	Seven_Segment1 <= "1111111"; -- null
+end case;
+end process;
+
+process(BCDin2)
+begin
+ 
+case BCDin2 is
+when "0000" =>
+	Seven_Segment2 <= "0000001"; -- 0
+when "0001" =>
+	Seven_Segment2 <= "1001111"; -- 1
+when "0010" =>
+	Seven_Segment2 <= "0010010"; -- 2
+when "0011" =>
+	Seven_Segment2 <= "0000110"; -- 3
+when "0100" =>
+	Seven_Segment2 <= "1001100"; -- 4
+when "0101" =>
+	Seven_Segment2 <= "0100100"; -- 5
+when "0110" =>
+	Seven_Segment2 <= "0100000"; -- 6
+when "0111" =>
+	Seven_Segment2 <= "0001111"; -- 7
+when "1000" =>
+	Seven_Segment2 <= "0000000"; -- 8
+when "1001" =>
+	Seven_Segment2 <= "0000100"; -- 9
+when others =>
+	Seven_Segment2 <= "1111111"; -- null
+end case;
+end process;
+
+process(BCDin3)
+begin
+ 
+case BCDin2 is
+when "0000" =>
+	Seven_Segment3 <= "0000001"; -- 0
+when "0001" =>
+	Seven_Segment3 <= "1001111"; -- 1
+when "0010" =>
+	Seven_Segment3 <= "0010010"; -- 2
+when "0011" =>
+	Seven_Segment3 <= "0000110"; -- 3
+when "0100" =>
+	Seven_Segment3 <= "1001100"; -- 4
+when "0101" =>
+	Seven_Segment3 <= "0100100"; -- 5
+when "0110" =>
+	Seven_Segment3 <= "0100000"; -- 6
+when "0111" =>
+	Seven_Segment3 <= "0001111"; -- 7
+when "1000" =>
+	Seven_Segment3 <= "0000000"; -- 8
+when "1001" =>
+	Seven_Segment3 <= "0000100"; -- 9
+when others =>
+	Seven_Segment3 <= "1111111"; -- null
+end case;
+end process;
 
 end rtl;
