@@ -102,7 +102,6 @@ end MSX_DE1_Top;
 
 architecture rtl of MSX_DE1_Top is
 
-
 	 component decoder_7seg
 	 port (
 	 	NUMBER		: in   std_logic_vector(3 downto 0);
@@ -123,6 +122,7 @@ architecture rtl of MSX_DE1_Top is
 	 signal s_mreq: std_logic;
 	 signal s_iorq_r: std_logic;
 	 signal s_iorq_w: std_logic;
+	 signal s_mreq_reg: std_logic;
 	 signal s_iorq_r_reg: std_logic;
 	 signal s_iorq_w_reg: std_logic;
 	 
@@ -130,45 +130,50 @@ architecture rtl of MSX_DE1_Top is
 	 signal s_rom_cs : std_logic;
 	 signal s_rom_d : std_logic_vector(7 downto 0);
 	 signal s_rom_a : std_logic_vector(21 downto 0);
-	 signal s_cart_en: std_logic := '0';
-	 
+	 signal s_cart_en: std_logic;
+
 begin
 
--- MSX Input Control Signals
-	 INT_n  <= 'Z'; 
-	 WAIT_n <= 'Z';
-	 BUSDIR_n <=  not s_cart_en;
-	 
 	-- Cartridge Emulation
+	 s_cart_en <= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
 	 FL_WE_N <= '1';
 	 FL_RST_N <= '1';
-	 FL_CE_N <= not s_cart_en;
+	 FL_CE_N <= not s_mreq_reg;
 	 FL_ADDR <= s_rom_a;
 	 FL_OE_N <= RD_n;
 	 s_rom_a <= ((A - x"4000") + (SW(5 downto 0) * x"2000"));
-	 s_cart_en <= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';
-	 	 
+	 s_mreq_reg <= '1' when SLTSL_n = '0' and s_cart_en ='1' else '0';
+	 BUSDIR_n <= not s_mreq_reg;
+	 
 	 -- Generic control signals
     s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
 	 s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
 	 s_mreq <= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
-	 s_msx_a <= A when s_cart_en = '1';
+	 s_msx_a <= A when s_mreq_reg = '1';
     s_iorq_r_reg <= '1' when A = x"56" and s_iorq_r = '1' else '0';
 	 s_iorq_w_reg <= '1' when A = x"56" and s_iorq_w = '1' else '0';
 	 
 	 -- I/O Ports Control and Register
 	 
-	 D <= FL_DQ when s_cart_en = '1' else        -- MSX reads data from FLASH RAM - Emulation of Cartridges
-	      (others => 'Z');
-			
+	 D <=	FL_DQ when s_mreq_reg = '1' else             -- MSX reads data from FLASH RAM - Emulation of Cartridges
+	 		s_msx_d when s_iorq_r_reg = '1' else         -- MSX read Register on port 0x56
+	 		(others => 'Z');
+	 
+	 -- Create a Register updated over I/O port 0x56
+	 process(s_iorq_w_reg)
+	 begin
+	 if rising_edge(s_iorq_w_reg) then
+	 	s_msx_d <= D;
+	 end if;
+	 end process;
 
 -- Display the current Memory Address in the 7 segment display
-    NUMBER0 <= s_msx_d(3 downto 0);
-    NUMBER1 <= s_msx_d(7 downto 4);
-    NUMBER2 <= s_msx_a(3 downto 0);
-    NUMBER3 <= s_msx_a(7 downto 4);
+    NUMBER0 <= s_msx_a(3 downto 0);
+    NUMBER1 <= s_msx_a(7 downto 4);
+    NUMBER2 <= s_msx_a(11 downto 8);
+    NUMBER3 <= s_msx_a(15 downto 12);
     
-    LEDG <= SLTSL_n & CS1_n & CS2_n & MREQ_n & s_cart_en & & "000";
+    LEDG <= s_msx_a(5 downto 0) & s_msx_d(1 downto 0);
     LEDR <= s_msx_a(15 downto 6);
     
     DISPHEX0 : decoder_7seg PORT MAP (
@@ -202,9 +207,14 @@ begin
     SRAM_DQ		<= (others => 'Z');
     GPIO_0		<= (others => 'Z');
 
+-- MSX signals
+	 INT_n			<= 'Z';
+	 
 	 HEX0 <= HEX_DISP0;
 	 HEX1 <= HEX_DISP1;
 	 HEX2 <= HEX_DISP2;
 	 HEX3 <= HEX_DISP3;
+	 
+	 WAIT_n <= 'Z';
 	
 end rtl;
