@@ -3,7 +3,8 @@ Altera DE1 Switches to Select ROMs.
 SW(9) must be in position ON / 1 for the Cartridge Emulation to be enabled.
 
 0000000000: Castle Excelent
-0000001000: Elevator Action
+0000000100: Elevator Action
+0000001000: Galaga
 0000001100: The Goonies
 0000010000: Gulkave
 0000010100: Gyrodine
