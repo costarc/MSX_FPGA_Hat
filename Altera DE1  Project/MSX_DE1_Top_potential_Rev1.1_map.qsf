@@ -46,6 +46,7 @@ set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
+set_global_assignment -name VHDL_FILE MSX_DE1_Top.vhd
 set_location_assignment PIN_A13 -to GPIO_0[0]
 set_location_assignment PIN_B13 -to GPIO_0[1]
 set_location_assignment PIN_A14 -to GPIO_0[2]
@@ -82,42 +83,41 @@ set_location_assignment PIN_J18 -to GPIO_0[32]
 set_location_assignment PIN_K20 -to GPIO_0[33]
 set_location_assignment PIN_L19 -to GPIO_0[34]
 set_location_assignment PIN_L18 -to GPIO_0[35]
-set_location_assignment PIN_H12 -to WAIT_n
-set_location_assignment PIN_H13 -to MSX_CLK
-set_location_assignment PIN_H14 -to INT_n
-set_location_assignment PIN_G15 -to M1_n
-set_location_assignment PIN_E14 -to BUSDIR_n
-set_location_assignment PIN_E15 -to CS12_n
-set_location_assignment PIN_F15 -to CS1_n
-set_location_assignment PIN_G16 -to SLTSL_n
-set_location_assignment PIN_F12 -to IORQ_n
-set_location_assignment PIN_F13 -to MREQ_n
-set_location_assignment PIN_C14 -to WR_n
-set_location_assignment PIN_D14 -to RD_n
-set_location_assignment PIN_D15 -to A[9]
-set_location_assignment PIN_D16 -to A[15]
-set_location_assignment PIN_C17 -to A[11]
-set_location_assignment PIN_C18 -to A[10]
-set_location_assignment PIN_C19 -to A[6]
-set_location_assignment PIN_C20 -to A[7]
-set_location_assignment PIN_D19 -to A[8]
-set_location_assignment PIN_D20 -to A[12]
-set_location_assignment PIN_E20 -to A[13]
-set_location_assignment PIN_F20 -to D[0]
-set_location_assignment PIN_E19 -to A[14]
-set_location_assignment PIN_E18 -to D[1]
-set_location_assignment PIN_G20 -to A[0]
-set_location_assignment PIN_G18 -to D[2]
-set_location_assignment PIN_G17 -to A[1]
-set_location_assignment PIN_H17 -to D[3]
-set_location_assignment PIN_J15 -to A[2]
-set_location_assignment PIN_H18 -to D[4]
-set_location_assignment PIN_N22 -to A[3]
-set_location_assignment PIN_N21 -to D[5]
-set_location_assignment PIN_P15 -to A[4]
-set_location_assignment PIN_N15 -to D[6]
-set_location_assignment PIN_P17 -to A[5]
-set_location_assignment PIN_P18 -to D[7]
+set_location_assignment PIN_H13 -to A[5]
+set_location_assignment PIN_H14 -to D[7]
+set_location_assignment PIN_G15 -to A[4]
+set_location_assignment PIN_E14 -to D[5]
+set_location_assignment PIN_E15 -to A[3]
+set_location_assignment PIN_F15 -to D[4]
+set_location_assignment PIN_G16 -to A[2]
+set_location_assignment PIN_F12 -to D[3]
+set_location_assignment PIN_F13 -to A[1]
+set_location_assignment PIN_C14 -to D[2]
+set_location_assignment PIN_D14 -to A[0]
+set_location_assignment PIN_D15 -to D[1]
+set_location_assignment PIN_D16 -to A[14]
+set_location_assignment PIN_C17 -to D[0]
+set_location_assignment PIN_C18 -to A[13]
+set_location_assignment PIN_C19 -to A[12]
+set_location_assignment PIN_C20 -to A[8]
+set_location_assignment PIN_D19 -to A[7]
+set_location_assignment PIN_D20 -to A[6]
+set_location_assignment PIN_E20 -to A[10]
+set_location_assignment PIN_F20 -to A[11]
+set_location_assignment PIN_E19 -to A[15]
+set_location_assignment PIN_E18 -to A[9]
+set_location_assignment PIN_G20 -to RD_n
+set_location_assignment PIN_G18 -to WR_n
+set_location_assignment PIN_G17 -to MREQ_n
+set_location_assignment PIN_H17 -to IORQ_n
+set_location_assignment PIN_J15 -to SLTSL_n
+set_location_assignment PIN_H18 -to CS1_n
+set_location_assignment PIN_N22 -to CS2_n
+set_location_assignment PIN_N21 -to BUSDIR_n
+set_location_assignment PIN_P15 -to M1_n
+set_location_assignment PIN_N15 -to INT_n
+set_location_assignment PIN_P17 -to MSX_CLK
+set_location_assignment PIN_P18 -to WAIT_n
 set_instance_assignment -name IO_STANDARD LVTTL -to GPIO_0[0]
 set_instance_assignment -name IO_STANDARD LVTTL -to GPIO_0[1]
 set_instance_assignment -name IO_STANDARD LVTTL -to GPIO_0[2]
@@ -495,9 +495,4 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
 set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
-set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
-set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
-set_global_assignment -name VHDL_FILE rom.vhd
-set_global_assignment -name VHDL_FILE decoder_7seg.vhd
-set_global_assignment -name VHDL_FILE MSX_DE1_Top.vhd
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
