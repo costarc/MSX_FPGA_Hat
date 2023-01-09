@@ -6,7 +6,7 @@
 
   (title_block
     (title "MSX DE1 Hat")
-    (date "2023-01-08")
+    (date "2023-01-09")
     (rev "1.1")
     (company "RCC")
     (comment 1 "to 3.3v systems with voltage conversion")
@@ -3378,7 +3378,7 @@
     (uuid 6f9656b3-3bfe-4b00-abcb-824b6a0202a0)
     (property "Reference" "IDC1" (id 0) (at 130.556 42.164 0))
     (property "Value" "DE1 GPIO" (id 1) (at 130.556 44.704 0))
-    (property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical" (id 2) (at 129.286 71.628 0)
+    (property "Footprint" "Connector_IDC:IDC-Header_2x20_P2.54mm_Vertical" (id 2) (at 129.286 71.628 0)
       (effects (font (size 1 1)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 129.286 71.628 0)
@@ -4141,7 +4141,7 @@
       (reference "CONN1") (unit 1) (value "MSX_BUS") (footprint "Roni Footprints:MSX_CART")
     )
     (path "/6f9656b3-3bfe-4b00-abcb-824b6a0202a0"
-      (reference "IDC1") (unit 1) (value "DE1 GPIO") (footprint "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical")
+      (reference "IDC1") (unit 1) (value "DE1 GPIO") (footprint "Connector_IDC:IDC-Header_2x20_P2.54mm_Vertical")
     )
     (path "/4b627ac7-f426-4ad6-aa9a-a3c2759a25ab"
       (reference "J1") (unit 1) (value "J1") (footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical")
