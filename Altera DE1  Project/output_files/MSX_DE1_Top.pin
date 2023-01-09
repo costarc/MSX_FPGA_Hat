@@ -168,10 +168,10 @@ VGA_R[1]                     : C9        : output : 3.3-V LVTTL       :         
 VGA_G[1]                     : C10       : output : 3.3-V LVTTL       :         : 3         : Y              
 VCCIO3                       : C11       : power  :                   : 3.3V    : 3         :                
 VCCIO4                       : C12       : power  :                   : 3.3V    : 4         :                
-GND*                         : C13       :        :                   :         : 4         :                
+D[6]                         : C13       : bidir  : 3.3-V LVTTL       :         : 4         : N              
 D[2]                         : C14       : bidir  : 3.3-V LVTTL       :         : 4         : Y              
 GND                          : C15       : gnd    :                   :         :           :                
-D[6]                         : C16       : bidir  : 3.3-V LVTTL       :         : 4         : N              
+GND*                         : C16       :        :                   :         : 4         :                
 D[0]                         : C17       : bidir  : 3.3-V LVTTL       :         : 4         : Y              
 A[13]                        : C18       : input  : 3.3-V LVTTL       :         : 4         : Y              
 A[12]                        : C19       : input  : 3.3-V LVTTL       :         : 5         : Y              

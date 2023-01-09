@@ -1,10 +1,10 @@
-Analysis & Synthesis Status : Successful - Fri Dec 16 01:33:50 2022
+Analysis & Synthesis Status : Successful - Mon Jan 09 00:12:48 2023
 Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
 Revision Name : MSX_DE1_Top
 Top-level Entity Name : MSX_DE1_Top
 Family : Cyclone II
-Total logic elements : 67
-    Total combinational functions : 67
+Total logic elements : 79
+    Total combinational functions : 79
     Dedicated logic registers : 0
 Total registers : 0
 Total pins : 283
