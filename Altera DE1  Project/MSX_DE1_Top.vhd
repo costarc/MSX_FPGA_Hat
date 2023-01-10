@@ -125,6 +125,7 @@ architecture rtl of MSX_DE1_Top is
 	signal s_busd_en: std_logic;
 	signal s_iorq_r_reg: std_logic;
 	signal s_iorq_w_reg: std_logic;
+	signal s_reset: std_logic := '0';
 	
 	-- signals for cartridge emulation
 	signal s_rom_en : std_logic;
@@ -152,14 +153,13 @@ begin
 	s_iorq_r_reg <= '1' when A = x"56" and s_iorq_r = '1' else '0';
 	s_iorq_w_reg <= '1' when A = x"56" and s_iorq_w = '1' else '0';
 	s_msxpi_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
-	s_reg56 <= D when s_iorq_w_reg = '1';
 	
 	-- Auxiliary Generic control signals
-    s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
+   s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
 	s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
 	s_mreq <= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
 	s_msx_a <= A when s_busd_en = '1';	 
-    s_busd_en <= '1' when s_rom_en = '1' or s_msxpi_en = '1' else '0';
+   s_busd_en <= '1' when s_rom_en = '1' or s_msxpi_en = '1' else '0';
 	 
 	-- Output signals to DE1
 	INT_n  <= 'Z';
@@ -167,7 +167,16 @@ begin
 	BUSDIR_n <= not s_busd_en;	
 	D <=	FL_DQ when s_rom_en = '1' else               -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		s_reg56 when s_iorq_r_reg = '1' else         -- MSX read Register on port 0x56
-	 		(others => 'Z');
+	 		(others => 'Z'); 
+	 	 
+	 process(s_iorq_w_reg)
+	 begin
+		if s_reset = '1' then
+			s_reg56 <= x"00";
+		elsif rising_edge(s_iorq_w_reg) then
+			s_reg56 <= D;
+		end if;
+	 end process;
 	 
     -- Display the current Memory Address in the 7 segment display
     NUMBER0 <= s_reg56(3 downto 0);

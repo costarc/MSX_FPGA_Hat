@@ -1,5 +1,5 @@
 Fitter report for MSX_DE1_Top
-Mon Jan 09 00:12:51 2023
+Tue Jan 10 10:18:32 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -10,35 +10,37 @@ Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edit
   2. Fitter Summary
   3. Fitter Settings
   4. Parallel Compilation
-  5. Incremental Compilation Preservation Summary
-  6. Incremental Compilation Partition Settings
-  7. Incremental Compilation Placement Preservation
-  8. Pin-Out File
-  9. Fitter Resource Usage Summary
- 10. Fitter Partition Statistics
- 11. Input Pins
- 12. Output Pins
- 13. Bidir Pins
- 14. I/O Bank Usage
- 15. All Package Pins
- 16. Output Pin Default Load For Reported TCO
- 17. Fitter Resource Utilization by Entity
- 18. Delay Chain Summary
- 19. Pad To Core Delay Chain Fanout
- 20. Control Signals
- 21. Global & Other Fast Signals
- 22. Non-Global High Fan-Out Signals
- 23. Other Routing Usage Summary
- 24. LAB Logic Elements
- 25. LAB Signals Sourced
- 26. LAB Signals Sourced Out
- 27. LAB Distinct Inputs
- 28. Fitter Device Options
- 29. Operating Settings and Conditions
- 30. Estimated Delay Added for Hold Timing Summary
- 31. Estimated Delay Added for Hold Timing Details
- 32. Fitter Messages
- 33. Fitter Suppressed Messages
+  5. Ignored Assignments
+  6. Incremental Compilation Preservation Summary
+  7. Incremental Compilation Partition Settings
+  8. Incremental Compilation Placement Preservation
+  9. Pin-Out File
+ 10. Fitter Resource Usage Summary
+ 11. Fitter Partition Statistics
+ 12. Input Pins
+ 13. Output Pins
+ 14. Bidir Pins
+ 15. I/O Bank Usage
+ 16. All Package Pins
+ 17. Output Pin Default Load For Reported TCO
+ 18. Fitter Resource Utilization by Entity
+ 19. Delay Chain Summary
+ 20. Pad To Core Delay Chain Fanout
+ 21. Control Signals
+ 22. Global & Other Fast Signals
+ 23. Non-Global High Fan-Out Signals
+ 24. Other Routing Usage Summary
+ 25. LAB Logic Elements
+ 26. LAB-wide Signals
+ 27. LAB Signals Sourced
+ 28. LAB Signals Sourced Out
+ 29. LAB Distinct Inputs
+ 30. Fitter Device Options
+ 31. Operating Settings and Conditions
+ 32. Estimated Delay Added for Hold Timing Summary
+ 33. Estimated Delay Added for Hold Timing Details
+ 34. Fitter Messages
+ 35. Fitter Suppressed Messages
 
 
 
@@ -64,17 +66,17 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Fitter Summary                                                                       ;
 +------------------------------------+-------------------------------------------------+
-; Fitter Status                      ; Successful - Mon Jan 09 00:12:51 2023           ;
+; Fitter Status                      ; Successful - Tue Jan 10 10:18:32 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_DE1_Top                                     ;
 ; Top-level Entity Name              ; MSX_DE1_Top                                     ;
 ; Family                             ; Cyclone II                                      ;
 ; Device                             ; EP2C20F484C7                                    ;
 ; Timing Models                      ; Final                                           ;
-; Total logic elements               ; 79 / 18,752 ( < 1 % )                           ;
-;     Total combinational functions  ; 79 / 18,752 ( < 1 % )                           ;
-;     Dedicated logic registers      ; 0 / 18,752 ( 0 % )                              ;
-; Total registers                    ; 0                                               ;
+; Total logic elements               ; 76 / 18,752 ( < 1 % )                           ;
+;     Total combinational functions  ; 76 / 18,752 ( < 1 % )                           ;
+;     Dedicated logic registers      ; 8 / 18,752 ( < 1 % )                            ;
+; Total registers                    ; 8                                               ;
 ; Total pins                         ; 283 / 315 ( 90 % )                              ;
 ; Total virtual pins                 ; 0                                               ;
 ; Total memory bits                  ; 0 / 239,616 ( 0 % )                             ;
@@ -145,14 +147,23 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+--------+
 
 
++----------------------------------------------------------------------------------------+
+; Ignored Assignments                                                                    ;
++----------+----------------+--------------+------------+---------------+----------------+
+; Name     ; Ignored Entity ; Ignored From ; Ignored To ; Ignored Value ; Ignored Source ;
++----------+----------------+--------------+------------+---------------+----------------+
+; Location ;                ;              ; CS12_n     ; PIN_E15       ; QSF Assignment ;
++----------+----------------+--------------+------------+---------------+----------------+
+
+
 +----------------------------------------------+
 ; Incremental Compilation Preservation Summary ;
 +---------------------+------------------------+
 ; Type                ; Value                  ;
 +---------------------+------------------------+
 ; Placement (by node) ;                        ;
-;     -- Requested    ; 0 / 368 ( 0.00 % )     ;
-;     -- Achieved     ; 0 / 368 ( 0.00 % )     ;
+;     -- Requested    ; 0 / 373 ( 0.00 % )     ;
+;     -- Achieved     ; 0 / 373 ( 0.00 % )     ;
 ;                     ;                        ;
 ; Routing (by net)    ;                        ;
 ;     -- Requested    ; 0 / 0 ( 0.00 % )       ;
@@ -175,7 +186,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +--------------------------------+---------+-------------------+-------------------------+-------------------+
 ; Partition Name                 ; # Nodes ; # Preserved Nodes ; Preservation Level Used ; Netlist Type Used ;
 +--------------------------------+---------+-------------------+-------------------------+-------------------+
-; Top                            ; 365     ; 0                 ; N/A                     ; Source File       ;
+; Top                            ; 370     ; 0                 ; N/A                     ; Source File       ;
 ; hard_block:auto_generated_inst ; 3       ; 0                 ; N/A                     ; Source File       ;
 +--------------------------------+---------+-------------------+-------------------------+-------------------+
 
@@ -191,23 +202,23 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 +---------------------------------------------+-----------------------+
 ; Resource                                    ; Usage                 ;
 +---------------------------------------------+-----------------------+
-; Total logic elements                        ; 79 / 18,752 ( < 1 % ) ;
-;     -- Combinational with no register       ; 79                    ;
+; Total logic elements                        ; 76 / 18,752 ( < 1 % ) ;
+;     -- Combinational with no register       ; 68                    ;
 ;     -- Register only                        ; 0                     ;
-;     -- Combinational with a register        ; 0                     ;
+;     -- Combinational with a register        ; 8                     ;
 ;                                             ;                       ;
 ; Logic element usage by number of LUT inputs ;                       ;
 ;     -- 4 input functions                    ; 44                    ;
-;     -- 3 input functions                    ; 28                    ;
-;     -- <=2 input functions                  ; 7                     ;
+;     -- 3 input functions                    ; 21                    ;
+;     -- <=2 input functions                  ; 11                    ;
 ;     -- Register only                        ; 0                     ;
 ;                                             ;                       ;
 ; Logic elements by mode                      ;                       ;
-;     -- normal mode                          ; 73                    ;
+;     -- normal mode                          ; 70                    ;
 ;     -- arithmetic mode                      ; 6                     ;
 ;                                             ;                       ;
-; Total registers*                            ; 0 / 19,649 ( 0 % )    ;
-;     -- Dedicated logic registers            ; 0 / 18,752 ( 0 % )    ;
+; Total registers*                            ; 8 / 19,649 ( < 1 % )  ;
+;     -- Dedicated logic registers            ; 8 / 18,752 ( < 1 % )  ;
 ;     -- I/O registers                        ; 0 / 897 ( 0 % )       ;
 ;                                             ;                       ;
 ; Total LABs:  partially or completely used   ; 6 / 1,172 ( < 1 % )   ;
@@ -226,11 +237,11 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; ASMI blocks                                 ; 0 / 1 ( 0 % )         ;
 ; CRC blocks                                  ; 0 / 1 ( 0 % )         ;
 ; Average interconnect usage (total/H/V)      ; 0% / 0% / 0%          ;
-; Peak interconnect usage (total/H/V)         ; 1% / 1% / 2%          ;
+; Peak interconnect usage (total/H/V)         ; 2% / 1% / 2%          ;
 ; Maximum fan-out                             ; 16                    ;
-; Highest non-global fan-out                  ; 10                    ;
-; Total fan-out                               ; 359                   ;
-; Average fan-out                             ; 0.98                  ;
+; Highest non-global fan-out                  ; 11                    ;
+; Total fan-out                               ; 357                   ;
+; Average fan-out                             ; 0.96                  ;
 +---------------------------------------------+-----------------------+
 *  Register count does not include registers inside RAM blocks or DSP blocks.
 
@@ -243,23 +254,23 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 +---------------------------------------------+----------------------+--------------------------------+
 ; Difficulty Clustering Region                ; Low                  ; Low                            ;
 ;                                             ;                      ;                                ;
-; Total logic elements                        ; 79 / 18752 ( < 1 % ) ; 0 / 18752 ( 0 % )              ;
-;     -- Combinational with no register       ; 79                   ; 0                              ;
+; Total logic elements                        ; 76 / 18752 ( < 1 % ) ; 0 / 18752 ( 0 % )              ;
+;     -- Combinational with no register       ; 68                   ; 0                              ;
 ;     -- Register only                        ; 0                    ; 0                              ;
-;     -- Combinational with a register        ; 0                    ; 0                              ;
+;     -- Combinational with a register        ; 8                    ; 0                              ;
 ;                                             ;                      ;                                ;
 ; Logic element usage by number of LUT inputs ;                      ;                                ;
 ;     -- 4 input functions                    ; 44                   ; 0                              ;
-;     -- 3 input functions                    ; 28                   ; 0                              ;
-;     -- <=2 input functions                  ; 7                    ; 0                              ;
+;     -- 3 input functions                    ; 21                   ; 0                              ;
+;     -- <=2 input functions                  ; 11                   ; 0                              ;
 ;     -- Register only                        ; 0                    ; 0                              ;
 ;                                             ;                      ;                                ;
 ; Logic elements by mode                      ;                      ;                                ;
-;     -- normal mode                          ; 73                   ; 0                              ;
+;     -- normal mode                          ; 70                   ; 0                              ;
 ;     -- arithmetic mode                      ; 6                    ; 0                              ;
 ;                                             ;                      ;                                ;
-; Total registers                             ; 0                    ; 0                              ;
-;     -- Dedicated logic registers            ; 0 / 18752 ( 0 % )    ; 0 / 18752 ( 0 % )              ;
+; Total registers                             ; 8                    ; 0                              ;
+;     -- Dedicated logic registers            ; 8 / 18752 ( < 1 % )  ; 0 / 18752 ( 0 % )              ;
 ;                                             ;                      ;                                ;
 ; Total LABs:  partially or completely used   ; 6 / 1172 ( < 1 % )   ; 0 / 1172 ( 0 % )               ;
 ;                                             ;                      ;                                ;
@@ -277,8 +288,8 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ;     -- Registered Output Connections        ; 0                    ; 0                              ;
 ;                                             ;                      ;                                ;
 ; Internal Connections                        ;                      ;                                ;
-;     -- Total Connections                    ; 359                  ; 0                              ;
-;     -- Registered Connections               ; 0                    ; 0                              ;
+;     -- Total Connections                    ; 357                  ; 0                              ;
+;     -- Registered Connections               ; 64                   ; 0                              ;
 ;                                             ;                      ;                                ;
 ; External Connections                        ;                      ;                                ;
 ;     -- Top                                  ; 0                    ; 0                              ;
@@ -311,42 +322,42 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; Name        ; Pin # ; I/O Bank ; X coordinate ; Y coordinate ; Cell number ; Combinational Fan-Out ; Registered Fan-Out ; Global ; Input Register ; Power Up High ; PCI I/O Enabled ; Bus Hold ; Weak Pull Up ; I/O Standard ; Termination ; Location assigned by ;
 +-------------+-------+----------+--------------+--------------+-------------+-----------------------+--------------------+--------+----------------+---------------+-----------------+----------+--------------+--------------+-------------+----------------------+
 ; AUD_ADCDAT  ; B6    ; 3        ; 3            ; 27           ; 0           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[0]        ; D14   ; 4        ; 35           ; 27           ; 1           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[10]       ; E20   ; 5        ; 50           ; 23           ; 1           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[11]       ; F20   ; 5        ; 50           ; 23           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[12]       ; C19   ; 5        ; 50           ; 24           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[13]       ; C18   ; 4        ; 48           ; 27           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[14]       ; D16   ; 4        ; 42           ; 27           ; 0           ; 4                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[15]       ; E19   ; 5        ; 50           ; 25           ; 1           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[1]        ; F13   ; 4        ; 35           ; 27           ; 3           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[2]        ; G16   ; 4        ; 44           ; 27           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[3]        ; E15   ; 4        ; 42           ; 27           ; 1           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[4]        ; G15   ; 4        ; 39           ; 27           ; 2           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[5]        ; H13   ; 4        ; 37           ; 27           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[6]        ; D20   ; 5        ; 50           ; 25           ; 2           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[7]        ; D19   ; 5        ; 50           ; 25           ; 3           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[8]        ; C20   ; 5        ; 50           ; 25           ; 4           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; A[9]        ; E18   ; 5        ; 50           ; 25           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[0]        ; G20   ; 5        ; 50           ; 23           ; 2           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[10]       ; C18   ; 4        ; 48           ; 27           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[11]       ; C17   ; 4        ; 48           ; 27           ; 1           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[12]       ; D20   ; 5        ; 50           ; 25           ; 2           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[13]       ; E20   ; 5        ; 50           ; 23           ; 1           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[14]       ; E19   ; 5        ; 50           ; 25           ; 1           ; 4                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[15]       ; D16   ; 4        ; 42           ; 27           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[1]        ; G17   ; 5        ; 50           ; 22           ; 1           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[2]        ; J15   ; 5        ; 50           ; 18           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[3]        ; N22   ; 6        ; 50           ; 12           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[4]        ; P15   ; 6        ; 50           ; 11           ; 2           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[5]        ; P17   ; 6        ; 50           ; 8            ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[6]        ; C19   ; 5        ; 50           ; 24           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[7]        ; C20   ; 5        ; 50           ; 25           ; 4           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[8]        ; D19   ; 5        ; 50           ; 25           ; 3           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; A[9]        ; D15   ; 4        ; 39           ; 27           ; 0           ; 3                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; CLOCK_24[0] ; B12   ; 4        ; 24           ; 27           ; 0           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; CLOCK_24[1] ; A12   ; 4        ; 24           ; 27           ; 1           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; CLOCK_27[0] ; D12   ; 3        ; 24           ; 27           ; 2           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; CLOCK_27[1] ; E12   ; 3        ; 24           ; 27           ; 3           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; CLOCK_50    ; L1    ; 2        ; 0            ; 13           ; 0           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; CS1_n       ; H18   ; 5        ; 50           ; 20           ; 1           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; CS2_n       ; N22   ; 6        ; 50           ; 12           ; 0           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; CS1_n       ; F15   ; 4        ; 39           ; 27           ; 3           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; CS2_n       ; V20   ; 6        ; 50           ; 4            ; 1           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; Fitter               ;
 ; EXT_CLOCK   ; M21   ; 6        ; 50           ; 14           ; 3           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; IORQ_n      ; H17   ; 5        ; 50           ; 20           ; 0           ; 5                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; IORQ_n      ; F12   ; 4        ; 31           ; 27           ; 2           ; 5                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; KEY[0]      ; R22   ; 6        ; 50           ; 10           ; 1           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; KEY[1]      ; R21   ; 6        ; 50           ; 10           ; 2           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; KEY[2]      ; T22   ; 6        ; 50           ; 9            ; 0           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; KEY[3]      ; T21   ; 6        ; 50           ; 9            ; 1           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; M1_n        ; P15   ; 6        ; 50           ; 11           ; 2           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; MREQ_n      ; G17   ; 5        ; 50           ; 22           ; 1           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; MSX_CLK     ; P17   ; 6        ; 50           ; 8            ; 0           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; M1_n        ; G15   ; 4        ; 39           ; 27           ; 2           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; MREQ_n      ; F13   ; 4        ; 35           ; 27           ; 3           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; MSX_CLK     ; H13   ; 4        ; 37           ; 27           ; 0           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; PS2_CLK     ; H15   ; 4        ; 44           ; 27           ; 1           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; PS2_DAT     ; J14   ; 4        ; 42           ; 27           ; 3           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; RD_n        ; G20   ; 5        ; 50           ; 23           ; 2           ; 5                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; SLTSL_n     ; J15   ; 5        ; 50           ; 18           ; 0           ; 10                    ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; RD_n        ; D14   ; 4        ; 35           ; 27           ; 1           ; 5                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; SLTSL_n     ; G16   ; 4        ; 44           ; 27           ; 0           ; 11                    ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; SW[0]       ; L22   ; 5        ; 50           ; 14           ; 0           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; SW[1]       ; L21   ; 5        ; 50           ; 14           ; 1           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; SW[2]       ; M22   ; 6        ; 50           ; 14           ; 2           ; 1                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
@@ -356,12 +367,12 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; SW[6]       ; U11   ; 8        ; 26           ; 0            ; 3           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; SW[7]       ; M2    ; 1        ; 0            ; 13           ; 3           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; SW[8]       ; M1    ; 1        ; 0            ; 13           ; 2           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; SW[9]       ; L2    ; 2        ; 0            ; 13           ; 1           ; 9                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; SW[9]       ; L2    ; 2        ; 0            ; 13           ; 1           ; 10                    ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; TCK         ; C7    ; 3        ; 7            ; 27           ; 2           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; TCS         ; D8    ; 3        ; 9            ; 27           ; 0           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; TDI         ; E8    ; 3        ; 11           ; 27           ; 3           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 ; UART_RXD    ; F14   ; 4        ; 35           ; 27           ; 2           ; 0                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
-; WR_n        ; G18   ; 5        ; 50           ; 22           ; 0           ; 4                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
+; WR_n        ; C14   ; 4        ; 39           ; 27           ; 1           ; 2                     ; 0                  ; no     ; no             ; no            ; no              ; no       ; Off          ; 3.3-V LVTTL  ; Off         ; User                 ;
 +-------------+-------+----------+--------------+--------------+-------------+-----------------------+--------------------+--------+----------------+---------------+-----------------+----------+--------------+--------------+-------------+----------------------+
 
 
@@ -372,7 +383,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 +---------------+-------+----------+--------------+--------------+-------------+-----------------+------------------------+---------------+-----------------+------------+---------------+----------+--------------+--------------+------------------+-------------+----------------------+------+----------------------+---------------------+
 ; AUD_DACDAT    ; B5    ; 3        ; 3            ; 27           ; 2           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; AUD_XCK       ; B4    ; 3        ; 1            ; 27           ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
-; BUSDIR_n      ; N21   ; 6        ; 50           ; 12           ; 1           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
+; BUSDIR_n      ; E14   ; 4        ; 35           ; 27           ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; DRAM_ADDR[0]  ; W4    ; 1        ; 0            ; 3            ; 1           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; DRAM_ADDR[10] ; W3    ; 1        ; 0            ; 3            ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; DRAM_ADDR[11] ; N6    ; 1        ; 0            ; 11           ; 2           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
@@ -450,7 +461,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; HEX3[5]       ; F3    ; 2        ; 0            ; 22           ; 1           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; HEX3[6]       ; D4    ; 2        ; 0            ; 25           ; 3           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; I2C_SCLK      ; A3    ; 3        ; 1            ; 27           ; 2           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
-; INT_n         ; N15   ; 6        ; 50           ; 11           ; 1           ; no              ; no                     ; no            ; no              ; yes        ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
+; INT_n         ; H14   ; 4        ; 42           ; 27           ; 2           ; no              ; no                     ; no            ; no              ; yes        ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; LEDG[0]       ; U22   ; 6        ; 50           ; 7            ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; LEDG[1]       ; U21   ; 6        ; 50           ; 7            ; 1           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; LEDG[2]       ; V22   ; 6        ; 50           ; 7            ; 2           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
@@ -469,7 +480,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; LEDR[7]       ; U18   ; 6        ; 50           ; 3            ; 1           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; LEDR[8]       ; R18   ; 6        ; 50           ; 8            ; 2           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; LEDR[9]       ; R17   ; 6        ; 50           ; 5            ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
-; SD_CLK        ; Y17   ; 7        ; 46           ; 0            ; 1           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; -                    ; -                   ;
+; SD_CLK        ; H10   ; 3        ; 15           ; 27           ; 2           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; -                    ; -                   ;
 ; SRAM_ADDR[0]  ; AA3   ; 8        ; 1            ; 0            ; 3           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; SRAM_ADDR[10] ; R11   ; 8        ; 20           ; 0            ; 2           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; SRAM_ADDR[11] ; T11   ; 8        ; 18           ; 0            ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
@@ -509,7 +520,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; VGA_R[2]      ; A7    ; 3        ; 11           ; 27           ; 1           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; VGA_R[3]      ; B7    ; 3        ; 11           ; 27           ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; VGA_VS        ; B11   ; 3        ; 22           ; 27           ; 0           ; no              ; no                     ; no            ; no              ; no         ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
-; WAIT_n        ; P18   ; 6        ; 50           ; 9            ; 2           ; no              ; no                     ; no            ; no              ; yes        ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
+; WAIT_n        ; H12   ; 4        ; 31           ; 27           ; 0           ; no              ; no                     ; no            ; no              ; yes        ; no            ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 +---------------+-------+----------+--------------+--------------+-------------+-----------------+------------------------+---------------+-----------------+------------+---------------+----------+--------------+--------------+------------------+-------------+----------------------+------+----------------------+---------------------+
 
 
@@ -537,14 +548,14 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; DRAM_DQ[7]  ; Y2    ; 1        ; 0            ; 4            ; 3           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; DRAM_DQ[8]  ; N1    ; 1        ; 0            ; 12           ; 2           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; DRAM_DQ[9]  ; N2    ; 1        ; 0            ; 12           ; 3           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
-; D[0]        ; C17   ; 4        ; 48           ; 27           ; 1           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
-; D[1]        ; D15   ; 4        ; 39           ; 27           ; 0           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
-; D[2]        ; C14   ; 4        ; 39           ; 27           ; 1           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
-; D[3]        ; F12   ; 4        ; 31           ; 27           ; 2           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
-; D[4]        ; F15   ; 4        ; 39           ; 27           ; 3           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
-; D[5]        ; E14   ; 4        ; 35           ; 27           ; 0           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
-; D[6]        ; C13   ; 4        ; 31           ; 27           ; 1           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; D[7]~17              ; -                   ;
-; D[7]        ; H14   ; 4        ; 42           ; 27           ; 2           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[0]        ; F20   ; 5        ; 50           ; 23           ; 0           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[1]        ; E18   ; 5        ; 50           ; 25           ; 0           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[2]        ; G18   ; 5        ; 50           ; 22           ; 0           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[3]        ; H17   ; 5        ; 50           ; 20           ; 0           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[4]        ; H18   ; 5        ; 50           ; 20           ; 1           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[5]        ; N21   ; 6        ; 50           ; 12           ; 1           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[6]        ; N15   ; 6        ; 50           ; 11           ; 1           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
+; D[7]        ; P18   ; 6        ; 50           ; 9            ; 2           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; no         ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; D[7]~17              ; -                   ;
 ; FL_DQ[0]    ; AB16  ; 7        ; 35           ; 0            ; 2           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; FL_DQ[1]    ; AA16  ; 7        ; 35           ; 0            ; 1           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; FL_DQ[2]    ; AB17  ; 7        ; 37           ; 0            ; 2           ; 1                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
@@ -590,8 +601,8 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; GPIO_0[8]   ; A17   ; 4        ; 37           ; 27           ; 2           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; GPIO_0[9]   ; B17   ; 4        ; 37           ; 27           ; 1           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; I2C_SDAT    ; B3    ; 3        ; 1            ; 27           ; 3           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
-; SD_CMD      ; M18   ; 6        ; 50           ; 13           ; 0           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; -                    ; -                   ;
-; SD_DAT      ; H10   ; 3        ; 15           ; 27           ; 2           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; -                    ; -                   ;
+; SD_CMD      ; M6    ; 1        ; 0            ; 12           ; 1           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; -                    ; -                   ;
+; SD_DAT      ; R16   ; 7        ; 44           ; 0            ; 1           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; -                    ; -                   ;
 ; SD_DAT3     ; H7    ; 3        ; 5            ; 27           ; 2           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; Fitter               ; 0 pF ; -                    ; -                   ;
 ; SRAM_DQ[0]  ; AA6   ; 8        ; 7            ; 0            ; 0           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
 ; SRAM_DQ[10] ; V9    ; 8        ; 9            ; 0            ; 0           ; 0                     ; 0                  ; no     ; no             ; no              ; no                     ; no            ; no              ; yes        ; no       ; Off          ; 3.3-V LVTTL  ; 24mA             ; Off         ; User                 ; 0 pF ; -                    ; -                   ;
@@ -612,20 +623,20 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 +-------------+-------+----------+--------------+--------------+-------------+-----------------------+--------------------+--------+----------------+-----------------+------------------------+---------------+-----------------+------------+----------+--------------+--------------+------------------+-------------+----------------------+------+----------------------+---------------------+
 
 
-+------------------------------------------------------------+
-; I/O Bank Usage                                             ;
-+----------+------------------+---------------+--------------+
-; I/O Bank ; Usage            ; VCCIO Voltage ; VREF Voltage ;
-+----------+------------------+---------------+--------------+
-; 1        ; 40 / 41 ( 98 % ) ; 3.3V          ; --           ;
-; 2        ; 32 / 33 ( 97 % ) ; 3.3V          ; --           ;
-; 3        ; 30 / 43 ( 70 % ) ; 3.3V          ; --           ;
-; 4        ; 38 / 40 ( 95 % ) ; 3.3V          ; --           ;
-; 5        ; 36 / 39 ( 92 % ) ; 3.3V          ; --           ;
-; 6        ; 32 / 36 ( 89 % ) ; 3.3V          ; --           ;
-; 7        ; 37 / 40 ( 93 % ) ; 3.3V          ; --           ;
-; 8        ; 41 / 43 ( 95 % ) ; 3.3V          ; --           ;
-+----------+------------------+---------------+--------------+
++-------------------------------------------------------------+
+; I/O Bank Usage                                              ;
++----------+-------------------+---------------+--------------+
+; I/O Bank ; Usage             ; VCCIO Voltage ; VREF Voltage ;
++----------+-------------------+---------------+--------------+
+; 1        ; 41 / 41 ( 100 % ) ; 3.3V          ; --           ;
+; 2        ; 32 / 33 ( 97 % )  ; 3.3V          ; --           ;
+; 3        ; 30 / 43 ( 70 % )  ; 3.3V          ; --           ;
+; 4        ; 37 / 40 ( 93 % )  ; 3.3V          ; --           ;
+; 5        ; 36 / 39 ( 92 % )  ; 3.3V          ; --           ;
+; 6        ; 32 / 36 ( 89 % )  ; 3.3V          ; --           ;
+; 7        ; 37 / 40 ( 93 % )  ; 3.3V          ; --           ;
+; 8        ; 41 / 43 ( 95 % )  ; 3.3V          ; --           ;
++----------+-------------------+---------------+--------------+
 
 
 +------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -733,14 +744,14 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; C10      ; 296        ; 3        ; VGA_G[1]                                 ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; C11      ;            ; 3        ; VCCIO3                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
 ; C12      ;            ; 4        ; VCCIO4                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
-; C13      ; 275        ; 4        ; D[6]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; N               ; no       ; Off          ;
-; C14      ; 260        ; 4        ; D[2]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; C13      ; 275        ; 4        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; --       ; --           ;
+; C14      ; 260        ; 4        ; WR_n                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; C15      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; C16      ; 254        ; 4        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; --       ; --           ;
-; C17      ; 245        ; 4        ; D[0]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; C18      ; 244        ; 4        ; A[13]                                    ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; C19      ; 238        ; 5        ; A[12]                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; C20      ; 239        ; 5        ; A[8]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; C17      ; 245        ; 4        ; A[11]                                    ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; C18      ; 244        ; 4        ; A[10]                                    ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; C19      ; 238        ; 5        ; A[6]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; C20      ; 239        ; 5        ; A[7]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; C21      ; 236        ; 5        ; GPIO_0[16]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; C22      ; 237        ; 5        ; GPIO_0[17]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; D1       ; 14         ; 2        ; HEX1[6]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -756,13 +767,13 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; D11      ; 289        ; 3        ; VGA_B[1]                                 ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; D12      ; 284        ; 3        ; CLOCK_27[0]                              ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; D13      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
-; D14      ; 267        ; 4        ; A[0]                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; D15      ; 259        ; 4        ; D[1]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; D16      ; 255        ; 4        ; A[14]                                    ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; D14      ; 267        ; 4        ; RD_n                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; D15      ; 259        ; 4        ; A[9]                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; D16      ; 255        ; 4        ; A[15]                                    ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; D17      ;            ; 4        ; VCCIO4                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
 ; D18      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
-; D19      ; 240        ; 5        ; A[7]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; D20      ; 241        ; 5        ; A[6]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; D19      ; 240        ; 5        ; A[8]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; D20      ; 241        ; 5        ; A[12]                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; D21      ; 229        ; 5        ; GPIO_0[18]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; D22      ; 230        ; 5        ; GPIO_0[19]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; E1       ; 20         ; 2        ; HEX1[0]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -778,13 +789,13 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; E11      ; 288        ; 3        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
 ; E12      ; 285        ; 3        ; CLOCK_27[1]                              ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; E13      ;            ; 4        ; VCCIO4                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
-; E14      ; 266        ; 4        ; D[5]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; E15      ; 256        ; 4        ; A[3]                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; E14      ; 266        ; 4        ; BUSDIR_n                                 ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; E15      ; 256        ; 4        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
 ; E16      ;            ;          ; GNDA_PLL2                                ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; E17      ;            ;          ; GND_PLL2                                 ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
-; E18      ; 243        ; 5        ; A[9]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; E19      ; 242        ; 5        ; A[15]                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; E20      ; 234        ; 5        ; A[10]                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; E18      ; 243        ; 5        ; D[1]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; E19      ; 242        ; 5        ; A[14]                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; E20      ; 234        ; 5        ; A[13]                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; E21      ; 227        ; 5        ; GPIO_0[20]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; E22      ; 228        ; 5        ; GPIO_0[21]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; F1       ; 22         ; 2        ; HEX0[5]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -798,15 +809,15 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; F9       ; 307        ; 3        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
 ; F10      ; 295        ; 3        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
 ; F11      ; 294        ; 3        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
-; F12      ; 276        ; 4        ; D[3]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; F13      ; 269        ; 4        ; A[1]                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; F12      ; 276        ; 4        ; IORQ_n                                   ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; F13      ; 269        ; 4        ; MREQ_n                                   ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; F14      ; 268        ; 4        ; UART_RXD                                 ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; F15      ; 262        ; 4        ; D[4]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; F15      ; 262        ; 4        ; CS1_n                                    ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; F16      ;            ;          ; VCCA_PLL2                                ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
 ; F17      ;            ;          ; VCCD_PLL2                                ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
 ; F18      ;            ;          ; GND_PLL2                                 ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; F19      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
-; F20      ; 235        ; 5        ; A[11]                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; F20      ; 235        ; 5        ; D[0]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; F21      ; 223        ; 5        ; GPIO_0[22]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; F22      ; 224        ; 5        ; GPIO_0[23]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; G1       ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
@@ -823,12 +834,12 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; G12      ; 277        ; 4        ; UART_TXD                                 ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; G13      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; G14      ;            ; 4        ; VCCIO4                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
-; G15      ; 261        ; 4        ; A[4]                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; G16      ; 252        ; 4        ; A[2]                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; G17      ; 231        ; 5        ; MREQ_n                                   ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; G18      ; 232        ; 5        ; WR_n                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; G15      ; 261        ; 4        ; M1_n                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; G16      ; 252        ; 4        ; SLTSL_n                                  ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; G17      ; 231        ; 5        ; A[1]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; G18      ; 232        ; 5        ; D[2]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; G19      ;            ; 5        ; VCCIO5                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
-; G20      ; 233        ; 5        ; RD_n                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; G20      ; 233        ; 5        ; A[0]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; G21      ; 221        ; 5        ; GPIO_0[24]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; G22      ; 222        ; 5        ; GPIO_0[25]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; H1       ; 24         ; 2        ; HEX0[3]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -840,15 +851,15 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; H7       ; 318        ; 3        ; SD_DAT3                                  ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; N               ; no       ; Off          ;
 ; H8       ; 314        ; 3        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
 ; H9       ; 300        ; 3        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
-; H10      ; 299        ; 3        ; SD_DAT                                   ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; N               ; no       ; Off          ;
+; H10      ; 299        ; 3        ; SD_CLK                                   ; output ; 3.3-V LVTTL  ;         ; Column I/O ; N               ; no       ; Off          ;
 ; H11      ; 290        ; 3        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
-; H12      ; 274        ; 4        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
-; H13      ; 263        ; 4        ; A[5]                                     ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; H14      ; 257        ; 4        ; D[7]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; H12      ; 274        ; 4        ; WAIT_n                                   ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; H13      ; 263        ; 4        ; MSX_CLK                                  ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
+; H14      ; 257        ; 4        ; INT_n                                    ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; H15      ; 253        ; 4        ; PS2_CLK                                  ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; H16      ; 219        ; 5        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
-; H17      ; 226        ; 5        ; IORQ_n                                   ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; H18      ; 225        ; 5        ; CS1_n                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; H17      ; 226        ; 5        ; D[3]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; H18      ; 225        ; 5        ; D[4]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; H19      ; 214        ; 5        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
 ; H20      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; H21      ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
@@ -867,7 +878,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; J12      ;            ;          ; VCCINT                                   ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
 ; J13      ;            ;          ; VCCINT                                   ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
 ; J14      ; 258        ; 4        ; PS2_DAT                                  ; input  ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; J15      ; 220        ; 5        ; SLTSL_n                                  ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; J15      ; 220        ; 5        ; A[2]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; J16      ;            ; 5        ; VCCIO5                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
 ; J17      ; 218        ; 5        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
 ; J18      ; 217        ; 5        ; GPIO_0[32]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -924,7 +935,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; M3       ;            ; 1        ; VCCIO1                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
 ; M4       ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; M5       ; 43         ; 1        ; DRAM_UDQM                                ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; M6       ; 44         ; 1        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
+; M6       ; 44         ; 1        ; SD_CMD                                   ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; N               ; no       ; Off          ;
 ; M7       ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; M8       ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; M9       ;            ;          ; VCCINT                                   ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
@@ -936,7 +947,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; M15      ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; M16      ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; M17      ; 198        ; 6        ; ^MSEL0                                   ;        ;              ;         ; --         ;                 ; --       ; --           ;
-; M18      ; 202        ; 6        ; SD_CMD                                   ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; N               ; no       ; Off          ;
+; M18      ; 202        ; 6        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
 ; M19      ; 201        ; 6        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
 ; M20      ;            ; 6        ; VCCIO6                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
 ; M21      ; 203        ; 6        ; EXT_CLOCK                                ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -955,14 +966,14 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; N12      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; N13      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; N14      ;            ;          ; VCCINT                                   ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
-; N15      ; 194        ; 6        ; INT_n                                    ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; N15      ; 194        ; 6        ; D[6]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; N16      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; N17      ; 197        ; 6        ; ^MSEL1                                   ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; N18      ; 196        ; 6        ; ^CONF_DONE                               ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; N19      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; N20      ; 195        ; 6        ; ^nSTATUS                                 ;        ;              ;         ; --         ;                 ; --       ; --           ;
-; N21      ; 199        ; 6        ; BUSDIR_n                                 ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; N22      ; 200        ; 6        ; CS2_n                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; N21      ; 199        ; 6        ; D[5]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; N22      ; 200        ; 6        ; A[3]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; P1       ; 47         ; 1        ; DRAM_DQ[10]                              ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; P2       ; 48         ; 1        ; DRAM_DQ[11]                              ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; P3       ; 50         ; 1        ; DRAM_ADDR[8]                             ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -977,10 +988,10 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; P12      ;            ;          ; VCCINT                                   ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
 ; P13      ;            ;          ; VCCINT                                   ; power  ;              ; 1.2V    ; --         ;                 ; --       ; --           ;
 ; P14      ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
-; P15      ; 193        ; 6        ; M1_n                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; P15      ; 193        ; 6        ; A[4]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; P16      ;            ; 6        ; VCCIO6                                   ; power  ;              ; 3.3V    ; --         ;                 ; --       ; --           ;
-; P17      ; 186        ; 6        ; MSX_CLK                                  ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; P18      ; 187        ; 6        ; WAIT_n                                   ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; P17      ; 186        ; 6        ; A[5]                                     ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
+; P18      ; 187        ; 6        ; D[7]                                     ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; P19      ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; P20      ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
 ; P21      ;            ;          ; NC                                       ;        ;              ;         ; --         ;                 ; --       ; --           ;
@@ -1000,7 +1011,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; R13      ; 145        ; 7        ; FL_ADDR[21]                              ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; R14      ; 150        ; 7        ; FL_ADDR[8]                               ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; R15      ; 151        ; 7        ; FL_ADDR[3]                               ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; R16      ; 155        ; 7        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
+; R16      ; 155        ; 7        ; SD_DAT                                   ; bidir  ; 3.3-V LVTTL  ;         ; Column I/O ; N               ; no       ; Off          ;
 ; R17      ; 177        ; 6        ; LEDR[9]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; R18      ; 184        ; 6        ; LEDR[8]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; R19      ; 185        ; 6        ; LEDR[1]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -1070,7 +1081,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; V17      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; V18      ;            ;          ; GND_PLL4                                 ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; V19      ; 166        ; 6        ; LEDR[5]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
-; V20      ; 173        ; 6        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
+; V20      ; 173        ; 6        ; CS2_n                                    ; input  ; 3.3-V LVTTL  ;         ; Row I/O    ; N               ; no       ; Off          ;
 ; V21      ; 180        ; 6        ; LEDG[3]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; V22      ; 181        ; 6        ; LEDG[2]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; W1       ; 71         ; 1        ; DRAM_DQ[4]                               ; bidir  ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
@@ -1111,7 +1122,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera
 ; Y14      ; 148        ; 7        ; FL_WE_N                                  ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
 ; Y15      ;            ;          ; GND                                      ; gnd    ;              ;         ; --         ;                 ; --       ; --           ;
 ; Y16      ; 154        ; 7        ; FL_ADDR[2]                               ; output ; 3.3-V LVTTL  ;         ; Column I/O ; Y               ; no       ; Off          ;
-; Y17      ; 159        ; 7        ; SD_CLK                                   ; output ; 3.3-V LVTTL  ;         ; Column I/O ; N               ; no       ; Off          ;
+; Y17      ; 159        ; 7        ; GND*                                     ;        ;              ;         ; Column I/O ;                 ; no       ; Off          ;
 ; Y18      ; 165        ; 6        ; LEDR[6]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; Y19      ; 168        ; 6        ; LEDR[3]                                  ; output ; 3.3-V LVTTL  ;         ; Row I/O    ; Y               ; no       ; Off          ;
 ; Y20      ; 169        ; 6        ; GND*                                     ;        ;              ;         ; Row I/O    ;                 ; no       ; Off          ;
@@ -1163,9 +1174,9 @@ Note: User assignments will override these defaults. The user specified values a
 +----------------------------+-------------+---------------------------+---------------+-------------+------+--------------+---------+-----------+------+--------------+--------------+-------------------+------------------+------------------------------------+--------------+
 ; Compilation Hierarchy Node ; Logic Cells ; Dedicated Logic Registers ; I/O Registers ; Memory Bits ; M4Ks ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; LUT-Only LCs ; Register-Only LCs ; LUT/Register LCs ; Full Hierarchy Name                ; Library Name ;
 +----------------------------+-------------+---------------------------+---------------+-------------+------+--------------+---------+-----------+------+--------------+--------------+-------------------+------------------+------------------------------------+--------------+
-; |MSX_DE1_Top               ; 79 (51)     ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 283  ; 0            ; 79 (51)      ; 0 (0)             ; 0 (0)            ; |MSX_DE1_Top                       ; work         ;
-;    |decoder_7seg:DISPHEX0| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 7 (7)        ; 0 (0)             ; 0 (0)            ; |MSX_DE1_Top|decoder_7seg:DISPHEX0 ; work         ;
-;    |decoder_7seg:DISPHEX1| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 7 (7)        ; 0 (0)             ; 0 (0)            ; |MSX_DE1_Top|decoder_7seg:DISPHEX1 ; work         ;
+; |MSX_DE1_Top               ; 76 (51)     ; 8 (8)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 283  ; 0            ; 68 (43)      ; 0 (0)             ; 8 (5)            ; |MSX_DE1_Top                       ; work         ;
+;    |decoder_7seg:DISPHEX0| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 6 (6)        ; 0 (0)             ; 1 (1)            ; |MSX_DE1_Top|decoder_7seg:DISPHEX0 ; work         ;
+;    |decoder_7seg:DISPHEX1| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 5 (5)        ; 0 (0)             ; 2 (2)            ; |MSX_DE1_Top|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 7 (7)        ; 0 (0)             ; 0 (0)            ; |MSX_DE1_Top|decoder_7seg:DISPHEX2 ; work         ;
 ;    |decoder_7seg:DISPHEX3| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 7 (7)        ; 0 (0)             ; 0 (0)            ; |MSX_DE1_Top|decoder_7seg:DISPHEX3 ; work         ;
 +----------------------------+-------------+---------------------------+---------------+-------------+------+--------------+---------+-----------+------+--------------+--------------+-------------------+------------------+------------------------------------+--------------+
@@ -1262,14 +1273,14 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; GPIO_0[33]    ; Bidir    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
 ; GPIO_0[34]    ; Bidir    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
 ; GPIO_0[35]    ; Bidir    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
-; D[0]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; D[1]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; D[2]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; D[3]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; D[4]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; D[5]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; D[6]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; D[7]          ; Bidir    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; D[0]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; D[1]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; D[2]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; D[3]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; D[4]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; D[5]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; D[6]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; D[7]          ; Bidir    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
 ; CLOCK_24[0]   ; Input    ; (0) 170 ps    ; (0) 170 ps    ; --                    ; --  ;
 ; CLOCK_24[1]   ; Input    ; (0) 170 ps    ; (0) 170 ps    ; --                    ; --  ;
 ; CLOCK_27[0]   ; Input    ; (0) 170 ps    ; (0) 170 ps    ; --                    ; --  ;
@@ -1428,31 +1439,31 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; AUD_DACDAT    ; Output   ; --            ; --            ; --                    ; --  ;
 ; AUD_XCK       ; Output   ; --            ; --            ; --                    ; --  ;
 ; BUSDIR_n      ; Output   ; --            ; --            ; --                    ; --  ;
-; M1_n          ; Input    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
-; MSX_CLK       ; Input    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
-; RD_n          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; WR_n          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; A[1]          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; A[2]          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; A[0]          ; Input    ; (0) 170 ps    ; (6) 2514 ps   ; --                    ; --  ;
-; A[3]          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; A[4]          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; M1_n          ; Input    ; (0) 170 ps    ; (0) 170 ps    ; --                    ; --  ;
+; MSX_CLK       ; Input    ; (0) 170 ps    ; (0) 170 ps    ; --                    ; --  ;
+; A[1]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; A[2]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; A[0]          ; Input    ; (0) 171 ps    ; (6) 2523 ps   ; --                    ; --  ;
+; A[3]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; A[4]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
 ; A[6]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; A[5]          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; A[5]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
 ; A[7]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
 ; A[8]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; A[9]          ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; A[10]         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; A[11]         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; A[9]          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; A[10]         ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; A[11]         ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
 ; A[12]         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; A[13]         ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; A[14]         ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
-; A[15]         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; IORQ_n        ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; MREQ_n        ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; A[13]         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; A[14]         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; A[15]         ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; RD_n          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; IORQ_n        ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; WR_n          ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; MREQ_n        ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
 ; CS2_n         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; CS1_n         ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
-; SLTSL_n       ; Input    ; (6) 2523 ps   ; (6) 2523 ps   ; --                    ; --  ;
+; CS1_n         ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
+; SLTSL_n       ; Input    ; (6) 2514 ps   ; (6) 2514 ps   ; --                    ; --  ;
 ; SW[0]         ; Input    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
 ; SW[1]         ; Input    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
 ; SW[2]         ; Input    ; (0) 171 ps    ; (0) 171 ps    ; --                    ; --  ;
@@ -1489,19 +1500,19 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; FL_DQ[0]              ;                   ;         ;
 ;      - D[0]~16        ; 1                 ; 6       ;
 ; FL_DQ[1]              ;                   ;         ;
-;      - D[1]~18        ; 0                 ; 6       ;
+;      - D[1]~18        ; 1                 ; 6       ;
 ; FL_DQ[2]              ;                   ;         ;
 ;      - D[2]~19        ; 0                 ; 6       ;
 ; FL_DQ[3]              ;                   ;         ;
 ;      - D[3]~20        ; 1                 ; 6       ;
 ; FL_DQ[4]              ;                   ;         ;
-;      - D[4]~21        ; 1                 ; 6       ;
+;      - D[4]~21        ; 0                 ; 6       ;
 ; FL_DQ[5]              ;                   ;         ;
 ;      - D[5]~22        ; 0                 ; 6       ;
 ; FL_DQ[6]              ;                   ;         ;
 ;      - D[6]~23        ; 0                 ; 6       ;
 ; FL_DQ[7]              ;                   ;         ;
-;      - D[7]~24        ; 1                 ; 6       ;
+;      - D[7]~24        ; 0                 ; 6       ;
 ; SRAM_DQ[0]            ;                   ;         ;
 ; SRAM_DQ[1]            ;                   ;         ;
 ; SRAM_DQ[2]            ;                   ;         ;
@@ -1560,21 +1571,21 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; GPIO_0[34]            ;                   ;         ;
 ; GPIO_0[35]            ;                   ;         ;
 ; D[0]                  ;                   ;         ;
-;      - s_reg56[0]     ; 0                 ; 6       ;
+;      - s_reg56[0]~0   ; 0                 ; 6       ;
 ; D[1]                  ;                   ;         ;
 ;      - s_reg56[1]     ; 0                 ; 6       ;
 ; D[2]                  ;                   ;         ;
-;      - s_reg56[2]     ; 0                 ; 6       ;
+;      - s_reg56[2]~1   ; 0                 ; 6       ;
 ; D[3]                  ;                   ;         ;
-;      - s_reg56[3]     ; 0                 ; 6       ;
+;      - s_reg56[3]~2   ; 1                 ; 6       ;
 ; D[4]                  ;                   ;         ;
-;      - s_reg56[4]     ; 0                 ; 6       ;
+;      - s_reg56[4]     ; 1                 ; 6       ;
 ; D[5]                  ;                   ;         ;
-;      - s_reg56[5]     ; 0                 ; 6       ;
+;      - s_reg56[5]     ; 1                 ; 6       ;
 ; D[6]                  ;                   ;         ;
-;      - s_reg56[6]     ; 0                 ; 6       ;
+;      - s_reg56[6]~3   ; 1                 ; 6       ;
 ; D[7]                  ;                   ;         ;
-;      - s_reg56[7]     ; 1                 ; 6       ;
+;      - s_reg56[7]~4   ; 0                 ; 6       ;
 ; CLOCK_24[0]           ;                   ;         ;
 ; CLOCK_24[1]           ;                   ;         ;
 ; CLOCK_27[0]           ;                   ;         ;
@@ -1597,88 +1608,86 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; AUD_ADCDAT            ;                   ;         ;
 ; M1_n                  ;                   ;         ;
 ; MSX_CLK               ;                   ;         ;
-; RD_n                  ;                   ;         ;
-;      - s_msxpi_en~2   ; 0                 ; 6       ;
-;      - D[7]~17        ; 0                 ; 6       ;
-;      - s_msxpi_en~3   ; 0                 ; 6       ;
-;      - LEDG[2]        ; 0                 ; 6       ;
-;      - FL_OE_N        ; 0                 ; 6       ;
-; WR_n                  ;                   ;         ;
-;      - s_msxpi_en~2   ; 1                 ; 6       ;
-;      - s_iorq_w_reg   ; 1                 ; 6       ;
-;      - s_msxpi_en~3   ; 1                 ; 6       ;
-;      - LEDG[1]        ; 1                 ; 6       ;
 ; A[1]                  ;                   ;         ;
-;      - s_iorq_r_reg~0 ; 1                 ; 6       ;
-;      - s_msx_a[1]     ; 1                 ; 6       ;
-;      - FL_ADDR[1]     ; 1                 ; 6       ;
+;      - s_iorq_w_reg~0 ; 0                 ; 6       ;
+;      - s_msx_a[1]     ; 0                 ; 6       ;
+;      - FL_ADDR[1]     ; 0                 ; 6       ;
 ; A[2]                  ;                   ;         ;
-;      - s_iorq_r_reg~0 ; 1                 ; 6       ;
-;      - s_msx_a[2]     ; 1                 ; 6       ;
-;      - FL_ADDR[2]     ; 1                 ; 6       ;
+;      - s_iorq_w_reg~0 ; 0                 ; 6       ;
+;      - s_msx_a[2]     ; 0                 ; 6       ;
+;      - FL_ADDR[2]     ; 0                 ; 6       ;
 ; A[0]                  ;                   ;         ;
-;      - s_iorq_r_reg~0 ; 0                 ; 0       ;
+;      - s_iorq_w_reg~0 ; 0                 ; 0       ;
 ;      - s_msx_a[0]     ; 0                 ; 0       ;
 ;      - FL_ADDR[0]     ; 1                 ; 6       ;
 ; A[3]                  ;                   ;         ;
-;      - s_iorq_r_reg~0 ; 0                 ; 6       ;
+;      - s_iorq_w_reg~0 ; 0                 ; 6       ;
 ;      - s_msx_a[3]     ; 0                 ; 6       ;
 ;      - FL_ADDR[3]     ; 0                 ; 6       ;
 ; A[4]                  ;                   ;         ;
-;      - s_iorq_r_reg~1 ; 1                 ; 6       ;
-;      - s_msx_a[4]     ; 1                 ; 6       ;
-;      - FL_ADDR[4]     ; 1                 ; 6       ;
+;      - s_iorq_w_reg~1 ; 0                 ; 6       ;
+;      - s_msx_a[4]     ; 0                 ; 6       ;
+;      - FL_ADDR[4]     ; 0                 ; 6       ;
 ; A[6]                  ;                   ;         ;
-;      - s_iorq_r_reg~1 ; 0                 ; 6       ;
+;      - s_iorq_w_reg~1 ; 0                 ; 6       ;
 ;      - s_msx_a[6]     ; 0                 ; 6       ;
 ;      - FL_ADDR[6]     ; 0                 ; 6       ;
 ; A[5]                  ;                   ;         ;
-;      - s_iorq_r_reg~1 ; 0                 ; 6       ;
+;      - s_iorq_w_reg~1 ; 0                 ; 6       ;
 ;      - s_msx_a[5]     ; 0                 ; 6       ;
 ;      - FL_ADDR[5]     ; 0                 ; 6       ;
 ; A[7]                  ;                   ;         ;
-;      - s_iorq_r_reg~1 ; 1                 ; 6       ;
+;      - s_iorq_w_reg~1 ; 1                 ; 6       ;
 ;      - s_msx_a[7]     ; 1                 ; 6       ;
 ;      - FL_ADDR[7]     ; 1                 ; 6       ;
 ; A[8]                  ;                   ;         ;
-;      - s_iorq_r_reg~2 ; 1                 ; 6       ;
+;      - s_iorq_w_reg~2 ; 1                 ; 6       ;
 ;      - s_msx_a[8]     ; 1                 ; 6       ;
 ;      - FL_ADDR[8]     ; 1                 ; 6       ;
 ; A[9]                  ;                   ;         ;
-;      - s_iorq_r_reg~2 ; 0                 ; 6       ;
-;      - s_msx_a[9]     ; 0                 ; 6       ;
-;      - FL_ADDR[9]     ; 0                 ; 6       ;
+;      - s_iorq_w_reg~2 ; 1                 ; 6       ;
+;      - s_msx_a[9]     ; 1                 ; 6       ;
+;      - FL_ADDR[9]     ; 1                 ; 6       ;
 ; A[10]                 ;                   ;         ;
-;      - s_iorq_r_reg~2 ; 1                 ; 6       ;
+;      - s_iorq_w_reg~2 ; 1                 ; 6       ;
 ;      - s_msx_a[10]    ; 1                 ; 6       ;
 ;      - FL_ADDR[10]    ; 1                 ; 6       ;
 ; A[11]                 ;                   ;         ;
-;      - s_iorq_r_reg~2 ; 0                 ; 6       ;
-;      - s_msx_a[11]    ; 0                 ; 6       ;
-;      - FL_ADDR[11]    ; 0                 ; 6       ;
+;      - s_iorq_w_reg~2 ; 1                 ; 6       ;
+;      - s_msx_a[11]    ; 1                 ; 6       ;
+;      - FL_ADDR[11]    ; 1                 ; 6       ;
 ; A[12]                 ;                   ;         ;
-;      - s_iorq_r_reg~3 ; 0                 ; 6       ;
+;      - s_iorq_w_reg~3 ; 0                 ; 6       ;
 ;      - s_msx_a[12]    ; 0                 ; 6       ;
 ;      - FL_ADDR[12]    ; 0                 ; 6       ;
 ; A[13]                 ;                   ;         ;
 ;      - Add1~0         ; 0                 ; 6       ;
-;      - s_iorq_r_reg~3 ; 0                 ; 6       ;
+;      - s_iorq_w_reg~3 ; 0                 ; 6       ;
 ;      - s_msx_a[13]    ; 0                 ; 6       ;
 ; A[14]                 ;                   ;         ;
 ;      - Add1~2         ; 1                 ; 6       ;
-;      - s_iorq_r_reg~3 ; 1                 ; 6       ;
+;      - s_iorq_w_reg~3 ; 1                 ; 6       ;
 ;      - Add0~0         ; 1                 ; 6       ;
 ;      - s_msx_a[14]    ; 1                 ; 6       ;
 ; A[15]                 ;                   ;         ;
-;      - s_iorq_r_reg~3 ; 0                 ; 6       ;
-;      - Add0~0         ; 0                 ; 6       ;
-;      - s_msx_a[15]    ; 0                 ; 6       ;
+;      - s_iorq_w_reg~3 ; 1                 ; 6       ;
+;      - Add0~0         ; 1                 ; 6       ;
+;      - s_msx_a[15]    ; 1                 ; 6       ;
+; RD_n                  ;                   ;         ;
+;      - s_msxpi_en~0   ; 1                 ; 6       ;
+;      - s_iorq_r_reg~0 ; 1                 ; 6       ;
+;      - D[7]~17        ; 1                 ; 6       ;
+;      - LEDG[2]        ; 1                 ; 6       ;
+;      - FL_OE_N        ; 1                 ; 6       ;
 ; IORQ_n                ;                   ;         ;
-;      - s_busd_en      ; 0                 ; 6       ;
+;      - s_msxpi_en~0   ; 0                 ; 6       ;
+;      - s_iorq_r_reg~0 ; 0                 ; 6       ;
 ;      - s_iorq_w_reg   ; 0                 ; 6       ;
 ;      - D[7]~17        ; 0                 ; 6       ;
-;      - s_msxpi_en~3   ; 0                 ; 6       ;
 ;      - LEDG[3]        ; 0                 ; 6       ;
+; WR_n                  ;                   ;         ;
+;      - s_iorq_w_reg   ; 1                 ; 6       ;
+;      - LEDG[1]        ; 1                 ; 6       ;
 ; MREQ_n                ;                   ;         ;
 ;      - LEDG[4]        ; 1                 ; 6       ;
 ; CS2_n                 ;                   ;         ;
@@ -1695,6 +1704,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ;      - D[5]~22        ; 0                 ; 6       ;
 ;      - D[6]~23        ; 0                 ; 6       ;
 ;      - D[7]~24        ; 0                 ; 6       ;
+;      - s_busd_en      ; 0                 ; 6       ;
 ;      - LEDG[7]        ; 0                 ; 6       ;
 ; SW[0]                 ;                   ;         ;
 ; SW[1]                 ;                   ;         ;
@@ -1711,9 +1721,9 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +--------------+--------------------+---------+---------------+--------+----------------------+------------------+---------------------------+
 ; Name         ; Location           ; Fan-Out ; Usage         ; Global ; Global Resource Used ; Global Line Name ; Enable Signal Source Name ;
 +--------------+--------------------+---------+---------------+--------+----------------------+------------------+---------------------------+
-; D[7]~17      ; LCCOMB_X49_Y14_N0  ; 8       ; Output enable ; no     ; --                   ; --               ; --                        ;
-; s_busd_en    ; LCCOMB_X49_Y14_N14 ; 16      ; Latch enable  ; yes    ; Global Clock         ; GCLK4            ; --                        ;
-; s_iorq_w_reg ; LCCOMB_X49_Y14_N6  ; 8       ; Latch enable  ; yes    ; Global Clock         ; GCLK7            ; --                        ;
+; D[7]~17      ; LCCOMB_X49_Y14_N2  ; 8       ; Output enable ; no     ; --                   ; --               ; --                        ;
+; s_busd_en    ; LCCOMB_X49_Y14_N22 ; 16      ; Latch enable  ; yes    ; Global Clock         ; GCLK7            ; --                        ;
+; s_iorq_w_reg ; LCCOMB_X49_Y14_N6  ; 8       ; Clock         ; yes    ; Global Clock         ; GCLK5            ; --                        ;
 +--------------+--------------------+---------+---------------+--------+----------------------+------------------+---------------------------+
 
 
@@ -1722,8 +1732,8 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +--------------+--------------------+---------+----------------------+------------------+---------------------------+
 ; Name         ; Location           ; Fan-Out ; Global Resource Used ; Global Line Name ; Enable Signal Source Name ;
 +--------------+--------------------+---------+----------------------+------------------+---------------------------+
-; s_busd_en    ; LCCOMB_X49_Y14_N14 ; 16      ; Global Clock         ; GCLK4            ; --                        ;
-; s_iorq_w_reg ; LCCOMB_X49_Y14_N6  ; 8       ; Global Clock         ; GCLK7            ; --                        ;
+; s_busd_en    ; LCCOMB_X49_Y14_N22 ; 16      ; Global Clock         ; GCLK7            ; --                        ;
+; s_iorq_w_reg ; LCCOMB_X49_Y14_N6  ; 8       ; Global Clock         ; GCLK5            ; --                        ;
 +--------------+--------------------+---------+----------------------+------------------+---------------------------+
 
 
@@ -1732,18 +1742,10 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +------------------------------+---------+
 ; Name                         ; Fan-Out ;
 +------------------------------+---------+
-; SLTSL_n                      ; 10      ;
-; SW[9]                        ; 9       ;
+; SLTSL_n                      ; 11      ;
+; SW[9]                        ; 10      ;
 ; s_msx_a[7]                   ; 9       ;
 ; s_msx_a[6]                   ; 9       ;
-; s_reg56[7]                   ; 9       ;
-; s_reg56[6]                   ; 9       ;
-; s_reg56[5]                   ; 9       ;
-; s_reg56[4]                   ; 9       ;
-; s_reg56[3]                   ; 9       ;
-; s_reg56[2]                   ; 9       ;
-; s_reg56[1]                   ; 9       ;
-; s_reg56[0]                   ; 9       ;
 ; s_msx_a[5]                   ; 8       ;
 ; s_msx_a[4]                   ; 8       ;
 ; s_msx_a[3]                   ; 8       ;
@@ -1751,11 +1753,18 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; s_msx_a[1]                   ; 8       ;
 ; s_msx_a[0]                   ; 8       ;
 ; D[7]~17                      ; 8       ;
+; s_reg56[7]                   ; 8       ;
+; s_reg56[6]                   ; 8       ;
+; s_reg56[5]                   ; 8       ;
+; s_reg56[4]                   ; 8       ;
+; s_reg56[3]                   ; 8       ;
+; s_reg56[2]                   ; 8       ;
+; s_reg56[1]                   ; 8       ;
+; s_reg56[0]                   ; 8       ;
 ; IORQ_n                       ; 5       ;
 ; RD_n                         ; 5       ;
 ; A[14]                        ; 4       ;
-; WR_n                         ; 4       ;
-; s_iorq_r_reg~4               ; 4       ;
+; s_iorq_w_reg~4               ; 4       ;
 ; A[15]                        ; 3       ;
 ; A[13]                        ; 3       ;
 ; A[12]                        ; 3       ;
@@ -1771,7 +1780,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; A[0]                         ; 3       ;
 ; A[2]                         ; 3       ;
 ; A[1]                         ; 3       ;
-; s_rom_en                     ; 3       ;
+; WR_n                         ; 2       ;
 ; s_msx_a[15]                  ; 2       ;
 ; s_msx_a[14]                  ; 2       ;
 ; s_msx_a[13]                  ; 2       ;
@@ -1780,6 +1789,8 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; s_msx_a[10]                  ; 2       ;
 ; s_msx_a[9]                   ; 2       ;
 ; s_msx_a[8]                   ; 2       ;
+; s_iorq_w_reg                 ; 2       ;
+; s_rom_en                     ; 2       ;
 ; SW[5]                        ; 1       ;
 ; SW[4]                        ; 1       ;
 ; SW[3]                        ; 1       ;
@@ -1805,7 +1816,12 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; FL_DQ[2]~10                  ; 1       ;
 ; FL_DQ[1]~9                   ; 1       ;
 ; FL_DQ[0]~8                   ; 1       ;
-; s_msxpi_en~3                 ; 1       ;
+; s_reg56[7]~4                 ; 1       ;
+; s_reg56[6]~3                 ; 1       ;
+; s_reg56[3]~2                 ; 1       ;
+; s_reg56[2]~1                 ; 1       ;
+; s_reg56[0]~0                 ; 1       ;
+; s_busd_en                    ; 1       ;
 ; D[7]~24                      ; 1       ;
 ; D[6]~23                      ; 1       ;
 ; D[5]~22                      ; 1       ;
@@ -1814,13 +1830,13 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; D[2]~19                      ; 1       ;
 ; D[1]~18                      ; 1       ;
 ; D[0]~16                      ; 1       ;
-; s_busd_en                    ; 1       ;
-; Add0~0                       ; 1       ;
-; s_iorq_r_reg~3               ; 1       ;
-; s_iorq_r_reg~2               ; 1       ;
-; s_iorq_r_reg~1               ; 1       ;
 ; s_iorq_r_reg~0               ; 1       ;
-; s_msxpi_en~2                 ; 1       ;
+; Add0~0                       ; 1       ;
+; s_msxpi_en~0                 ; 1       ;
+; s_iorq_w_reg~3               ; 1       ;
+; s_iorq_w_reg~2               ; 1       ;
+; s_iorq_w_reg~1               ; 1       ;
+; s_iorq_w_reg~0               ; 1       ;
 ; decoder_7seg:DISPHEX3|Mux0~0 ; 1       ;
 ; decoder_7seg:DISPHEX3|Mux1~0 ; 1       ;
 ; decoder_7seg:DISPHEX3|Mux2~0 ; 1       ;
@@ -1870,21 +1886,21 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-----------------------------+------------------------+
 ; Other Routing Resource Type ; Usage                  ;
 +-----------------------------+------------------------+
-; Block interconnects         ; 160 / 54,004 ( < 1 % ) ;
-; C16 interconnects           ; 55 / 2,100 ( 3 % )     ;
-; C4 interconnects            ; 186 / 36,000 ( < 1 % ) ;
-; Direct links                ; 16 / 54,004 ( < 1 % )  ;
+; Block interconnects         ; 151 / 54,004 ( < 1 % ) ;
+; C16 interconnects           ; 56 / 2,100 ( 3 % )     ;
+; C4 interconnects            ; 179 / 36,000 ( < 1 % ) ;
+; Direct links                ; 8 / 54,004 ( < 1 % )   ;
 ; Global clocks               ; 2 / 16 ( 13 % )        ;
-; Local interconnects         ; 27 / 18,752 ( < 1 % )  ;
-; R24 interconnects           ; 58 / 1,900 ( 3 % )     ;
-; R4 interconnects            ; 207 / 46,920 ( < 1 % ) ;
+; Local interconnects         ; 30 / 18,752 ( < 1 % )  ;
+; R24 interconnects           ; 65 / 1,900 ( 3 % )     ;
+; R4 interconnects            ; 215 / 46,920 ( < 1 % ) ;
 +-----------------------------+------------------------+
 
 
 +---------------------------------------------------------------------------+
 ; LAB Logic Elements                                                        ;
 +---------------------------------------------+-----------------------------+
-; Number of Logic Elements  (Average = 13.17) ; Number of LABs  (Total = 6) ;
+; Number of Logic Elements  (Average = 12.67) ; Number of LABs  (Total = 6) ;
 +---------------------------------------------+-----------------------------+
 ; 1                                           ; 0                           ;
 ; 2                                           ; 0                           ;
@@ -1897,18 +1913,27 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; 9                                           ; 0                           ;
 ; 10                                          ; 0                           ;
 ; 11                                          ; 1                           ;
-; 12                                          ; 2                           ;
-; 13                                          ; 1                           ;
-; 14                                          ; 0                           ;
-; 15                                          ; 1                           ;
-; 16                                          ; 1                           ;
+; 12                                          ; 1                           ;
+; 13                                          ; 3                           ;
+; 14                                          ; 1                           ;
+; 15                                          ; 0                           ;
+; 16                                          ; 0                           ;
 +---------------------------------------------+-----------------------------+
+
+
++------------------------------------------------------------------+
+; LAB-wide Signals                                                 ;
++------------------------------------+-----------------------------+
+; LAB-wide Signals  (Average = 0.33) ; Number of LABs  (Total = 6) ;
++------------------------------------+-----------------------------+
+; 1 Clock                            ; 2                           ;
++------------------------------------+-----------------------------+
 
 
 +----------------------------------------------------------------------------+
 ; LAB Signals Sourced                                                        ;
 +----------------------------------------------+-----------------------------+
-; Number of Signals Sourced  (Average = 13.17) ; Number of LABs  (Total = 6) ;
+; Number of Signals Sourced  (Average = 14.00) ; Number of LABs  (Total = 6) ;
 +----------------------------------------------+-----------------------------+
 ; 0                                            ; 0                           ;
 ; 1                                            ; 0                           ;
@@ -1922,11 +1947,13 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; 9                                            ; 0                           ;
 ; 10                                           ; 0                           ;
 ; 11                                           ; 1                           ;
-; 12                                           ; 2                           ;
-; 13                                           ; 1                           ;
+; 12                                           ; 1                           ;
+; 13                                           ; 2                           ;
 ; 14                                           ; 0                           ;
-; 15                                           ; 1                           ;
-; 16                                           ; 1                           ;
+; 15                                           ; 0                           ;
+; 16                                           ; 0                           ;
+; 17                                           ; 1                           ;
+; 18                                           ; 1                           ;
 +----------------------------------------------+-----------------------------+
 
 
@@ -1943,18 +1970,18 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; 5                                                ; 0                           ;
 ; 6                                                ; 0                           ;
 ; 7                                                ; 1                           ;
-; 8                                                ; 1                           ;
-; 9                                                ; 0                           ;
+; 8                                                ; 0                           ;
+; 9                                                ; 1                           ;
 ; 10                                               ; 1                           ;
-; 11                                               ; 1                           ;
-; 12                                               ; 2                           ;
+; 11                                               ; 2                           ;
+; 12                                               ; 1                           ;
 +--------------------------------------------------+-----------------------------+
 
 
 +---------------------------------------------------------------------------+
 ; LAB Distinct Inputs                                                       ;
 +---------------------------------------------+-----------------------------+
-; Number of Distinct Inputs  (Average = 9.67) ; Number of LABs  (Total = 6) ;
+; Number of Distinct Inputs  (Average = 9.83) ; Number of LABs  (Total = 6) ;
 +---------------------------------------------+-----------------------------+
 ; 0                                           ; 0                           ;
 ; 1                                           ; 0                           ;
@@ -1971,7 +1998,8 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; 12                                          ; 0                           ;
 ; 13                                          ; 0                           ;
 ; 14                                          ; 0                           ;
-; 15                                          ; 1                           ;
+; 15                                          ; 0                           ;
+; 16                                          ; 1                           ;
 +---------------------------------------------+-----------------------------+
 
 
@@ -2009,7 +2037,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-----------------+----------------------+-------------------+
 ; Source Clock(s) ; Destination Clock(s) ; Delay Added in ns ;
 +-----------------+----------------------+-------------------+
-; I/O             ; A[0]                 ; 2.1               ;
+; I/O             ; A[0]                 ; 2.4               ;
 +-----------------+----------------------+-------------------+
 Note: For more information on problematic transfers, consider running the Fitter again with the Optimize hold timing option (Settings Menu) turned off.
 This will disable optimization of problematic paths and expose them for further analysis using either the TimeQuest Timing Analyzer or the Classic Timing Analyzer.
@@ -2020,7 +2048,7 @@ This will disable optimization of problematic paths and expose them for further 
 +-----------------+----------------------+-------------------+
 ; Source Register ; Destination Register ; Delay Added in ns ;
 +-----------------+----------------------+-------------------+
-; A[0]            ; s_msx_a[0]           ; 2.115             ;
+; A[0]            ; s_msx_a[0]           ; 2.417             ;
 +-----------------+----------------------+-------------------+
 Note: This table only shows the top 1 path(s) that have the largest delay added for hold.
 
@@ -2046,9 +2074,9 @@ Critical Warning (169085): No exact pin location assignment(s) for 5 pins of 283
     Info (169086): Pin SD_DAT3 not assigned to an exact location on the device
     Info (169086): Pin SD_CMD not assigned to an exact location on the device
     Info (169086): Pin SD_DAT not assigned to an exact location on the device
-    Info (169086): Pin D[6] not assigned to an exact location on the device
     Info (169086): Pin SD_CLK not assigned to an exact location on the device
-Warning (335093): TimeQuest Timing Analyzer is analyzing 24 combinational loops as latches.
+    Info (169086): Pin CS2_n not assigned to an exact location on the device
+Warning (335093): TimeQuest Timing Analyzer is analyzing 16 combinational loops as latches.
 Critical Warning (332012): Synopsys Design Constraints File file not found: 'MSX_DE1_Top.sdc'. A Synopsys Design Constraints File is required by the TimeQuest Timing Analyzer to get proper timing constraints. Without it, the Compiler will not properly optimize the design.
 Info (332144): No user constrained base clocks found in the design
 Info (332130): Timing requirements not specified -- quality metrics such as performance may be sacrificed to reduce compilation time.
@@ -2058,11 +2086,14 @@ Info (176353): Automatically promoted node s_busd_en
         Info (176357): Destination node BUSDIR_n
 Info (176353): Automatically promoted node s_iorq_w_reg 
     Info (176355): Automatically promoted destinations to use location or clock signal Global Clock
+    Info (176356): Following destination nodes may be non-global or may not use global or regional clocks
+        Info (176357): Destination node s_msxpi_en~0
+        Info (176357): Destination node s_busd_en
 Info (176233): Starting register packing
 Info (176235): Finished register packing
     Extra Info (176219): No registers were packed into other blocks
 Info (176214): Statistics of I/O pins that need to be placed that use the same VCCIO and VREF, before I/O pin placement
-    Info (176211): Number of I/O pins in group: 5 (unused VREF, 3.3V VCCIO, 0 input, 1 output, 4 bidirectional)
+    Info (176211): Number of I/O pins in group: 5 (unused VREF, 3.3V VCCIO, 1 input, 1 output, 3 bidirectional)
         Info (176212): I/O standards used: 3.3-V LVTTL.
 Info (176215): I/O bank details before I/O pin placement
     Info (176214): Statistics of I/O banks
@@ -2074,6 +2105,8 @@ Info (176215): I/O bank details before I/O pin placement
         Info (176213): I/O bank number 6 does not use VREF pins and has 3.3V VCCIO pins. 31 total pin(s) used --  5 pins available
         Info (176213): I/O bank number 7 does not use VREF pins and has 3.3V VCCIO pins. 36 total pin(s) used --  4 pins available
         Info (176213): I/O bank number 8 does not use VREF pins and has 3.3V VCCIO pins. 41 total pin(s) used --  2 pins available
+Warning (15705): Ignored locations or region assignments to the following nodes
+    Warning (15706): Node "CS12_n" is assigned to location or region, but does not exist in design
 Info (171121): Fitter preparation operations ending: elapsed time is 00:00:00
 Info (170189): Fitter placement preparation operations beginning
 Info (170190): Fitter placement preparation operations ending: elapsed time is 00:00:00
@@ -2082,12 +2115,12 @@ Info (170137): Fitter placement was successful
 Info (170192): Fitter placement operations ending: elapsed time is 00:00:00
 Info (170193): Fitter routing operations beginning
 Info (170195): Router estimated average interconnect usage is 0% of the available device resources
-    Info (170196): Router estimated peak interconnect usage is 1% of the available device resources in the region that extends from location X25_Y14 to location X37_Y27
-Info (170194): Fitter routing operations ending: elapsed time is 00:00:01
+    Info (170196): Router estimated peak interconnect usage is 2% of the available device resources in the region that extends from location X38_Y14 to location X50_Y27
+Info (170194): Fitter routing operations ending: elapsed time is 00:00:00
 Info (170199): The Fitter performed an Auto Fit compilation.  Optimizations were skipped to reduce compilation time.
     Info (170201): Optimizations that may affect the design's routability were skipped
     Info (170200): Optimizations that may affect the design's timing were skipped
-Info (11888): Total time spent on timing analysis during the Fitter is 0.36 seconds.
+Info (11888): Total time spent on timing analysis during the Fitter is 0.42 seconds.
 Info (306004): Started post-fitting delay annotation
 Warning (306006): Found 231 output pins without output pin load capacitance assignment
     Info (306007): Pin "INT_n" has no specified output pin load capacitance -- assuming default load capacitance of 0 pF for timing analysis
@@ -2325,6 +2358,7 @@ Info (306005): Delay annotation completed successfully
 Info (306004): Started post-fitting delay annotation
 Info (306005): Delay annotation completed successfully
 Info (11218): Fitter post-fit operations ending: elapsed time is 00:00:00
+Warning (171167): Found invalid Fitter assignments. See the Ignored Assignments panel in the Fitter Compilation Report for more information.
 Warning (169064): Following 83 pins have no output enable or a GND or VCC output enable - later changes to this connectivity may change fitting results
     Info (169065): Pin SD_DAT3 has a permanently disabled output enable
     Info (169065): Pin SD_CMD has a permanently disabled output enable
@@ -2411,10 +2445,10 @@ Warning (169064): Following 83 pins have no output enable or a GND or VCC output
     Info (169065): Pin GPIO_0[35] has a permanently disabled output enable
 Warning (169174): The Reserve All Unused Pins setting has not been specified, and will default to 'As output driving ground'.
 Info (144001): Generated suppressed messages file C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/output_files/MSX_DE1_Top.fit.smsg
-Info: Quartus II 64-Bit Fitter was successful. 0 errors, 8 warnings
-    Info: Peak virtual memory: 4840 megabytes
-    Info: Processing ended: Mon Jan 09 00:12:52 2023
-    Info: Elapsed time: 00:00:04
+Info: Quartus II 64-Bit Fitter was successful. 0 errors, 11 warnings
+    Info: Peak virtual memory: 4834 megabytes
+    Info: Processing ended: Tue Jan 10 10:18:32 2023
+    Info: Elapsed time: 00:00:03
     Info: Total CPU time (on all processors): 00:00:03
 
 

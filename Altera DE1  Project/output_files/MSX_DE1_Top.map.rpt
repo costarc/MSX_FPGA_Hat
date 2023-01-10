@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MSX_DE1_Top
-Mon Jan 09 00:12:48 2023
+Tue Jan 10 10:18:29 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -15,8 +15,9 @@ Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edit
   7. Analysis & Synthesis Resource Utilization by Entity
   8. User-Specified and Inferred Latches
   9. General Register Statistics
- 10. Elapsed Time Per Partition
- 11. Analysis & Synthesis Messages
+ 10. Inverted Register Statistics
+ 11. Elapsed Time Per Partition
+ 12. Analysis & Synthesis Messages
 
 
 
@@ -42,15 +43,15 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Mon Jan 09 00:12:48 2023           ;
+; Analysis & Synthesis Status        ; Successful - Tue Jan 10 10:18:29 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_DE1_Top                                     ;
 ; Top-level Entity Name              ; MSX_DE1_Top                                     ;
 ; Family                             ; Cyclone II                                      ;
 ; Total logic elements               ; 79                                              ;
-;     Total combinational functions  ; 79                                              ;
-;     Dedicated logic registers      ; 0                                               ;
-; Total registers                    ; 0                                               ;
+;     Total combinational functions  ; 76                                              ;
+;     Dedicated logic registers      ; 8                                               ;
+; Total registers                    ; 8                                               ;
 ; Total pins                         ; 283                                             ;
 ; Total virtual pins                 ; 0                                               ;
 ; Total memory bits                  ; 0                                               ;
@@ -155,14 +156,14 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+--------+
 
 
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Analysis & Synthesis Source Files Read                                                                                                                               ;
-+----------------------------------+-----------------+-----------------------+-------------------------------------------------------------------------------+---------+
-; File Name with User-Entered Path ; Used in Netlist ; File Type             ; File Name with Absolute Path                                                  ; Library ;
-+----------------------------------+-----------------+-----------------------+-------------------------------------------------------------------------------+---------+
-; MSX_DE1_Top.vhd                  ; yes             ; User VHDL File        ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd  ;         ;
-; decoder_7seg.vhd                 ; yes             ; Auto-Found VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/decoder_7seg.vhd ;         ;
-+----------------------------------+-----------------+-----------------------+-------------------------------------------------------------------------------+---------+
++----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Analysis & Synthesis Source Files Read                                                                                                                         ;
++----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------+---------+
+; File Name with User-Entered Path ; Used in Netlist ; File Type       ; File Name with Absolute Path                                                  ; Library ;
++----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------+---------+
+; decoder_7seg.vhd                 ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/decoder_7seg.vhd ;         ;
+; MSX_DE1_Top.vhd                  ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd  ;         ;
++----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------+---------+
 
 
 +---------------------------------------------------------+
@@ -172,26 +173,26 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +---------------------------------------------+-----------+
 ; Estimated Total logic elements              ; 79        ;
 ;                                             ;           ;
-; Total combinational functions               ; 79        ;
+; Total combinational functions               ; 76        ;
 ; Logic element usage by number of LUT inputs ;           ;
 ;     -- 4 input functions                    ; 44        ;
-;     -- 3 input functions                    ; 28        ;
-;     -- <=2 input functions                  ; 7         ;
+;     -- 3 input functions                    ; 21        ;
+;     -- <=2 input functions                  ; 11        ;
 ;                                             ;           ;
 ; Logic elements by mode                      ;           ;
-;     -- normal mode                          ; 73        ;
+;     -- normal mode                          ; 70        ;
 ;     -- arithmetic mode                      ; 6         ;
 ;                                             ;           ;
-; Total registers                             ; 0         ;
-;     -- Dedicated logic registers            ; 0         ;
+; Total registers                             ; 8         ;
+;     -- Dedicated logic registers            ; 8         ;
 ;     -- I/O registers                        ; 0         ;
 ;                                             ;           ;
 ; I/O pins                                    ; 283       ;
 ; Embedded Multiplier 9-bit elements          ; 0         ;
 ; Maximum fan-out node                        ; s_busd_en ;
 ; Maximum fan-out                             ; 17        ;
-; Total fan-out                               ; 357       ;
-; Average fan-out                             ; 0.99      ;
+; Total fan-out                               ; 355       ;
+; Average fan-out                             ; 0.97      ;
 +---------------------------------------------+-----------+
 
 
@@ -200,7 +201,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
 ; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                ; Library Name ;
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
-; |MSX_DE1_Top               ; 79 (51)           ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MSX_DE1_Top                       ; work         ;
+; |MSX_DE1_Top               ; 76 (48)           ; 8 (8)        ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MSX_DE1_Top                       ; work         ;
 ;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX0 ; work         ;
 ;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX2 ; work         ;
@@ -214,14 +215,6 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-----------------------------------------------------+---------------------+------------------------+
 ; Latch Name                                          ; Latch Enable Signal ; Free of Timing Hazards ;
 +-----------------------------------------------------+---------------------+------------------------+
-; s_reg56[0]                                          ; s_iorq_w_reg        ; yes                    ;
-; s_reg56[1]                                          ; s_iorq_w_reg        ; yes                    ;
-; s_reg56[2]                                          ; s_iorq_w_reg        ; yes                    ;
-; s_reg56[3]                                          ; s_iorq_w_reg        ; yes                    ;
-; s_reg56[4]                                          ; s_iorq_w_reg        ; yes                    ;
-; s_reg56[5]                                          ; s_iorq_w_reg        ; yes                    ;
-; s_reg56[6]                                          ; s_iorq_w_reg        ; yes                    ;
-; s_reg56[7]                                          ; s_iorq_w_reg        ; yes                    ;
 ; s_msx_a[0]                                          ; s_busd_en           ; yes                    ;
 ; s_msx_a[1]                                          ; s_busd_en           ; yes                    ;
 ; s_msx_a[2]                                          ; s_busd_en           ; yes                    ;
@@ -238,7 +231,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; s_msx_a[13]                                         ; s_busd_en           ; yes                    ;
 ; s_msx_a[14]                                         ; s_busd_en           ; yes                    ;
 ; s_msx_a[15]                                         ; s_busd_en           ; yes                    ;
-; Number of user-specified and inferred latches = 24  ;                     ;                        ;
+; Number of user-specified and inferred latches = 16  ;                     ;                        ;
 +-----------------------------------------------------+---------------------+------------------------+
 Note: All latches listed above may not be present at the end of synthesis due to various synthesis optimizations.
 
@@ -248,7 +241,7 @@ Note: All latches listed above may not be present at the end of synthesis due to
 +----------------------------------------------+-------+
 ; Statistic                                    ; Value ;
 +----------------------------------------------+-------+
-; Total registers                              ; 0     ;
+; Total registers                              ; 8     ;
 ; Number of registers using Synchronous Clear  ; 0     ;
 ; Number of registers using Synchronous Load   ; 0     ;
 ; Number of registers using Asynchronous Clear ; 0     ;
@@ -256,6 +249,20 @@ Note: All latches listed above may not be present at the end of synthesis due to
 ; Number of registers using Clock Enable       ; 0     ;
 ; Number of registers using Preset             ; 0     ;
 +----------------------------------------------+-------+
+
+
++--------------------------------------------------+
+; Inverted Register Statistics                     ;
++----------------------------------------+---------+
+; Inverted Register                      ; Fan out ;
++----------------------------------------+---------+
+; s_reg56[0]                             ; 8       ;
+; s_reg56[2]                             ; 8       ;
+; s_reg56[3]                             ; 8       ;
+; s_reg56[6]                             ; 8       ;
+; s_reg56[7]                             ; 8       ;
+; Total number of inverted registers = 5 ;         ;
++----------------------------------------+---------+
 
 
 +-------------------------------+
@@ -273,9 +280,13 @@ Note: All latches listed above may not be present at the end of synthesis due to
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Mon Jan 09 00:12:46 2023
+    Info: Processing started: Tue Jan 10 10:18:27 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MSX_DE1_Top -c MSX_DE1_Top
 Warning (20028): Parallel compilation is not licensed and has been disabled
+Warning (12019): Can't analyze file -- file rom.vhd is missing
+Info (12021): Found 2 design units, including 1 entities, in source file decoder_7seg.vhd
+    Info (12022): Found design unit 1: decoder_7seg-rtl
+    Info (12023): Found entity 1: decoder_7seg
 Info (12021): Found 2 design units, including 1 entities, in source file msx_de1_top.vhd
     Info (12022): Found design unit 1: MSX_DE1_Top-rtl
     Info (12023): Found entity 1: MSX_DE1_Top
@@ -309,6 +320,8 @@ Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(75): used im
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(80): used implicit default value for signal "AUD_DACDAT" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(82): used implicit default value for signal "AUD_XCK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(122): object "s_mreq" assigned a value but never read
+Warning (10540): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(128): used explicit default value for signal "s_reset" because signal was never assigned a value
+Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(174): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
 Info (10041): Inferred latch for "s_msx_a[0]" at MSX_DE1_Top.vhd(161)
 Info (10041): Inferred latch for "s_msx_a[1]" at MSX_DE1_Top.vhd(161)
 Info (10041): Inferred latch for "s_msx_a[2]" at MSX_DE1_Top.vhd(161)
@@ -325,17 +338,6 @@ Info (10041): Inferred latch for "s_msx_a[12]" at MSX_DE1_Top.vhd(161)
 Info (10041): Inferred latch for "s_msx_a[13]" at MSX_DE1_Top.vhd(161)
 Info (10041): Inferred latch for "s_msx_a[14]" at MSX_DE1_Top.vhd(161)
 Info (10041): Inferred latch for "s_msx_a[15]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_reg56[0]" at MSX_DE1_Top.vhd(155)
-Info (10041): Inferred latch for "s_reg56[1]" at MSX_DE1_Top.vhd(155)
-Info (10041): Inferred latch for "s_reg56[2]" at MSX_DE1_Top.vhd(155)
-Info (10041): Inferred latch for "s_reg56[3]" at MSX_DE1_Top.vhd(155)
-Info (10041): Inferred latch for "s_reg56[4]" at MSX_DE1_Top.vhd(155)
-Info (10041): Inferred latch for "s_reg56[5]" at MSX_DE1_Top.vhd(155)
-Info (10041): Inferred latch for "s_reg56[6]" at MSX_DE1_Top.vhd(155)
-Info (10041): Inferred latch for "s_reg56[7]" at MSX_DE1_Top.vhd(155)
-Warning (12125): Using design file decoder_7seg.vhd, which is not specified as a design file for the current project, but contains definitions for 2 design units and 1 entities in project
-    Info (12022): Found design unit 1: decoder_7seg-rtl
-    Info (12023): Found entity 1: decoder_7seg
 Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
 Warning (13039): The following bidir pins have no drivers
     Warning (13040): Bidir "SD_DAT3" has no driver
@@ -472,9 +474,9 @@ Info (21057): Implemented 362 device resources after synthesis - the final resou
     Info (21059): Implemented 140 output pins
     Info (21060): Implemented 91 bidirectional pins
     Info (21061): Implemented 79 logic cells
-Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 159 warnings
-    Info: Peak virtual memory: 4631 megabytes
-    Info: Processing ended: Mon Jan 09 00:12:48 2023
+Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 161 warnings
+    Info: Peak virtual memory: 4626 megabytes
+    Info: Processing ended: Tue Jan 10 10:18:29 2023
     Info: Elapsed time: 00:00:02
     Info: Total CPU time (on all processors): 00:00:01
 
