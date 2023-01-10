@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MSX_DE1_Top
-Tue Jan 10 10:18:29 2023
+Tue Jan 10 19:31:07 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -10,14 +10,7 @@ Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edit
   2. Analysis & Synthesis Summary
   3. Analysis & Synthesis Settings
   4. Parallel Compilation
-  5. Analysis & Synthesis Source Files Read
-  6. Analysis & Synthesis Resource Usage Summary
-  7. Analysis & Synthesis Resource Utilization by Entity
-  8. User-Specified and Inferred Latches
-  9. General Register Statistics
- 10. Inverted Register Statistics
- 11. Elapsed Time Per Partition
- 12. Analysis & Synthesis Messages
+  5. Analysis & Synthesis Messages
 
 
 
@@ -43,20 +36,20 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Tue Jan 10 10:18:29 2023           ;
+; Analysis & Synthesis Status        ; Failed - Tue Jan 10 19:31:07 2023               ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_DE1_Top                                     ;
 ; Top-level Entity Name              ; MSX_DE1_Top                                     ;
 ; Family                             ; Cyclone II                                      ;
-; Total logic elements               ; 79                                              ;
-;     Total combinational functions  ; 76                                              ;
-;     Dedicated logic registers      ; 8                                               ;
-; Total registers                    ; 8                                               ;
-; Total pins                         ; 283                                             ;
-; Total virtual pins                 ; 0                                               ;
-; Total memory bits                  ; 0                                               ;
-; Embedded Multiplier 9-bit elements ; 0                                               ;
-; Total PLLs                         ; 0                                               ;
+; Total logic elements               ; N/A until Partition Merge                       ;
+;     Total combinational functions  ; N/A until Partition Merge                       ;
+;     Dedicated logic registers      ; N/A until Partition Merge                       ;
+; Total registers                    ; N/A until Partition Merge                       ;
+; Total pins                         ; N/A until Partition Merge                       ;
+; Total virtual pins                 ; N/A until Partition Merge                       ;
+; Total memory bits                  ; N/A until Partition Merge                       ;
+; Embedded Multiplier 9-bit elements ; N/A until Partition Merge                       ;
+; Total PLLs                         ; N/A until Partition Merge                       ;
 +------------------------------------+-------------------------------------------------+
 
 
@@ -156,140 +149,32 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+--------+
 
 
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Analysis & Synthesis Source Files Read                                                                                                                         ;
-+----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------+---------+
-; File Name with User-Entered Path ; Used in Netlist ; File Type       ; File Name with Absolute Path                                                  ; Library ;
-+----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------+---------+
-; decoder_7seg.vhd                 ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/decoder_7seg.vhd ;         ;
-; MSX_DE1_Top.vhd                  ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd  ;         ;
-+----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------+---------+
-
-
-+---------------------------------------------------------+
-; Analysis & Synthesis Resource Usage Summary             ;
-+---------------------------------------------+-----------+
-; Resource                                    ; Usage     ;
-+---------------------------------------------+-----------+
-; Estimated Total logic elements              ; 79        ;
-;                                             ;           ;
-; Total combinational functions               ; 76        ;
-; Logic element usage by number of LUT inputs ;           ;
-;     -- 4 input functions                    ; 44        ;
-;     -- 3 input functions                    ; 21        ;
-;     -- <=2 input functions                  ; 11        ;
-;                                             ;           ;
-; Logic elements by mode                      ;           ;
-;     -- normal mode                          ; 70        ;
-;     -- arithmetic mode                      ; 6         ;
-;                                             ;           ;
-; Total registers                             ; 8         ;
-;     -- Dedicated logic registers            ; 8         ;
-;     -- I/O registers                        ; 0         ;
-;                                             ;           ;
-; I/O pins                                    ; 283       ;
-; Embedded Multiplier 9-bit elements          ; 0         ;
-; Maximum fan-out node                        ; s_busd_en ;
-; Maximum fan-out                             ; 17        ;
-; Total fan-out                               ; 355       ;
-; Average fan-out                             ; 0.97      ;
-+---------------------------------------------+-----------+
-
-
-+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Analysis & Synthesis Resource Utilization by Entity                                                                                                                                        ;
-+----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
-; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                ; Library Name ;
-+----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
-; |MSX_DE1_Top               ; 76 (48)           ; 8 (8)        ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MSX_DE1_Top                       ; work         ;
-;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX0 ; work         ;
-;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX1 ; work         ;
-;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX2 ; work         ;
-;    |decoder_7seg:DISPHEX3| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX3 ; work         ;
-+----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
-Note: For table entries with two numbers listed, the numbers in parentheses indicate the number of resources of the given type used by the specific entity alone. The numbers listed outside of parentheses indicate the total resources of the given type used by the specific entity and all of its sub-entities in the hierarchy.
-
-
-+----------------------------------------------------------------------------------------------------+
-; User-Specified and Inferred Latches                                                                ;
-+-----------------------------------------------------+---------------------+------------------------+
-; Latch Name                                          ; Latch Enable Signal ; Free of Timing Hazards ;
-+-----------------------------------------------------+---------------------+------------------------+
-; s_msx_a[0]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[1]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[2]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[3]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[4]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[5]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[6]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[7]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[8]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[9]                                          ; s_busd_en           ; yes                    ;
-; s_msx_a[10]                                         ; s_busd_en           ; yes                    ;
-; s_msx_a[11]                                         ; s_busd_en           ; yes                    ;
-; s_msx_a[12]                                         ; s_busd_en           ; yes                    ;
-; s_msx_a[13]                                         ; s_busd_en           ; yes                    ;
-; s_msx_a[14]                                         ; s_busd_en           ; yes                    ;
-; s_msx_a[15]                                         ; s_busd_en           ; yes                    ;
-; Number of user-specified and inferred latches = 16  ;                     ;                        ;
-+-----------------------------------------------------+---------------------+------------------------+
-Note: All latches listed above may not be present at the end of synthesis due to various synthesis optimizations.
-
-
-+------------------------------------------------------+
-; General Register Statistics                          ;
-+----------------------------------------------+-------+
-; Statistic                                    ; Value ;
-+----------------------------------------------+-------+
-; Total registers                              ; 8     ;
-; Number of registers using Synchronous Clear  ; 0     ;
-; Number of registers using Synchronous Load   ; 0     ;
-; Number of registers using Asynchronous Clear ; 0     ;
-; Number of registers using Asynchronous Load  ; 0     ;
-; Number of registers using Clock Enable       ; 0     ;
-; Number of registers using Preset             ; 0     ;
-+----------------------------------------------+-------+
-
-
-+--------------------------------------------------+
-; Inverted Register Statistics                     ;
-+----------------------------------------+---------+
-; Inverted Register                      ; Fan out ;
-+----------------------------------------+---------+
-; s_reg56[0]                             ; 8       ;
-; s_reg56[2]                             ; 8       ;
-; s_reg56[3]                             ; 8       ;
-; s_reg56[6]                             ; 8       ;
-; s_reg56[7]                             ; 8       ;
-; Total number of inverted registers = 5 ;         ;
-+----------------------------------------+---------+
-
-
-+-------------------------------+
-; Elapsed Time Per Partition    ;
-+----------------+--------------+
-; Partition Name ; Elapsed Time ;
-+----------------+--------------+
-; Top            ; 00:00:00     ;
-+----------------+--------------+
-
-
 +-------------------------------+
 ; Analysis & Synthesis Messages ;
 +-------------------------------+
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Tue Jan 10 10:18:27 2023
+    Info: Processing started: Tue Jan 10 19:31:06 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MSX_DE1_Top -c MSX_DE1_Top
 Warning (20028): Parallel compilation is not licensed and has been disabled
-Warning (12019): Can't analyze file -- file rom.vhd is missing
+Info (12021): Found 2 design units, including 1 entities, in source file mapper components/mm74hc373.vhd
+    Info (12022): Found design unit 1: C_74HC373WM-behaviour
+    Info (12023): Found entity 1: C_74HC373WM
+Info (12021): Found 2 design units, including 1 entities, in source file mapper components/74hc257.vhd
+    Info (12022): Found design unit 1: C_74HC257-behaviour
+    Info (12023): Found entity 1: C_74HC257
+Info (12021): Found 2 design units, including 1 entities, in source file mapper components/74hc30.vhd
+    Info (12022): Found design unit 1: C_74HC30-behaviour
+    Info (12023): Found entity 1: C_74HC30
 Info (12021): Found 2 design units, including 1 entities, in source file decoder_7seg.vhd
     Info (12022): Found design unit 1: decoder_7seg-rtl
     Info (12023): Found entity 1: decoder_7seg
 Info (12021): Found 2 design units, including 1 entities, in source file msx_de1_top.vhd
     Info (12022): Found design unit 1: MSX_DE1_Top-rtl
     Info (12023): Found entity 1: MSX_DE1_Top
+Info (12021): Found 1 design units, including 1 entities, in source file mapper components/c_74hc139.bdf
+    Info (12023): Found entity 1: C_74HC139
 Info (12127): Elaborating entity "MSX_DE1_Top" for the top level hierarchy
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(24): used implicit default value for signal "UART_TXD" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(28): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
@@ -303,12 +188,6 @@ Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(35): used im
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(36): used implicit default value for signal "DRAM_BA_1" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(37): used implicit default value for signal "DRAM_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(38): used implicit default value for signal "DRAM_CKE" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(48): used implicit default value for signal "SRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(49): used implicit default value for signal "SRAM_UB_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(50): used implicit default value for signal "SRAM_LB_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(51): used implicit default value for signal "SRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(52): used implicit default value for signal "SRAM_CE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(53): used implicit default value for signal "SRAM_OE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(58): used implicit default value for signal "SD_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(61): used implicit default value for signal "I2C_SCLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(69): used implicit default value for signal "TDO" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
@@ -319,165 +198,52 @@ Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(74): used im
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(75): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(80): used implicit default value for signal "AUD_DACDAT" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(82): used implicit default value for signal "AUD_XCK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(122): object "s_mreq" assigned a value but never read
-Warning (10540): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(128): used explicit default value for signal "s_reset" because signal was never assigned a value
-Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(174): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
-Info (10041): Inferred latch for "s_msx_a[0]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[1]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[2]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[3]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[4]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[5]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[6]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[7]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[8]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[9]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[10]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[11]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[12]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[13]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[14]" at MSX_DE1_Top.vhd(161)
-Info (10041): Inferred latch for "s_msx_a[15]" at MSX_DE1_Top.vhd(161)
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(174): object "s_mreq" assigned a value but never read
+Warning (10540): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(180): used explicit default value for signal "s_reset" because signal was never assigned a value
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(195): object "s_mappper_fd" assigned a value but never read
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(196): object "s_mappper_fe" assigned a value but never read
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(197): object "s_mappper_ff" assigned a value but never read
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(200): object "s_mapper_slt0" assigned a value but never read
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(201): object "s_mapper_slt1" assigned a value but never read
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(202): object "s_mapper_slt2" assigned a value but never read
+Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(203): object "s_mapper_slt3" assigned a value but never read
+Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(235): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(253): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(303): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10873): Using initial value X (don't care) for net "LEDR[9..8]" at MSX_DE1_Top.vhd(22)
+Info (10041): Inferred latch for "s_msx_a[0]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "s_msx_a[1]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "s_msx_a[2]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "s_msx_a[3]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "s_msx_a[4]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "s_msx_a[5]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "s_msx_a[6]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "s_msx_a[7]" at MSX_DE1_Top.vhd(289)
+Info (10041): Inferred latch for "LEDR[0]" at MSX_DE1_Top.vhd(226)
+Info (10041): Inferred latch for "LEDR[1]" at MSX_DE1_Top.vhd(226)
+Info (10041): Inferred latch for "LEDR[2]" at MSX_DE1_Top.vhd(226)
+Info (10041): Inferred latch for "LEDR[3]" at MSX_DE1_Top.vhd(226)
+Info (10041): Inferred latch for "LEDR[4]" at MSX_DE1_Top.vhd(226)
+Info (10041): Inferred latch for "LEDR[5]" at MSX_DE1_Top.vhd(226)
+Info (10041): Inferred latch for "LEDR[6]" at MSX_DE1_Top.vhd(226)
+Info (10041): Inferred latch for "LEDR[7]" at MSX_DE1_Top.vhd(226)
 Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
-Warning (13039): The following bidir pins have no drivers
-    Warning (13040): Bidir "SD_DAT3" has no driver
-    Warning (13040): Bidir "SD_CMD" has no driver
-Warning (13012): Latch s_msx_a[0] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[0]
-Warning (13012): Latch s_msx_a[1] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[1]
-Warning (13012): Latch s_msx_a[2] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[2]
-Warning (13012): Latch s_msx_a[3] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[3]
-Warning (13012): Latch s_msx_a[4] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[4]
-Warning (13012): Latch s_msx_a[5] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[5]
-Warning (13012): Latch s_msx_a[6] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[6]
-Warning (13012): Latch s_msx_a[7] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[7]
-Warning (13012): Latch s_msx_a[8] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[8]
-Warning (13012): Latch s_msx_a[9] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[9]
-Warning (13012): Latch s_msx_a[10] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[10]
-Warning (13012): Latch s_msx_a[11] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[11]
-Warning (13012): Latch s_msx_a[12] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[12]
-Warning (13012): Latch s_msx_a[13] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[13]
-Warning (13012): Latch s_msx_a[14] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[14]
-Warning (13012): Latch s_msx_a[15] has unsafe behavior
-    Warning (13013): Ports D and ENA on the latch are fed by the same signal A[15]
-Warning (13024): Output pins are stuck at VCC or GND
-    Warning (13410): Pin "UART_TXD" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[0]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[1]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[2]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[3]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[4]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[5]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[6]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[7]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[8]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[9]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[10]" is stuck at GND
-    Warning (13410): Pin "DRAM_ADDR[11]" is stuck at GND
-    Warning (13410): Pin "DRAM_LDQM" is stuck at GND
-    Warning (13410): Pin "DRAM_UDQM" is stuck at GND
-    Warning (13410): Pin "DRAM_WE_N" is stuck at GND
-    Warning (13410): Pin "DRAM_CAS_N" is stuck at GND
-    Warning (13410): Pin "DRAM_RAS_N" is stuck at GND
-    Warning (13410): Pin "DRAM_CS_N" is stuck at GND
-    Warning (13410): Pin "DRAM_BA_0" is stuck at GND
-    Warning (13410): Pin "DRAM_BA_1" is stuck at GND
-    Warning (13410): Pin "DRAM_CLK" is stuck at GND
-    Warning (13410): Pin "DRAM_CKE" is stuck at GND
-    Warning (13410): Pin "FL_ADDR[20]" is stuck at GND
-    Warning (13410): Pin "FL_ADDR[21]" is stuck at GND
-    Warning (13410): Pin "FL_WE_N" is stuck at VCC
-    Warning (13410): Pin "FL_RST_N" is stuck at VCC
-    Warning (13410): Pin "SRAM_ADDR[0]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[1]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[2]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[3]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[4]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[5]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[6]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[7]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[8]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[9]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[10]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[11]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[12]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[13]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[14]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[15]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[16]" is stuck at GND
-    Warning (13410): Pin "SRAM_ADDR[17]" is stuck at GND
-    Warning (13410): Pin "SRAM_UB_N" is stuck at GND
-    Warning (13410): Pin "SRAM_LB_N" is stuck at GND
-    Warning (13410): Pin "SRAM_WE_N" is stuck at GND
-    Warning (13410): Pin "SRAM_CE_N" is stuck at GND
-    Warning (13410): Pin "SRAM_OE_N" is stuck at GND
-    Warning (13410): Pin "SD_CLK" is stuck at GND
-    Warning (13410): Pin "I2C_SCLK" is stuck at GND
-    Warning (13410): Pin "TDO" is stuck at GND
-    Warning (13410): Pin "VGA_HS" is stuck at GND
-    Warning (13410): Pin "VGA_VS" is stuck at GND
-    Warning (13410): Pin "VGA_R[0]" is stuck at GND
-    Warning (13410): Pin "VGA_R[1]" is stuck at GND
-    Warning (13410): Pin "VGA_R[2]" is stuck at GND
-    Warning (13410): Pin "VGA_R[3]" is stuck at GND
-    Warning (13410): Pin "VGA_G[0]" is stuck at GND
-    Warning (13410): Pin "VGA_G[1]" is stuck at GND
-    Warning (13410): Pin "VGA_G[2]" is stuck at GND
-    Warning (13410): Pin "VGA_G[3]" is stuck at GND
-    Warning (13410): Pin "VGA_B[0]" is stuck at GND
-    Warning (13410): Pin "VGA_B[1]" is stuck at GND
-    Warning (13410): Pin "VGA_B[2]" is stuck at GND
-    Warning (13410): Pin "VGA_B[3]" is stuck at GND
-    Warning (13410): Pin "AUD_DACDAT" is stuck at GND
-    Warning (13410): Pin "AUD_XCK" is stuck at GND
-Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
-    Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
-Warning (21074): Design contains 22 input pin(s) that do not drive logic
-    Warning (15610): No output dependent on input pin "CLOCK_24[0]"
-    Warning (15610): No output dependent on input pin "CLOCK_24[1]"
-    Warning (15610): No output dependent on input pin "CLOCK_27[0]"
-    Warning (15610): No output dependent on input pin "CLOCK_27[1]"
-    Warning (15610): No output dependent on input pin "CLOCK_50"
-    Warning (15610): No output dependent on input pin "EXT_CLOCK"
-    Warning (15610): No output dependent on input pin "KEY[0]"
-    Warning (15610): No output dependent on input pin "KEY[1]"
-    Warning (15610): No output dependent on input pin "KEY[2]"
-    Warning (15610): No output dependent on input pin "KEY[3]"
-    Warning (15610): No output dependent on input pin "SW[6]"
-    Warning (15610): No output dependent on input pin "SW[7]"
-    Warning (15610): No output dependent on input pin "SW[8]"
-    Warning (15610): No output dependent on input pin "UART_RXD"
-    Warning (15610): No output dependent on input pin "PS2_DAT"
-    Warning (15610): No output dependent on input pin "PS2_CLK"
-    Warning (15610): No output dependent on input pin "TDI"
-    Warning (15610): No output dependent on input pin "TCK"
-    Warning (15610): No output dependent on input pin "TCS"
-    Warning (15610): No output dependent on input pin "AUD_ADCDAT"
-    Warning (15610): No output dependent on input pin "M1_n"
-    Warning (15610): No output dependent on input pin "MSX_CLK"
-Info (21057): Implemented 362 device resources after synthesis - the final resource count might be different
-    Info (21058): Implemented 52 input pins
-    Info (21059): Implemented 140 output pins
-    Info (21060): Implemented 91 bidirectional pins
-    Info (21061): Implemented 79 logic cells
-Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 161 warnings
-    Info: Peak virtual memory: 4626 megabytes
-    Info: Processing ended: Tue Jan 10 10:18:29 2023
-    Info: Elapsed time: 00:00:02
-    Info: Total CPU time (on all processors): 00:00:01
+Info (12128): Elaborating entity "C_74HC30" for hierarchy "C_74HC30:i_74HC30"
+Warning (10620): VHDL warning at 74HC30.vhd(16): comparison between unequal length operands always returns FALSE
+Info (12128): Elaborating entity "C_74HC139" for hierarchy "C_74HC139:i_74HC139"
+Error (275021): Illegal wire or bus name "Y0(0)" of type pin 
+Error (275021): Illegal wire or bus name "Y0(1)" of type pin 
+Error (275021): Illegal wire or bus name "Y0(2)" of type pin 
+Error (275021): Illegal wire or bus name "Y0(3)" of type pin 
+Error (275021): Illegal wire or bus name "Y1(0)" of type pin 
+Error (275021): Illegal wire or bus name "Y1(1)" of type pin 
+Error (275021): Illegal wire or bus name "Y1(2)" of type pin 
+Error (275021): Illegal wire or bus name "Y1(3)" of type pin 
+Error (12152): Can't elaborate user hierarchy "C_74HC139:i_74HC139" File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 340
+Error: Quartus II 64-Bit Analysis & Synthesis was unsuccessful. 9 errors, 37 warnings
+    Error: Peak virtual memory: 4627 megabytes
+    Error: Processing ended: Tue Jan 10 19:31:07 2023
+    Error: Elapsed time: 00:00:01
+    Error: Total CPU time (on all processors): 00:00:01
 
 

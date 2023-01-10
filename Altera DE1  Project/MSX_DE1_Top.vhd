@@ -108,6 +108,58 @@ architecture rtl of MSX_DE1_Top is
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
 	
+	component C_74HC30 is
+	port (
+		D: in std_logic_vector(7 downto 0);
+		Y: out std_logic);
+	end component;
+
+	component C_74HC670D is
+	port (
+		D: in std_logic_vector(3 downto 0);
+		Q: out std_logic_vector(3 downto 0);
+		RA: std_logic;
+		RB: std_logic;
+		WA: std_logic;
+		WB: std_logic;
+		WE_n: std_logic;
+		RE_n: std_logic);
+	end component;
+	
+	component C_74HC139 is
+	port (
+		A10 : in std_logic;
+		A11 : in std_logic;
+		A20 : in std_logic;
+		A21 : in std_logic;
+		Y0: out std_logic_vector(3 downto 0);
+		Y1: out std_logic_vector(3 downto 0);
+		E1: in std_logic;
+		E2: in std_logic);
+	end component;
+
+	component C_74HC257 is
+	port (
+		I1: in std_logic_vector(1 downto 0);
+		Y1: out std_logic;
+		I2: in std_logic_vector(1 downto 0);
+		Y2: out std_logic;
+		I3: in std_logic_vector(1 downto 0);
+		Y3: out std_logic;
+		I4: in std_logic_vector(1 downto 0);
+		Y4: out std_logic;
+		S: in std_logic;
+		OE_n: in std_logic);
+	end component;
+
+	component C_74HC373WM is
+	port (
+		D: in std_logic_vector(7 downto 0);
+		Q: out std_logic_vector(7 downto 0);
+		LE: in std_logic;
+		OE_n: in std_logic);
+	end component;
+	
 	signal HEX_DISP0	: std_logic_vector(6 downto 0);
 	signal HEX_DISP1	: std_logic_vector(6 downto 0);
 	signal HEX_DISP2	: std_logic_vector(6 downto 0);
@@ -133,11 +185,87 @@ architecture rtl of MSX_DE1_Top is
 	signal s_rom_a : std_logic_vector(21 downto 0);
 	signal s_cart_en: std_logic;
 	
-	-- signals for I/O Device Emulation
+	-- signals for I/O Device Emulation / Test Only
 	signal s_reg56: std_logic_vector(7 downto 0) := x"CD";
 	signal s_msxpi_en: std_logic;
-	 
+	
+	-- signals for simple memory mapper in the primary slot
+	signal s_mapper_en: std_logic;
+	signal s_mappper_fc: std_logic_vector(7 downto 0);
+	signal s_mappper_fd: std_logic_vector(7 downto 0);
+	signal s_mappper_fe: std_logic_vector(7 downto 0);
+	signal s_mappper_ff: std_logic_vector(7 downto 0);
+	signal s_mapper_q: std_logic_vector(7 downto 0);
+	
+	signal s_mapper_slt0: std_logic_vector(1 downto 0) := "00";
+	signal s_mapper_slt1: std_logic_vector(1 downto 0) := "01";
+	signal s_mapper_slt2: std_logic_vector(1 downto 0) := "10";
+	signal s_mapper_slt3: std_logic_vector(1 downto 0) := "11";
+
+	-- signals for the mapper external components
+	signal s_74hc30_y: std_logic;
+	signal s_74hc257_Y1: std_logic;
+	signal s_74hc257_y2: std_logic;
+	signal s_74hc139_y0: std_logic_vector(3 downto 0);
+	signal s_74hc139_y1: std_logic_vector(3 downto 0);
+	signal s_74hc373_ma: std_logic_vector(7 downto 0);
+	
 begin
+	
+	-- Memory Mapper - 256KB using DE1 SRAM Lower Bytes only
+	s_mapper_en <= '1' when (SLTSL_n = '0' and s_cart_en ='0') else '0';
+	--s_mapper_en <= '0';
+	SRAM_WE_N <= '1'; -- WR_n when s_mapper_en = '1' else '1';
+	SRAM_DQ <= (others =>'Z');
+	SRAM_ADDR <= "00" & A;	
+	s_mapper_q <= SRAM_DQ(7 downto 0);
+	SRAM_UB_N <= '1'; --A(0);						
+	SRAM_LB_N <= '0'; --not SRAM_UB_N;											
+	SRAM_CE_N <= not s_mapper_en;								
+	SRAM_OE_N <= RD_n;								
+	LEDR (7 downto 0) <= D when A = x"A8" and s_iorq_w = '1';
+	
+	s_mapper_slt0 <= D(1 downto 0) when A = x"A8" and s_iorq_w = '1';
+	s_mapper_slt1 <= D(3 downto 2) when A = x"A8" and s_iorq_w = '1';
+	s_mapper_slt2 <= D(5 downto 4) when A = x"A8" and s_iorq_w = '1';
+	s_mapper_slt3 <= D(7 downto 6) when A = x"A8" and s_iorq_w = '1';
+
+	 process(s_mapper_en)
+	 begin
+		if s_reset = '1' then
+			s_mappper_fc <= x"00000000";
+			s_mappper_fd <= x"00000001";
+			s_mappper_fe <= x"00000010";
+			s_mappper_ff <= x"00000011";		
+		elsif rising_edge(s_mapper_en) then
+			case A(7 downto 0) is
+				when x"FC" => s_mappper_fc <= D;
+				when x"FD" => s_mappper_fd <= D;
+				when x"FE" => s_mappper_fe <= D;
+				when x"FF" => s_mappper_ff <= D;
+				when others => s_mappper_fc <= s_mappper_fc ;
+			end case;
+		end if;
+	 end process;
+	 
+	 process(s_mapper_en)
+	 begin
+		if s_reset = '1' then
+			s_mappper_fc <= x"00000000";
+			s_mappper_fd <= x"00000001";
+			s_mappper_fe <= x"00000010";
+			s_mappper_ff <= x"00000011";		
+		elsif rising_edge(s_mapper_en) then
+			case A(7 downto 0) is
+				when x"FC" => s_mappper_fc <= D;
+				when x"FD" => s_mappper_fd <= D;
+				when x"FE" => s_mappper_fe <= D;
+				when x"FF" => s_mappper_ff <= D;
+				when others => s_mappper_fc <= s_mappper_fc ;
+			end case;
+		end if;
+	 end process;
+	 
 	
 	-- Cartridge Emulation
 	s_cart_en <= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
@@ -167,6 +295,7 @@ begin
 	BUSDIR_n <= not s_busd_en;	
 	D <=	FL_DQ when s_rom_en = '1' else               -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		s_reg56 when s_iorq_r_reg = '1' else         -- MSX read Register on port 0x56
+			s_mapper_q when s_mapper_en = '1' and RD_n = '0' else
 	 		(others => 'Z'); 
 	 	 
 	 process(s_iorq_w_reg)
@@ -185,7 +314,7 @@ begin
     NUMBER3 <= s_msx_a(7 downto 4);
 
     LEDG <= SLTSL_n & CS1_n & CS2_n & MREQ_n & IORQ_n & RD_n & wr_n & s_msxpi_en;
-    LEDR <= s_msx_a(15 downto 6);
+    --LEDR <= s_msx_a(15 downto 6);
     
     DISPHEX0 : decoder_7seg PORT MAP (
     		NUMBER			=>	NUMBER0,
@@ -207,7 +336,14 @@ begin
     		HEX_DISP		=>	HEX_DISP3
     	);
     
-    		
+    i_74HC30 : C_74HC30 Port Map (D => "11" & A(7 downto 2), Y => s_74hc30_y);
+	 i_74HC139 : C_74HC139 Port Map (E1=> s_74hc30_y, E2=> s_74hc30_y, A10 => WR_n, A11 => IORQ_n, A20 => RD_n, A21 => IORQ_n, Y0 => s_74hc139_y0, Y1 => s_74hc139_y1);
+	 i1_74HC670D : C_74HC670D Port Map (D => D(3 downto 0), Q => s_74hc373_ma(3 downto 0), RA => s_74hc257_y1, RB => s_74hc257_y2, WA => A(0), WB => A(1), WE_n => s_74hc139_y0(0), RE_n => '0');
+	 i2_74HC670D : C_74HC670D Port Map (D => D(7 downto 4), Q => s_74hc373_ma(7 downto 4), RA => s_74hc257_y1, RB => s_74hc257_y2, WA => A(0), WB => A(1), WE_n => s_74hc139_y0(0), RE_n => '0');
+	 i_74HC257 : C_74HC257 Port Map (S => s_74hc139_y1(0), OE_n => '0', I1 => A(0) & A(14), I2 => A(1) & A(15), i3 => "00", I4 => "00", Y1 => s_74hc257_y1, Y2 => s_74hc257_y2, Y3 => open, Y4 => open);
+    i_74HC373WM : C_74HC373WM Port Map (LE => '1', OE_n => s_74hc139_y1(0), D => s_74hc373_ma, Q => D);
+
+ 
     SD_DAT		<= 'Z';
     I2C_SDAT		<= 'Z';
     AUD_ADCLRCK	<= 'Z';
