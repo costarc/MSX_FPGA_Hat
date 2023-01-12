@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MSX_DE1_Top
-Tue Jan 10 19:31:07 2023
+Thu Jan 12 20:05:03 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -36,7 +36,7 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Failed - Tue Jan 10 19:31:07 2023               ;
+; Analysis & Synthesis Status        ; Failed - Thu Jan 12 20:05:03 2023               ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_DE1_Top                                     ;
 ; Top-level Entity Name              ; MSX_DE1_Top                                     ;
@@ -155,9 +155,18 @@ Parallel compilation was disabled, but you have multiple processors available. E
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Tue Jan 10 19:31:06 2023
+    Info: Processing started: Thu Jan 12 20:05:02 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MSX_DE1_Top -c MSX_DE1_Top
 Warning (20028): Parallel compilation is not licensed and has been disabled
+Info (12021): Found 2 design units, including 1 entities, in source file mapper components/74hc670d.vhd
+    Info (12022): Found design unit 1: C_74HC670D-rtl
+    Info (12023): Found entity 1: C_74HC670D
+Info (12021): Found 2 design units, including 1 entities, in source file mapper components/74hc139.vhd
+    Info (12022): Found design unit 1: C_74HC139-behaviour
+    Info (12023): Found entity 1: C_74HC139
+Info (12021): Found 2 design units, including 1 entities, in source file mapper components/74hc138.vhd
+    Info (12022): Found design unit 1: C_74HC138-rtl
+    Info (12023): Found entity 1: C_74HC138
 Info (12021): Found 2 design units, including 1 entities, in source file mapper components/mm74hc373.vhd
     Info (12022): Found design unit 1: C_74HC373WM-behaviour
     Info (12023): Found entity 1: C_74HC373WM
@@ -173,76 +182,13 @@ Info (12021): Found 2 design units, including 1 entities, in source file decoder
 Info (12021): Found 2 design units, including 1 entities, in source file msx_de1_top.vhd
     Info (12022): Found design unit 1: MSX_DE1_Top-rtl
     Info (12023): Found entity 1: MSX_DE1_Top
-Info (12021): Found 1 design units, including 1 entities, in source file mapper components/c_74hc139.bdf
-    Info (12023): Found entity 1: C_74HC139
-Info (12127): Elaborating entity "MSX_DE1_Top" for the top level hierarchy
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(24): used implicit default value for signal "UART_TXD" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(28): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(29): used implicit default value for signal "DRAM_LDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(30): used implicit default value for signal "DRAM_UDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(31): used implicit default value for signal "DRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(32): used implicit default value for signal "DRAM_CAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(33): used implicit default value for signal "DRAM_RAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(34): used implicit default value for signal "DRAM_CS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(35): used implicit default value for signal "DRAM_BA_0" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(36): used implicit default value for signal "DRAM_BA_1" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(37): used implicit default value for signal "DRAM_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(38): used implicit default value for signal "DRAM_CKE" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(58): used implicit default value for signal "SD_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(61): used implicit default value for signal "I2C_SCLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(69): used implicit default value for signal "TDO" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(71): used implicit default value for signal "VGA_HS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(72): used implicit default value for signal "VGA_VS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(73): used implicit default value for signal "VGA_R" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(74): used implicit default value for signal "VGA_G" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(75): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(80): used implicit default value for signal "AUD_DACDAT" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(82): used implicit default value for signal "AUD_XCK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(174): object "s_mreq" assigned a value but never read
-Warning (10540): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(180): used explicit default value for signal "s_reset" because signal was never assigned a value
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(195): object "s_mappper_fd" assigned a value but never read
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(196): object "s_mappper_fe" assigned a value but never read
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(197): object "s_mappper_ff" assigned a value but never read
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(200): object "s_mapper_slt0" assigned a value but never read
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(201): object "s_mapper_slt1" assigned a value but never read
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(202): object "s_mapper_slt2" assigned a value but never read
-Warning (10036): Verilog HDL or VHDL warning at MSX_DE1_Top.vhd(203): object "s_mapper_slt3" assigned a value but never read
-Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(235): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
-Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(253): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
-Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(303): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
-Warning (10873): Using initial value X (don't care) for net "LEDR[9..8]" at MSX_DE1_Top.vhd(22)
-Info (10041): Inferred latch for "s_msx_a[0]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "s_msx_a[1]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "s_msx_a[2]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "s_msx_a[3]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "s_msx_a[4]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "s_msx_a[5]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "s_msx_a[6]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "s_msx_a[7]" at MSX_DE1_Top.vhd(289)
-Info (10041): Inferred latch for "LEDR[0]" at MSX_DE1_Top.vhd(226)
-Info (10041): Inferred latch for "LEDR[1]" at MSX_DE1_Top.vhd(226)
-Info (10041): Inferred latch for "LEDR[2]" at MSX_DE1_Top.vhd(226)
-Info (10041): Inferred latch for "LEDR[3]" at MSX_DE1_Top.vhd(226)
-Info (10041): Inferred latch for "LEDR[4]" at MSX_DE1_Top.vhd(226)
-Info (10041): Inferred latch for "LEDR[5]" at MSX_DE1_Top.vhd(226)
-Info (10041): Inferred latch for "LEDR[6]" at MSX_DE1_Top.vhd(226)
-Info (10041): Inferred latch for "LEDR[7]" at MSX_DE1_Top.vhd(226)
-Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
-Info (12128): Elaborating entity "C_74HC30" for hierarchy "C_74HC30:i_74HC30"
-Warning (10620): VHDL warning at 74HC30.vhd(16): comparison between unequal length operands always returns FALSE
-Info (12128): Elaborating entity "C_74HC139" for hierarchy "C_74HC139:i_74HC139"
-Error (275021): Illegal wire or bus name "Y0(0)" of type pin 
-Error (275021): Illegal wire or bus name "Y0(1)" of type pin 
-Error (275021): Illegal wire or bus name "Y0(2)" of type pin 
-Error (275021): Illegal wire or bus name "Y0(3)" of type pin 
-Error (275021): Illegal wire or bus name "Y1(0)" of type pin 
-Error (275021): Illegal wire or bus name "Y1(1)" of type pin 
-Error (275021): Illegal wire or bus name "Y1(2)" of type pin 
-Error (275021): Illegal wire or bus name "Y1(3)" of type pin 
-Error (12152): Can't elaborate user hierarchy "C_74HC139:i_74HC139" File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 340
-Error: Quartus II 64-Bit Analysis & Synthesis was unsuccessful. 9 errors, 37 warnings
-    Error: Peak virtual memory: 4627 megabytes
-    Error: Processing ended: Tue Jan 10 19:31:07 2023
+Error (10482): VHDL error at MSX_DE1_Top.vhd(345): object "s_74hc670_2_q" is used but not declared File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 345
+Error (10349): VHDL Association List error at MSX_DE1_Top.vhd(345): formal "E1" does not exist File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 345
+Error (10346): VHDL error at MSX_DE1_Top.vhd(345): formal port or parameter "E" must have actual or default value File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 345
+Error (10784): HDL error at MSX_DE1_Top.vhd(132): see declaration for object "E" File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 132
+Error: Quartus II 64-Bit Analysis & Synthesis was unsuccessful. 4 errors, 1 warning
+    Error: Peak virtual memory: 4626 megabytes
+    Error: Processing ended: Thu Jan 12 20:05:03 2023
     Error: Elapsed time: 00:00:01
     Error: Total CPU time (on all processors): 00:00:01
 

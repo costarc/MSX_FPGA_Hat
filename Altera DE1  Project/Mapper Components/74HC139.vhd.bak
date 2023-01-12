@@ -5,10 +5,10 @@ Entity C_74HC139 is
 port (
 	A1: in std_logic_vector(1 downto 0);
 	E1: in std_logic;
-	Y1: out std_logic_vector(3 downto 0);
+	Y1 in std_logic_vector(3 downto 0);
 	A2: in std_logic_vector(1 downto 0);
 	E2: in std_logic;
-	Y2: out std_logic_vector(3 downto 0));
+	Y2 in std_logic_vector(3 downto 0);
 end C_74HC139;
 
 architecture behaviour of C_74HC139 is

@@ -125,15 +125,20 @@ architecture rtl of MSX_DE1_Top is
 		WE_n: std_logic;
 		RE_n: std_logic);
 	end component;
+
+	component C_74HC138 is
+	port (
+		A: in std_logic_vector(2 downto 0);
+		E: in std_logic_vector(2 downto 0);
+		Y: out std_logic_vector(7 downto 0));
+	end component;
 	
 	component C_74HC139 is
 	port (
-		A10 : in std_logic;
-		A11 : in std_logic;
-		A20 : in std_logic;
-		A21 : in std_logic;
-		Y0: out std_logic_vector(3 downto 0);
+		A1 : in std_logic_vector(1 downto 0);
+		A2 : in std_logic_vector(1 downto 0);
 		Y1: out std_logic_vector(3 downto 0);
+		Y2: out std_logic_vector(3 downto 0);
 		E1: in std_logic;
 		E2: in std_logic);
 	end component;
@@ -337,12 +342,12 @@ begin
     	);
     
     i_74HC30 : C_74HC30 Port Map (D => "11" & A(7 downto 2), Y => s_74hc30_y);
-	 i_74HC139 : C_74HC139 Port Map (E1=> s_74hc30_y, E2=> s_74hc30_y, A10 => WR_n, A11 => IORQ_n, A20 => RD_n, A21 => IORQ_n, Y0 => s_74hc139_y0, Y1 => s_74hc139_y1);
-	 i1_74HC670D : C_74HC670D Port Map (D => D(3 downto 0), Q => s_74hc373_ma(3 downto 0), RA => s_74hc257_y1, RB => s_74hc257_y2, WA => A(0), WB => A(1), WE_n => s_74hc139_y0(0), RE_n => '0');
-	 i2_74HC670D : C_74HC670D Port Map (D => D(7 downto 4), Q => s_74hc373_ma(7 downto 4), RA => s_74hc257_y1, RB => s_74hc257_y2, WA => A(0), WB => A(1), WE_n => s_74hc139_y0(0), RE_n => '0');
-	 i_74HC257 : C_74HC257 Port Map (S => s_74hc139_y1(0), OE_n => '0', I1 => A(0) & A(14), I2 => A(1) & A(15), i3 => "00", I4 => "00", Y1 => s_74hc257_y1, Y2 => s_74hc257_y2, Y3 => open, Y4 => open);
-    i_74HC373WM : C_74HC373WM Port Map (LE => '1', OE_n => s_74hc139_y1(0), D => s_74hc373_ma, Q => D);
-
+	 i_74HC138 : C_74HC138 Port Map (A => s_74hc670_2_q(3 downto 1), E1 => SLTSL_n, E2 => SLTSL_n, E3 => '1', Y => s_74HC138_Y);
+	 i_74HC139 : C_74HC139 Port Map (E1=> s_74hc30_y, E2=> s_74hc30_y, A1 => IORQ_n & WR_n, A2 => IORQ_n & RD_n,Y1 => s_74hc139_y1, Y2 => s_74hc139_y2); 
+	 i_74HC257 : C_74HC257 Port Map (S => s_74hc139_y2(0), OE_n => '0', I1 => A(0) & A(14), I2 => A(1) & A(15), i3 => "00", I4 => "00", Y1 => s_74hc257_y1, Y2 => s_74hc257_y2, Y3 => open, Y4 => open);
+    i_74HC373WM : C_74HC373WM Port Map (LE => '1', OE_n => s_74hc139_y2(0), D => s_74hc670_2_q & s_74hc670_1_q, Q => D);
+    i1_74HC670D : C_74HC670D Port Map (D => D(3 downto 0), Q => s_74hc670_1_q, RA => s_74hc257_y1, RB => s_74hc257_y2, WA => A(0), WB => A(1), WE_n => s_74hc139_y1(0), RE_n => '0');
+	 i2_74HC670D : C_74HC670D Port Map (D => D(7 downto 4), Q => s_74hc670_2_q, RA => s_74hc257_y1, RB => s_74hc257_y2, WA => A(0), WB => A(1), WE_n => s_74hc139_y1(0), RE_n => '0');
  
     SD_DAT		<= 'Z';
     I2C_SDAT		<= 'Z';
