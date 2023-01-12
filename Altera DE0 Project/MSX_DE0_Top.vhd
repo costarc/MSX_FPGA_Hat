@@ -2,6 +2,7 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
+Entity MSX_DE0_Top is
 port (
     CLOCK_24:	  	in std_logic_vector(1 downto 0);		-- 24 MHz
     CLOCK_27:		in std_logic_vector(1 downto 0);		--	27 MHz
@@ -97,9 +98,9 @@ port (
     INT_n:			out std_logic;
     MSX_CLK:			in std_logic;
     WAIT_n:			out std_logic); 
-end MSX_DE1_Top;
+end MSX_DE0_Top;
 
-architecture rtl of MSX_DE1_Top is
+architecture rtl of MSX_DE0_Top is
 	
 	component decoder_7seg
 	port (
