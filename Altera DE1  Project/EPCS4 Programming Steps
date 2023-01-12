@@ -1,0 +1,17 @@
+Programming the EPCS4 in the DE1
+
+Make sure Run/Prog is in RUN
+
+1.open File > Convert Programming Files 
+2.select .jic (JTAG indirect) as the output type 
+3.select appropriate EPCS device 
+4.click SOF data, then Add File to add your .sof 
+5.click properties to optionally enable compression 
+6.click Flash Loader then Add Device to select your target device 
+7.click Generate 
+8.open Tools > QII Programmer 
+9.click Auto Detect 
+10.double click in File column of your FPGA device row 
+11.select .jic file 
+12.click the Program/Configure check box in the new EPCS device listed 
+13.click Start
