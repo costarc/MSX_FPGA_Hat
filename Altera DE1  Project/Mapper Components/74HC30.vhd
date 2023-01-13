@@ -12,6 +12,6 @@ Architecture behaviour of C_74HC30 is
 	
 begin
 
-	Y  <= '0' when D = x"11111111" else '0';
+	Y  <= '0' when D = "11111111" else '1';
 	
 end behaviour;

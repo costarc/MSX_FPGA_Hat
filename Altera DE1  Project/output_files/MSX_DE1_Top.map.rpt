@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MSX_DE1_Top
-Thu Jan 12 20:05:03 2023
+Fri Jan 13 12:49:10 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -10,7 +10,23 @@ Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edit
   2. Analysis & Synthesis Summary
   3. Analysis & Synthesis Settings
   4. Parallel Compilation
-  5. Analysis & Synthesis Messages
+  5. Analysis & Synthesis Source Files Read
+  6. Analysis & Synthesis Resource Usage Summary
+  7. Analysis & Synthesis Resource Utilization by Entity
+  8. User-Specified and Inferred Latches
+  9. Registers Removed During Synthesis
+ 10. General Register Statistics
+ 11. Port Connectivity Checks: "C_74HC670D:i2_74HC670D"
+ 12. Port Connectivity Checks: "C_74HC670D:i1_74HC670D"
+ 13. Port Connectivity Checks: "C_74HC373WM:i_74HC373WM"
+ 14. Port Connectivity Checks: "C_74HC257:i_74HC257"
+ 15. Port Connectivity Checks: "C_74HC139:i_74HC139"
+ 16. Port Connectivity Checks: "C_74HC138:i_74HC138"
+ 17. Port Connectivity Checks: "C_74HC30:i_74HC30"
+ 18. Port Connectivity Checks: "decoder_7seg:DISPHEX1"
+ 19. Port Connectivity Checks: "decoder_7seg:DISPHEX0"
+ 20. Elapsed Time Per Partition
+ 21. Analysis & Synthesis Messages
 
 
 
@@ -36,20 +52,20 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Failed - Thu Jan 12 20:05:03 2023               ;
+; Analysis & Synthesis Status        ; Successful - Fri Jan 13 12:49:10 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_DE1_Top                                     ;
 ; Top-level Entity Name              ; MSX_DE1_Top                                     ;
 ; Family                             ; Cyclone II                                      ;
-; Total logic elements               ; N/A until Partition Merge                       ;
-;     Total combinational functions  ; N/A until Partition Merge                       ;
-;     Dedicated logic registers      ; N/A until Partition Merge                       ;
-; Total registers                    ; N/A until Partition Merge                       ;
-; Total pins                         ; N/A until Partition Merge                       ;
-; Total virtual pins                 ; N/A until Partition Merge                       ;
-; Total memory bits                  ; N/A until Partition Merge                       ;
-; Embedded Multiplier 9-bit elements ; N/A until Partition Merge                       ;
-; Total PLLs                         ; N/A until Partition Merge                       ;
+; Total logic elements               ; 5                                               ;
+;     Total combinational functions  ; 5                                               ;
+;     Dedicated logic registers      ; 0                                               ;
+; Total registers                    ; 0                                               ;
+; Total pins                         ; 283                                             ;
+; Total virtual pins                 ; 0                                               ;
+; Total memory bits                  ; 0                                               ;
+; Embedded Multiplier 9-bit elements ; 0                                               ;
+; Total PLLs                         ; 0                                               ;
 +------------------------------------+-------------------------------------------------+
 
 
@@ -149,13 +165,228 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+--------+
 
 
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Analysis & Synthesis Source Files Read                                                                                                                                        ;
++----------------------------------+-----------------+-----------------+----------------------------------------------------------------------------------------------+---------+
+; File Name with User-Entered Path ; Used in Netlist ; File Type       ; File Name with Absolute Path                                                                 ; Library ;
++----------------------------------+-----------------+-----------------+----------------------------------------------------------------------------------------------+---------+
+; Mapper Components/74HC670D.vhd   ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/Mapper Components/74HC670D.vhd  ;         ;
+; Mapper Components/74HC139.vhd    ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/Mapper Components/74HC139.vhd   ;         ;
+; Mapper Components/74HC138.vhd    ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/Mapper Components/74HC138.vhd   ;         ;
+; Mapper Components/MM74HC373.vhd  ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/Mapper Components/MM74HC373.vhd ;         ;
+; Mapper Components/74HC257.vhd    ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/Mapper Components/74HC257.vhd   ;         ;
+; Mapper Components/74HC30.vhd     ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/Mapper Components/74HC30.vhd    ;         ;
+; decoder_7seg.vhd                 ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/decoder_7seg.vhd                ;         ;
+; MSX_DE1_Top.vhd                  ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd                 ;         ;
++----------------------------------+-----------------+-----------------+----------------------------------------------------------------------------------------------+---------+
+
+
++---------------------------------------------------------------------------+
+; Analysis & Synthesis Resource Usage Summary                               ;
++---------------------------------------------+-----------------------------+
+; Resource                                    ; Usage                       ;
++---------------------------------------------+-----------------------------+
+; Estimated Total logic elements              ; 5                           ;
+;                                             ;                             ;
+; Total combinational functions               ; 5                           ;
+; Logic element usage by number of LUT inputs ;                             ;
+;     -- 4 input functions                    ; 2                           ;
+;     -- 3 input functions                    ; 2                           ;
+;     -- <=2 input functions                  ; 1                           ;
+;                                             ;                             ;
+; Logic elements by mode                      ;                             ;
+;     -- normal mode                          ; 5                           ;
+;     -- arithmetic mode                      ; 0                           ;
+;                                             ;                             ;
+; Total registers                             ; 0                           ;
+;     -- Dedicated logic registers            ; 0                           ;
+;     -- I/O registers                        ; 0                           ;
+;                                             ;                             ;
+; I/O pins                                    ; 283                         ;
+; Embedded Multiplier 9-bit elements          ; 0                           ;
+; Maximum fan-out node                        ; C_74HC139:i_74HC139|Y2[0]~2 ;
+; Maximum fan-out                             ; 17                          ;
+; Total fan-out                               ; 85                          ;
+; Average fan-out                             ; 0.30                        ;
++---------------------------------------------+-----------------------------+
+
+
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Analysis & Synthesis Resource Utilization by Entity                                                                                                                                      ;
++----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+----------------------------------+--------------+
+; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name              ; Library Name ;
++----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+----------------------------------+--------------+
+; |MSX_DE1_Top               ; 5 (2)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MSX_DE1_Top                     ; work         ;
+;    |C_74HC139:i_74HC139|   ; 3 (3)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|C_74HC139:i_74HC139 ; work         ;
++----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+----------------------------------+--------------+
+Note: For table entries with two numbers listed, the numbers in parentheses indicate the number of resources of the given type used by the specific entity alone. The numbers listed outside of parentheses indicate the total resources of the given type used by the specific entity and all of its sub-entities in the hierarchy.
+
+
++---------------------------------------------------------------------------------------------------------+
+; User-Specified and Inferred Latches                                                                     ;
++----------------------------------------------------+---------------------------+------------------------+
+; Latch Name                                         ; Latch Enable Signal       ; Free of Timing Hazards ;
++----------------------------------------------------+---------------------------+------------------------+
+; C_74HC373WM:i_74HC373WM|s_latch[0]                 ; C_74HC139:i_74HC139|Y2[0] ; yes                    ;
+; C_74HC373WM:i_74HC373WM|s_latch[1]                 ; C_74HC139:i_74HC139|Y2[0] ; yes                    ;
+; C_74HC373WM:i_74HC373WM|s_latch[2]                 ; C_74HC139:i_74HC139|Y2[0] ; yes                    ;
+; C_74HC373WM:i_74HC373WM|s_latch[3]                 ; C_74HC139:i_74HC139|Y2[0] ; yes                    ;
+; C_74HC373WM:i_74HC373WM|s_latch[5]                 ; C_74HC139:i_74HC139|Y2[0] ; yes                    ;
+; C_74HC373WM:i_74HC373WM|s_latch[6]                 ; C_74HC139:i_74HC139|Y2[0] ; yes                    ;
+; C_74HC373WM:i_74HC373WM|s_latch[7]                 ; C_74HC139:i_74HC139|Y2[0] ; yes                    ;
+; Number of user-specified and inferred latches = 7  ;                           ;                        ;
++----------------------------------------------------+---------------------------+------------------------+
+Note: All latches listed above may not be present at the end of synthesis due to various synthesis optimizations.
+
+
++-----------------------------------------------------------------------------------------+
+; Registers Removed During Synthesis                                                      ;
++-----------------------------------------+-----------------------------------------------+
+; Register name                           ; Reason for Removal                            ;
++-----------------------------------------+-----------------------------------------------+
+; C_74HC670D:i1_74HC670D|s_DREG[0..2]     ; Merged with C_74HC670D:i2_74HC670D|s_DREG[0]  ;
+; C_74HC670D:i2_74HC670D|s_DREG[3]        ; Merged with C_74HC670D:i2_74HC670D|s_DREG[0]  ;
+; C_74HC670D:i1_74HC670D|s_DREG[3]        ; Merged with C_74HC670D:i2_74HC670D|s_DREG[0]  ;
+; C_74HC670D:i2_74HC670D|s_DREG[1,2]      ; Merged with C_74HC670D:i2_74HC670D|s_DREG[0]  ;
+; C_74HC670D:i1_74HC670D|s_DREG[4,6]      ; Merged with C_74HC670D:i2_74HC670D|s_DREG[4]  ;
+; C_74HC670D:i2_74HC670D|s_DREG[7]        ; Merged with C_74HC670D:i2_74HC670D|s_DREG[4]  ;
+; C_74HC670D:i1_74HC670D|s_DREG[5,7]      ; Merged with C_74HC670D:i2_74HC670D|s_DREG[4]  ;
+; C_74HC670D:i2_74HC670D|s_DREG[5,6]      ; Merged with C_74HC670D:i2_74HC670D|s_DREG[4]  ;
+; C_74HC670D:i2_74HC670D|s_DREG[10]       ; Merged with C_74HC670D:i2_74HC670D|s_DREG[8]  ;
+; C_74HC670D:i1_74HC670D|s_DREG[8,10]     ; Merged with C_74HC670D:i2_74HC670D|s_DREG[8]  ;
+; C_74HC670D:i2_74HC670D|s_DREG[9,11]     ; Merged with C_74HC670D:i2_74HC670D|s_DREG[8]  ;
+; C_74HC670D:i1_74HC670D|s_DREG[9,11]     ; Merged with C_74HC670D:i2_74HC670D|s_DREG[8]  ;
+; C_74HC670D:i1_74HC670D|s_DREG[12,15]    ; Merged with C_74HC670D:i2_74HC670D|s_DREG[12] ;
+; C_74HC670D:i2_74HC670D|s_DREG[13,15]    ; Merged with C_74HC670D:i2_74HC670D|s_DREG[12] ;
+; C_74HC670D:i1_74HC670D|s_DREG[13]       ; Merged with C_74HC670D:i2_74HC670D|s_DREG[12] ;
+; C_74HC670D:i2_74HC670D|s_DREG[14]       ; Merged with C_74HC670D:i2_74HC670D|s_DREG[12] ;
+; C_74HC670D:i1_74HC670D|s_DREG[14]       ; Merged with C_74HC670D:i2_74HC670D|s_DREG[12] ;
+; C_74HC670D:i2_74HC670D|s_DREG[0,4,8,12] ; Stuck at GND due to stuck port data_in        ;
+; Total Number of Removed Registers = 32  ;                                               ;
++-----------------------------------------+-----------------------------------------------+
+
+
++------------------------------------------------------+
+; General Register Statistics                          ;
++----------------------------------------------+-------+
+; Statistic                                    ; Value ;
++----------------------------------------------+-------+
+; Total registers                              ; 0     ;
+; Number of registers using Synchronous Clear  ; 0     ;
+; Number of registers using Synchronous Load   ; 0     ;
+; Number of registers using Asynchronous Clear ; 0     ;
+; Number of registers using Asynchronous Load  ; 0     ;
+; Number of registers using Clock Enable       ; 0     ;
+; Number of registers using Preset             ; 0     ;
++----------------------------------------------+-------+
+
+
++----------------------------------------------------+
+; Port Connectivity Checks: "C_74HC670D:i2_74HC670D" ;
++------+-------+----------+--------------------------+
+; Port ; Type  ; Severity ; Details                  ;
++------+-------+----------+--------------------------+
+; re_n ; Input ; Info     ; Stuck at GND             ;
++------+-------+----------+--------------------------+
+
+
++----------------------------------------------------+
+; Port Connectivity Checks: "C_74HC670D:i1_74HC670D" ;
++------+-------+----------+--------------------------+
+; Port ; Type  ; Severity ; Details                  ;
++------+-------+----------+--------------------------+
+; re_n ; Input ; Info     ; Stuck at GND             ;
++------+-------+----------+--------------------------+
+
+
++-----------------------------------------------------+
+; Port Connectivity Checks: "C_74HC373WM:i_74HC373WM" ;
++------+-------+----------+---------------------------+
+; Port ; Type  ; Severity ; Details                   ;
++------+-------+----------+---------------------------+
+; le   ; Input ; Info     ; Stuck at VCC              ;
++------+-------+----------+---------------------------+
+
+
++----------------------------------------------------------------------------------------------------------------+
+; Port Connectivity Checks: "C_74HC257:i_74HC257"                                                                ;
++------+--------+----------+-------------------------------------------------------------------------------------+
+; Port ; Type   ; Severity ; Details                                                                             ;
++------+--------+----------+-------------------------------------------------------------------------------------+
+; i3   ; Input  ; Info     ; Stuck at GND                                                                        ;
+; y3   ; Output ; Info     ; Connected to dangling logic. Logic that only feeds a dangling port will be removed. ;
+; i4   ; Input  ; Info     ; Stuck at GND                                                                        ;
+; y4   ; Output ; Info     ; Connected to dangling logic. Logic that only feeds a dangling port will be removed. ;
+; oe_n ; Input  ; Info     ; Stuck at GND                                                                        ;
++------+--------+----------+-------------------------------------------------------------------------------------+
+
+
++--------------------------------------------------------------------------------------------------------------------+
+; Port Connectivity Checks: "C_74HC139:i_74HC139"                                                                    ;
++----------+--------+----------+-------------------------------------------------------------------------------------+
+; Port     ; Type   ; Severity ; Details                                                                             ;
++----------+--------+----------+-------------------------------------------------------------------------------------+
+; y1[3..1] ; Output ; Info     ; Connected to dangling logic. Logic that only feeds a dangling port will be removed. ;
+; y2[3..1] ; Output ; Info     ; Connected to dangling logic. Logic that only feeds a dangling port will be removed. ;
++----------+--------+----------+-------------------------------------------------------------------------------------+
+
+
++-------------------------------------------------------------------------------------------------------------------+
+; Port Connectivity Checks: "C_74HC138:i_74HC138"                                                                   ;
++---------+--------+----------+-------------------------------------------------------------------------------------+
+; Port    ; Type   ; Severity ; Details                                                                             ;
++---------+--------+----------+-------------------------------------------------------------------------------------+
+; e3      ; Input  ; Info     ; Stuck at VCC                                                                        ;
+; y[7..1] ; Output ; Info     ; Connected to dangling logic. Logic that only feeds a dangling port will be removed. ;
++---------+--------+----------+-------------------------------------------------------------------------------------+
+
+
++-----------------------------------------------+
+; Port Connectivity Checks: "C_74HC30:i_74HC30" ;
++---------+-------+----------+------------------+
+; Port    ; Type  ; Severity ; Details          ;
++---------+-------+----------+------------------+
+; d[7..6] ; Input ; Info     ; Stuck at VCC     ;
++---------+-------+----------+------------------+
+
+
++---------------------------------------------------+
+; Port Connectivity Checks: "decoder_7seg:DISPHEX1" ;
++--------------+-------+----------+-----------------+
+; Port         ; Type  ; Severity ; Details         ;
++--------------+-------+----------+-----------------+
+; number[3..2] ; Input ; Info     ; Stuck at VCC    ;
+; number[1..0] ; Input ; Info     ; Stuck at GND    ;
++--------------+-------+----------+-----------------+
+
+
++---------------------------------------------------+
+; Port Connectivity Checks: "decoder_7seg:DISPHEX0" ;
++--------------+-------+----------+-----------------+
+; Port         ; Type  ; Severity ; Details         ;
++--------------+-------+----------+-----------------+
+; number[3..2] ; Input ; Info     ; Stuck at VCC    ;
+; number[1]    ; Input ; Info     ; Stuck at GND    ;
+; number[0]    ; Input ; Info     ; Stuck at VCC    ;
++--------------+-------+----------+-----------------+
+
+
++-------------------------------+
+; Elapsed Time Per Partition    ;
++----------------+--------------+
+; Partition Name ; Elapsed Time ;
++----------------+--------------+
+; Top            ; 00:00:00     ;
++----------------+--------------+
+
+
 +-------------------------------+
 ; Analysis & Synthesis Messages ;
 +-------------------------------+
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Thu Jan 12 20:05:02 2023
+    Info: Processing started: Fri Jan 13 12:49:09 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MSX_DE1_Top -c MSX_DE1_Top
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Info (12021): Found 2 design units, including 1 entities, in source file mapper components/74hc670d.vhd
@@ -182,14 +413,271 @@ Info (12021): Found 2 design units, including 1 entities, in source file decoder
 Info (12021): Found 2 design units, including 1 entities, in source file msx_de1_top.vhd
     Info (12022): Found design unit 1: MSX_DE1_Top-rtl
     Info (12023): Found entity 1: MSX_DE1_Top
-Error (10482): VHDL error at MSX_DE1_Top.vhd(345): object "s_74hc670_2_q" is used but not declared File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 345
-Error (10349): VHDL Association List error at MSX_DE1_Top.vhd(345): formal "E1" does not exist File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 345
-Error (10346): VHDL error at MSX_DE1_Top.vhd(345): formal port or parameter "E" must have actual or default value File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 345
-Error (10784): HDL error at MSX_DE1_Top.vhd(132): see declaration for object "E" File: C:/Users/alpha/Documents/Dev/MSX_DE1_Hat/Altera DE1  Project/MSX_DE1_Top.vhd Line: 132
-Error: Quartus II 64-Bit Analysis & Synthesis was unsuccessful. 4 errors, 1 warning
-    Error: Peak virtual memory: 4626 megabytes
-    Error: Processing ended: Thu Jan 12 20:05:03 2023
-    Error: Elapsed time: 00:00:01
-    Error: Total CPU time (on all processors): 00:00:01
+Info (12127): Elaborating entity "MSX_DE1_Top" for the top level hierarchy
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(24): used implicit default value for signal "UART_TXD" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(28): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(29): used implicit default value for signal "DRAM_LDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(30): used implicit default value for signal "DRAM_UDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(31): used implicit default value for signal "DRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(32): used implicit default value for signal "DRAM_CAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(33): used implicit default value for signal "DRAM_RAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(34): used implicit default value for signal "DRAM_CS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(35): used implicit default value for signal "DRAM_BA_0" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(36): used implicit default value for signal "DRAM_BA_1" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(37): used implicit default value for signal "DRAM_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(38): used implicit default value for signal "DRAM_CKE" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(41): used implicit default value for signal "FL_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(42): used implicit default value for signal "FL_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(43): used implicit default value for signal "FL_RST_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(44): used implicit default value for signal "FL_OE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(45): used implicit default value for signal "FL_CE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(58): used implicit default value for signal "SD_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(61): used implicit default value for signal "I2C_SCLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(69): used implicit default value for signal "TDO" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(71): used implicit default value for signal "VGA_HS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(72): used implicit default value for signal "VGA_VS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(73): used implicit default value for signal "VGA_R" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(74): used implicit default value for signal "VGA_G" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(75): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(80): used implicit default value for signal "AUD_DACDAT" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(82): used implicit default value for signal "AUD_XCK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(96): used implicit default value for signal "BUSDIR_n" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(98): used implicit default value for signal "INT_n" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(179): used implicit default value for signal "s_msx_a" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(180): used implicit default value for signal "s_msx_d" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10540): VHDL Signal Declaration warning at MSX_DE1_Top.vhd(196): used explicit default value for signal "s_reg56" because signal was never assigned a value
+Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
+Info (12128): Elaborating entity "C_74HC30" for hierarchy "C_74HC30:i_74HC30"
+Info (12128): Elaborating entity "C_74HC138" for hierarchy "C_74HC138:i_74HC138"
+Info (12128): Elaborating entity "C_74HC139" for hierarchy "C_74HC139:i_74HC139"
+Warning (10492): VHDL Process Statement warning at 74HC139.vhd(58): signal "s_A1" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at 74HC139.vhd(72): signal "s_A2" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Info (12128): Elaborating entity "C_74HC257" for hierarchy "C_74HC257:i_74HC257"
+Info (10041): Inferred latch for "s_Y4" at 74HC257.vhd(72)
+Info (10041): Inferred latch for "s_Y3" at 74HC257.vhd(68)
+Info (10041): Inferred latch for "s_Y2" at 74HC257.vhd(64)
+Info (10041): Inferred latch for "s_Y1" at 74HC257.vhd(60)
+Info (12128): Elaborating entity "C_74HC373WM" for hierarchy "C_74HC373WM:i_74HC373WM"
+Warning (10492): VHDL Process Statement warning at MM74HC373.vhd(38): signal "s_D" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at MM74HC373.vhd(39): signal "s_latch" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at MM74HC373.vhd(41): signal "s_latch" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10631): VHDL Process Statement warning at MM74HC373.vhd(33): inferring latch(es) for signal or variable "s_latch", which holds its previous value in one or more paths through the process
+Info (10041): Inferred latch for "s_latch[0]" at MM74HC373.vhd(33)
+Info (10041): Inferred latch for "s_latch[1]" at MM74HC373.vhd(33)
+Info (10041): Inferred latch for "s_latch[2]" at MM74HC373.vhd(33)
+Info (10041): Inferred latch for "s_latch[3]" at MM74HC373.vhd(33)
+Info (10041): Inferred latch for "s_latch[4]" at MM74HC373.vhd(33)
+Info (10041): Inferred latch for "s_latch[5]" at MM74HC373.vhd(33)
+Info (10041): Inferred latch for "s_latch[6]" at MM74HC373.vhd(33)
+Info (10041): Inferred latch for "s_latch[7]" at MM74HC373.vhd(33)
+Info (12128): Elaborating entity "C_74HC670D" for hierarchy "C_74HC670D:i1_74HC670D"
+Warning (10492): VHDL Process Statement warning at 74HC670D.vhd(72): signal "s_ra_rb" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at 74HC670D.vhd(73): signal "s_DREG" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at 74HC670D.vhd(74): signal "s_DREG" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at 74HC670D.vhd(75): signal "s_DREG" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at 74HC670D.vhd(76): signal "s_DREG" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (14026): LATCH primitive "C_74HC257:i_74HC257|s_Y4_78" is permanently enabled
+Warning (14026): LATCH primitive "C_74HC257:i_74HC257|s_Y2" is permanently enabled
+Warning (14026): LATCH primitive "C_74HC257:i_74HC257|s_Y1" is permanently enabled
+Warning (19016): Clock multiplexers are found and protected
+    Warning (19017): Found clock multiplexer C_74HC139:i_74HC139|Mux3
+Warning (13046): Tri-state node(s) do not directly drive top-level pin(s)
+    Warning (13049): Converted tri-state buffer "C_74HC670D:i2_74HC670D|Q[0]" feeding internal logic into a wire
+    Warning (13049): Converted tri-state buffer "C_74HC257:i_74HC257|Y2" feeding internal logic into a wire
+    Warning (13049): Converted tri-state buffer "C_74HC257:i_74HC257|Y1" feeding internal logic into a wire
+Warning (13039): The following bidir pins have no drivers
+    Warning (13040): Bidir "SD_DAT3" has no driver
+    Warning (13040): Bidir "SD_CMD" has no driver
+Warning (13027): Removed fan-outs from the following always-disabled I/O buffers
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[0]" to the node "SRAM_DQ[0]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[1]" to the node "SRAM_DQ[1]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[2]" to the node "SRAM_DQ[2]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[3]" to the node "SRAM_DQ[3]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[4]" to the node "SRAM_DQ[4]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[5]" to the node "SRAM_DQ[5]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[6]" to the node "SRAM_DQ[6]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[7]" to the node "SRAM_DQ[7]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[8]" to the node "SRAM_DQ[8]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[9]" to the node "SRAM_DQ[9]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[10]" to the node "SRAM_DQ[10]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[11]" to the node "SRAM_DQ[11]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[12]" to the node "SRAM_DQ[12]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[13]" to the node "SRAM_DQ[13]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[14]" to the node "SRAM_DQ[14]"
+    Warning (13028): Removed fan-out from the always-disabled I/O buffer "SRAM_DQ[15]" to the node "SRAM_DQ[15]"
+Warning (13050): Open-drain buffer(s) that do not directly drive top-level pin(s) are removed
+    Warning (13051): Converted the fanout from the open-drain buffer "C_74HC670D:i2_74HC670D|Q[1]" to the node "C_74HC373WM:i_74HC373WM|s_latch[5]" into a wire
+    Warning (13051): Converted the fanout from the open-drain buffer "C_74HC670D:i2_74HC670D|Q[2]" to the node "C_74HC373WM:i_74HC373WM|s_latch[6]" into a wire
+    Warning (13051): Converted the fanout from the open-drain buffer "C_74HC670D:i2_74HC670D|Q[3]" to the node "C_74HC373WM:i_74HC373WM|s_latch[7]" into a wire
+    Warning (13051): Converted the fanout from the open-drain buffer "C_74HC670D:i1_74HC670D|Q[0]" to the node "C_74HC373WM:i_74HC373WM|s_latch[0]" into a wire
+    Warning (13051): Converted the fanout from the open-drain buffer "C_74HC670D:i1_74HC670D|Q[1]" to the node "C_74HC373WM:i_74HC373WM|s_latch[1]" into a wire
+    Warning (13051): Converted the fanout from the open-drain buffer "C_74HC670D:i1_74HC670D|Q[2]" to the node "C_74HC373WM:i_74HC373WM|s_latch[2]" into a wire
+    Warning (13051): Converted the fanout from the open-drain buffer "C_74HC670D:i1_74HC670D|Q[3]" to the node "C_74HC373WM:i_74HC373WM|s_latch[3]" into a wire
+Warning (13030): Reduced the following open-drain buffers that are fed by GND
+    Warning (13031): Reduced fanout from the always-enabled open-drain buffer "C_74HC670D:i2_74HC670D|Q[1]" to the output pin "LEDG[5]" to GND
+    Warning (13031): Reduced fanout from the always-enabled open-drain buffer "C_74HC670D:i2_74HC670D|Q[2]" to the output pin "LEDG[6]" to GND
+    Warning (13031): Reduced fanout from the always-enabled open-drain buffer "C_74HC670D:i2_74HC670D|Q[3]" to the output pin "LEDG[7]" to GND
+    Warning (13031): Reduced fanout from the always-enabled open-drain buffer "C_74HC670D:i1_74HC670D|Q[0]" to the output pin "SRAM_ADDR[14]" to GND
+    Warning (13031): Reduced fanout from the always-enabled open-drain buffer "C_74HC670D:i1_74HC670D|Q[1]" to the output pin "SRAM_ADDR[15]" to GND
+    Warning (13031): Reduced fanout from the always-enabled open-drain buffer "C_74HC670D:i1_74HC670D|Q[2]" to the output pin "SRAM_ADDR[16]" to GND
+    Warning (13031): Reduced fanout from the always-enabled open-drain buffer "C_74HC670D:i1_74HC670D|Q[3]" to the output pin "SRAM_ADDR[17]" to GND
+Warning (13024): Output pins are stuck at VCC or GND
+    Warning (13410): Pin "HEX0[0]" is stuck at VCC
+    Warning (13410): Pin "HEX0[1]" is stuck at GND
+    Warning (13410): Pin "HEX0[2]" is stuck at GND
+    Warning (13410): Pin "HEX0[3]" is stuck at GND
+    Warning (13410): Pin "HEX0[4]" is stuck at GND
+    Warning (13410): Pin "HEX0[5]" is stuck at VCC
+    Warning (13410): Pin "HEX0[6]" is stuck at GND
+    Warning (13410): Pin "HEX1[0]" is stuck at GND
+    Warning (13410): Pin "HEX1[1]" is stuck at VCC
+    Warning (13410): Pin "HEX1[2]" is stuck at VCC
+    Warning (13410): Pin "HEX1[3]" is stuck at GND
+    Warning (13410): Pin "HEX1[4]" is stuck at GND
+    Warning (13410): Pin "HEX1[5]" is stuck at GND
+    Warning (13410): Pin "HEX1[6]" is stuck at VCC
+    Warning (13410): Pin "HEX2[0]" is stuck at GND
+    Warning (13410): Pin "HEX2[1]" is stuck at GND
+    Warning (13410): Pin "HEX2[2]" is stuck at GND
+    Warning (13410): Pin "HEX2[3]" is stuck at GND
+    Warning (13410): Pin "HEX2[4]" is stuck at GND
+    Warning (13410): Pin "HEX2[5]" is stuck at GND
+    Warning (13410): Pin "HEX2[6]" is stuck at VCC
+    Warning (13410): Pin "HEX3[0]" is stuck at GND
+    Warning (13410): Pin "HEX3[1]" is stuck at GND
+    Warning (13410): Pin "HEX3[2]" is stuck at GND
+    Warning (13410): Pin "HEX3[3]" is stuck at GND
+    Warning (13410): Pin "HEX3[4]" is stuck at GND
+    Warning (13410): Pin "HEX3[5]" is stuck at GND
+    Warning (13410): Pin "HEX3[6]" is stuck at VCC
+    Warning (13410): Pin "LEDG[0]" is stuck at GND
+    Warning (13410): Pin "LEDG[1]" is stuck at GND
+    Warning (13410): Pin "LEDG[2]" is stuck at GND
+    Warning (13410): Pin "LEDG[3]" is stuck at GND
+    Warning (13410): Pin "LEDG[5]" is stuck at GND
+    Warning (13410): Pin "LEDG[6]" is stuck at GND
+    Warning (13410): Pin "LEDG[7]" is stuck at GND
+    Warning (13410): Pin "LEDR[8]" is stuck at VCC
+    Warning (13410): Pin "UART_TXD" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[0]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[1]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[2]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[3]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[4]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[5]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[6]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[7]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[8]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[9]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[10]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[11]" is stuck at GND
+    Warning (13410): Pin "DRAM_LDQM" is stuck at GND
+    Warning (13410): Pin "DRAM_UDQM" is stuck at GND
+    Warning (13410): Pin "DRAM_WE_N" is stuck at GND
+    Warning (13410): Pin "DRAM_CAS_N" is stuck at GND
+    Warning (13410): Pin "DRAM_RAS_N" is stuck at GND
+    Warning (13410): Pin "DRAM_CS_N" is stuck at GND
+    Warning (13410): Pin "DRAM_BA_0" is stuck at GND
+    Warning (13410): Pin "DRAM_BA_1" is stuck at GND
+    Warning (13410): Pin "DRAM_CLK" is stuck at GND
+    Warning (13410): Pin "DRAM_CKE" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[0]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[1]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[2]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[3]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[4]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[5]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[6]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[7]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[8]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[9]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[10]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[11]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[12]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[13]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[14]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[15]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[16]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[17]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[18]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[19]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[20]" is stuck at GND
+    Warning (13410): Pin "FL_ADDR[21]" is stuck at GND
+    Warning (13410): Pin "FL_WE_N" is stuck at GND
+    Warning (13410): Pin "FL_RST_N" is stuck at GND
+    Warning (13410): Pin "FL_OE_N" is stuck at GND
+    Warning (13410): Pin "FL_CE_N" is stuck at GND
+    Warning (13410): Pin "SRAM_ADDR[14]" is stuck at GND
+    Warning (13410): Pin "SRAM_ADDR[15]" is stuck at GND
+    Warning (13410): Pin "SRAM_ADDR[16]" is stuck at GND
+    Warning (13410): Pin "SRAM_ADDR[17]" is stuck at GND
+    Warning (13410): Pin "SD_CLK" is stuck at GND
+    Warning (13410): Pin "I2C_SCLK" is stuck at GND
+    Warning (13410): Pin "TDO" is stuck at GND
+    Warning (13410): Pin "VGA_HS" is stuck at GND
+    Warning (13410): Pin "VGA_VS" is stuck at GND
+    Warning (13410): Pin "VGA_R[0]" is stuck at GND
+    Warning (13410): Pin "VGA_R[1]" is stuck at GND
+    Warning (13410): Pin "VGA_R[2]" is stuck at GND
+    Warning (13410): Pin "VGA_R[3]" is stuck at GND
+    Warning (13410): Pin "VGA_G[0]" is stuck at GND
+    Warning (13410): Pin "VGA_G[1]" is stuck at GND
+    Warning (13410): Pin "VGA_G[2]" is stuck at GND
+    Warning (13410): Pin "VGA_G[3]" is stuck at GND
+    Warning (13410): Pin "VGA_B[0]" is stuck at GND
+    Warning (13410): Pin "VGA_B[1]" is stuck at GND
+    Warning (13410): Pin "VGA_B[2]" is stuck at GND
+    Warning (13410): Pin "VGA_B[3]" is stuck at GND
+    Warning (13410): Pin "AUD_DACDAT" is stuck at GND
+    Warning (13410): Pin "AUD_XCK" is stuck at GND
+    Warning (13410): Pin "BUSDIR_n" is stuck at GND
+    Warning (13410): Pin "INT_n" is stuck at GND
+Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
+    Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
+Warning (21074): Design contains 34 input pin(s) that do not drive logic
+    Warning (15610): No output dependent on input pin "CLOCK_24[0]"
+    Warning (15610): No output dependent on input pin "CLOCK_24[1]"
+    Warning (15610): No output dependent on input pin "CLOCK_27[0]"
+    Warning (15610): No output dependent on input pin "CLOCK_27[1]"
+    Warning (15610): No output dependent on input pin "CLOCK_50"
+    Warning (15610): No output dependent on input pin "EXT_CLOCK"
+    Warning (15610): No output dependent on input pin "KEY[0]"
+    Warning (15610): No output dependent on input pin "KEY[1]"
+    Warning (15610): No output dependent on input pin "KEY[2]"
+    Warning (15610): No output dependent on input pin "KEY[3]"
+    Warning (15610): No output dependent on input pin "SW[0]"
+    Warning (15610): No output dependent on input pin "SW[1]"
+    Warning (15610): No output dependent on input pin "SW[2]"
+    Warning (15610): No output dependent on input pin "SW[3]"
+    Warning (15610): No output dependent on input pin "SW[4]"
+    Warning (15610): No output dependent on input pin "SW[5]"
+    Warning (15610): No output dependent on input pin "SW[6]"
+    Warning (15610): No output dependent on input pin "SW[7]"
+    Warning (15610): No output dependent on input pin "SW[8]"
+    Warning (15610): No output dependent on input pin "SW[9]"
+    Warning (15610): No output dependent on input pin "UART_RXD"
+    Warning (15610): No output dependent on input pin "PS2_DAT"
+    Warning (15610): No output dependent on input pin "PS2_CLK"
+    Warning (15610): No output dependent on input pin "TDI"
+    Warning (15610): No output dependent on input pin "TCK"
+    Warning (15610): No output dependent on input pin "TCS"
+    Warning (15610): No output dependent on input pin "AUD_ADCDAT"
+    Warning (15610): No output dependent on input pin "MREQ_n"
+    Warning (15610): No output dependent on input pin "CS1_n"
+    Warning (15610): No output dependent on input pin "CS2_n"
+    Warning (15610): No output dependent on input pin "M1_n"
+    Warning (15610): No output dependent on input pin "MSX_CLK"
+    Warning (15610): No output dependent on input pin "A[14]"
+    Warning (15610): No output dependent on input pin "A[15]"
+Info (21057): Implemented 288 device resources after synthesis - the final resource count might be different
+    Info (21058): Implemented 52 input pins
+    Info (21059): Implemented 140 output pins
+    Info (21060): Implemented 91 bidirectional pins
+    Info (21061): Implemented 5 logic cells
+Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 235 warnings
+    Info: Peak virtual memory: 4628 megabytes
+    Info: Processing ended: Fri Jan 13 12:49:10 2023
+    Info: Elapsed time: 00:00:01
+    Info: Total CPU time (on all processors): 00:00:01
 
 
