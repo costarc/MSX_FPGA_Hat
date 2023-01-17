@@ -2,7 +2,6 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
-Entity MSX_DE1_Top is
 port (
     CLOCK_24:	  	in std_logic_vector(1 downto 0);		-- 24 MHz
     CLOCK_27:		in std_logic_vector(1 downto 0);		--	27 MHz
