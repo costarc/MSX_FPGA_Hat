@@ -16,21 +16,21 @@ SW(9) must be in position ON / 1 for the Cartridge Emulation to be enabled.
 0000100110: Frogger
 
 Teh ROMs must be written to the DE1 FLASH RAM, using DE1 Control Panel.
-Write the file "DE1Games.ROM" to DE1 FLASH RAM from address 0x0000
+Write the file "DE1ROMs.bin" to DE1 FLASH RAM from address 0x0000
 
 
 Creating the file DE1ROMS.ROM for the configuration above:
 
-cat CASTLE.ROM > DE1GAMES.ROM
-cat ELEVATOR.ROM >> DE1GAMES.ROM
-cat GALAGA.ROM >> DE1GAMES.ROM
-cat GOONIES.ROM >>DE1GAMES.ROM
-cat GULKAVE.ROM >> DE1GAMES.ROM
-cat GYRODINE.ROM >> DE1GAMES.ROM
-cat LODERUN.ROM >> DE1GAMES.ROM
-cat ZANAC.ROM >> DE1GAMES.ROM
-cat ROAD.ROM >> DE1GAMES.ROM
-cat HRALLY.ROM >> DE1GAMES.ROM
-cat AVALANCH.ROM >> DE1GAMES.ROM
-cat FROGGER.ROM >> DE1GAMES.ROM
+cat CASTLE.ROM > DE1ROMs.bin
+cat ELEVATOR.ROM >> DE1ROMs.bin
+cat GALAGA.ROM >> DE1ROMs.bin
+cat GOONIES.ROM >>DE1ROMs.bin
+cat GULKAVE.ROM >> DE1ROMs.bin
+cat GYRODINE.ROM >> DE1ROMs.bin
+cat LODERUN.ROM >> DE1ROMs.bin
+cat ZANAC.ROM >> DE1ROMs.bin
+cat ROAD.ROM >> DE1ROMs.bin
+cat HRALLY.ROM >> DE1ROMs.bin
+cat AVALANCH.ROM >> DE1ROMs.bin
+cat FROGGER.ROM >> DE1ROMs.bin
 

@@ -1,9 +1,8 @@
 library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
-use ieee.numeric_std.all;
 
-Entity MegaROM_Top is
+Entity MemoryMapper512K_Top is
 port (
     CLOCK_24:	  	in std_logic_vector(1 downto 0);		-- 24 MHz
     CLOCK_27:		in std_logic_vector(1 downto 0);		--	27 MHz
@@ -99,9 +98,9 @@ port (
     INT_n:			out std_logic;
     MSX_CLK:			in std_logic;
     WAIT_n:			out std_logic); 
-end MegaROM_Top;
+end MemoryMapper512K_Top;
 
-architecture bevioural of MegaROM_Top is
+architecture bevioural of MemoryMapper512K_Top is
 	
 	component decoder_7seg
 	port (
@@ -125,85 +124,34 @@ architecture bevioural of MegaROM_Top is
 	-- signals for cartridge emulation
 	signal s_rom_en : std_logic;
 	signal s_rom_d : std_logic_vector(7 downto 0);
-	signal s_rom_a : std_logic_vector(23 downto 0);
+	signal s_rom_a : std_logic_vector(31 downto 0);
 	signal s_cart_en: std_logic;
+
+	-- signals for slot expansion
+	signal ffff				: std_logic;
+	signal slt_exp_n		: std_logic_vector(3 downto 0);
 	
-	-- Flash Konami8
-	signal rom_bank_wr_s	: std_logic;
-	signal rom_bank2_q	: std_logic_vector(7 downto 0);
-	signal rom_bank3_q	: std_logic_vector(7 downto 0);
-	signal rom_bank4_q	: std_logic_vector(7 downto 0);
-	
-	signal s_flashbase	: std_logic_vector(23 downto 0);
 begin
-	s_reset <= not KE	LEDG <= A(15 downto 8);
-	LEDR <= s_rom_en & rom_bank4_q(2 downto 0) & rom_bank3_q(2 downto 0) & rom_bank2_q(2 downto 0);
-Y(0);
+
+	s_reset <= not KEY(0);
+	LEDG <= s_rom_en & rom_bank1_q(3 downto 0) & rom_bank2_q(2 downto 0);
 	-- Cartridge Emulation
 	s_cart_en <= SW(9);  -- Will only enable Cart emulation if SW(9) is '1'
-	FL_WE_N <= '1';
-	FL_RST_N <= '1';
-	FL_CE_N <= not s_rom_en;
-	FL_ADDR <= s_rom_a(21 downto 0);
-	FL_OE_N <= RD_n;
-
-	-- Konami8 MegaROM
-	-- 1st Bank is fixed at 4000h
-	-- Remaining Banks hig part of the address is read from the respective Bank register
-	s_rom_a(23 downto 0) <= s_flashbase + A - x"4000" when A(15 downto 13) = "010" and SLTSL_n = '0' else
-	                        s_flashbase + (rom_bank2_q(3 downto 0) & A(12 downto 0)) when A(15 downto 13) = "011" and SLTSL_n = '0' else
-                           s_flashbase + (rom_bank3_q(3 downto 0) & A(12 downto 0)) when A(15 downto 13) = "100"  and SLTSL_n = '0' else
-	                        s_flashbase + (rom_bank4_q(3 downto 0) & A(12 downto 0)) when A(15 downto 13) = "101"  and SLTSL_n = '0' else
-									(others => '-');
-	
-	-- SW(2..0) selects the ROM - See DE1ROMs_Guide.txt
-	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
-	-- where the roms for this cores is written.
-	-- ROMs for this core starts at postion 0x100000 and each ROM has 128KB
-	s_flashbase <= x"120000" when SW(0) = '1' else
-	               x"140000" when SW(1) = '1' else
-						x"160000" when SW(2) = '1' else
-						x"100000";
-	
-	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
-	s_rom_en <= (not SLTSL_n) when s_cart_en ='1' else '0';
 
 	-- Output signals to DE1
 	INT_n  <= 'Z';
 	WAIT_n <= 'Z';
 	BUSDIR_n <= not s_rom_en;	
+	
 	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 
-
-	-- Bank write - Detect writes in addresses 6000h - BFFFh
-	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A >= x"6000" and A < x"C000" else  '0';
-	
-	process (s_reset, rom_bank_wr_s)
-	begin
-		if s_reset = '1' then
-			rom_bank2_q		<= "00000001";					-- Konami8 Bank2 initial segment is always 1
-			rom_bank3_q		<= (others => '0');
-			rom_bank4_q		<= (others => '0');
-		elsif falling_edge(rom_bank_wr_s) then
-			case A(15 downto 13) is
-				when "011"   =>								-- Writing segment to Register 6000h
-					rom_bank2_q		<= D;
-				when "100"   =>								-- Writing segment to Register 8000h
-					rom_bank3_q		<= D;
-				when "101"   =>								-- Writing segment to Register A000h
-					rom_bank4_q		<= D;
-				when others =>
-					null;
-			end case;
-		end if;
-	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
 	NUMBER0 <= s_rom_a(3 downto 0);
 	NUMBER1 <= s_rom_a(7 downto 4);
 	NUMBER2 <= s_rom_a(11 downto 8);
 	NUMBER3 <= s_rom_a(15 downto 12);
-
+	LEDR <= A(15 downto 6);
 	   
     DISPHEX0 : decoder_7seg PORT MAP (
     		NUMBER			=>	NUMBER0,
@@ -240,5 +188,18 @@ Y(0);
 	HEX1 <= HEX_DISP1;
 	HEX2 <= HEX_DISP2;
 	HEX3 <= HEX_DISP3;
+
+	-- Expansor de slot
+	exp: entity work.exp_slot
+	port map (
+		reset_n		=> s_reset,
+		sltsl_n		=> not s_rom_en,
+		cpu_rd_n		=> RD_n,
+		cpu_wr_n		=> WR_n,
+		ffff			=> ffff,
+		cpu_a			=> A(15 downto 14),
+		cpu_d			=> D,
+		exp_n			=> slt_exp_n
+	);
 	
 end bevioural;

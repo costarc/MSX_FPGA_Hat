@@ -1,0 +1,71 @@
+Create a big ROM file:
+
+ASCII16 (256KB ROMs) - 000000h in the Flash:
+---------------------------------------------
+cat XEVIOUS.ROM >> DE1ROMs.bin
+cat FANZONE2.ROM >> DE1ROMs.bin
+cat ISHTAR.ROM >> DE1ROMs.bin
+cat ANDROGYN.ROM >> DE1ROMs.bin
+
+Konami8 (128KB ROMs) - 100000h in the Flash:
+---------------------------------------------
+cat GRADIUS.ROM >> DE1ROMs.bin
+cat PENGUIN.ROM >> DE1ROMs.bin
+cat USAS.ROM >> DE1ROMs.bin
+cat MGEAR1.ROM >> DE1ROMs.bin
+
+SD Mapper ROM(MSX-DOS/Nextor 128KB ROM):
+----------------------------------------
+SDMAPPER.ROM >> DE1ROMs.bin
+
+32KB ROM Games
+---------------
+cat CASTLE.ROM >> DE1ROMs.bin
+cat ELEVATOR.ROM >> DE1ROMs.bin
+cat GALAGA.ROM >> DE1ROMs.bin
+cat GOONIES.ROM >>DE1ROMs.bin
+cat GULKAVE.ROM >> DE1ROMs.bin
+cat GYRODINE.ROM >> DE1ROMs.bin
+cat LODERUN.ROM >> DE1ROMs.bin
+cat ZANAC.ROM >> DE1ROMs.bin
+cat ROAD.ROM >> DE1ROMs.bin
+cat HRALLY.ROM >> DE1ROMs.bin
+cat AVALANCH.ROM >> DE1ROMs.bin
+cat FROGGER.ROM >> DE1ROMs.bin
+
+
+MSX-DOS 2.2v3 (64KB ROM):
+-------------------------
+cat MDOS22V3.ROM >> DE1ROMs.bin
+
+----
+Write to DE1 FLASH using DE1 Control Panel
+
+Select the banks (Game) to boot using SW Switches
+
+ASCI16 ROMS:
+000: Xevious
+001: Fan Zone
+010: Ishtar
+100: Androgyn
+
+Konami8 ROMs:
+000: Gradius
+001: Pengui nAdventure
+010: USAS
+100: Metal Gear Solid
+
+32KB Nomarl ROMs:
+0000000000: Castle Excelent
+0000000100: Elevator Action
+0000001000: Galaga
+0000001100: The Goonies
+0000010000: Gulkave
+0000010100: Gyrodine
+0000011000: Lode Runner
+0000011100: Zanac
+0000100000: Road Fighter
+0000100010: Hyper Rally
+0000100100: Avalanche
+0000100110: Frogger
+

@@ -137,9 +137,13 @@ architecture bevioural of MegaROM_Top is
 	signal rom_bank2_q	: std_logic_vector(7 downto 0);
 	
 	signal s_flashbase	: std_logic_vector(23 downto 0);
+	
 begin
+
 	s_reset <= not KEY(0);
-	LEDG <= s_rom_en & rom_bank1_q(3 downto 0) & rom_bank2_q(2 downto 0);
+	LEDG <= A(15 downto 8);
+	LEDR <= s_rom_en & rom_bank2_q(3 downto 0) & rom_bank1_q(4 downto 0);
+	
 	-- Cartridge Emulation
 	s_cart_en <= SW(9);  -- Will only enable Cart emulation if SW(9) is '1'
 	FL_WE_N <= '1';
@@ -147,19 +151,20 @@ begin
 	FL_CE_N <= not s_rom_en;
 	FL_ADDR <= s_rom_a(21 downto 0);
 	FL_OE_N <= RD_n;
-	-- s_rom_a <= ((A - x"4000") + (SW(5 downto 0) * x"2000"));
 
-	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(3 downto 0) & A(13 downto 0)) when A(15) = '0' and SLTSL_n = '0' else 				-- Bank1
-                           s_flashbase + (rom_bank2_q(3 downto 0) & A(13 downto 0)) when A(15) = '1'  and SLTSL_n = '0' else 		-- Bank2:
+	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when A(15) = '0' and SLTSL_n = '0' else 				-- Bank1
+                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when A(15) = '1'  and SLTSL_n = '0' else 		-- Bank2:
 	                        (others => '-');
 
+	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
+	-- where the roms for this cores is written.
+	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
 	s_flashbase <= x"040000" when SW(0) = '1' else
 	               x"080000" when SW(1) = '1' else
 						x"0C0000" when SW(2) = '1' else
 						x"000000";
 	
-	-- MegaROM Emulation
-   -- Slot Selects
+	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
 	s_rom_en <= (not SLTSL_n) when s_cart_en ='1' else '0';
 
 	-- Output signals to DE1
@@ -197,7 +202,6 @@ begin
 	NUMBER1 <= s_rom_a(7 downto 4);
 	NUMBER2 <= s_rom_a(11 downto 8);
 	NUMBER3 <= s_rom_a(15 downto 12);
-	LEDR <= A(15 downto 6);
 	   
     DISPHEX0 : decoder_7seg PORT MAP (
     		NUMBER			=>	NUMBER0,
@@ -234,18 +238,5 @@ begin
 	HEX1 <= HEX_DISP1;
 	HEX2 <= HEX_DISP2;
 	HEX3 <= HEX_DISP3;
-
-	-- Expansor de slot
-	exp: entity work.exp_slot
-	port map (
-		reset_n		=> s_reset,
-		sltsl_n		=> not s_rom_en,
-		cpu_rd_n		=> RD_n,
-		cpu_wr_n		=> WR_n,
-		ffff			=> ffff,
-		cpu_a			=> A(15 downto 14),
-		cpu_d			=> D,
-		exp_n			=> slt_exp_n
-	);
 	
 end bevioural;
