@@ -1,0 +1,15 @@
+Create a big MegaROM file:
+
+cat XEVIOUS.ROM >> MegaROM.ROM
+cat FANZONE2.ROM >> MegaROM.ROM
+cat ISHTAR.ROM >> MegaROM.ROM
+cat ANDROGYN.ROM >> MegaROM.ROM
+
+Write to DE1 FLASH using DE1 Control Panel
+
+Select the banks (Game) to boot using SW(2..0):
+
+000: Xevious
+001: Fan Zone
+010: Ishtar
+100: Androgyn

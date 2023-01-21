@@ -2,7 +2,7 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
-Entity MSX_DE1_Top is
+Entity MegaROM_Top is
 port (
     CLOCK_24:	  	in std_logic_vector(1 downto 0);		-- 24 MHz
     CLOCK_27:		in std_logic_vector(1 downto 0);		--	27 MHz
@@ -98,9 +98,9 @@ port (
     INT_n:			out std_logic;
     MSX_CLK:			in std_logic;
     WAIT_n:			out std_logic); 
-end MSX_DE1_Top;
+end MegaROM_Top;
 
-architecture rtl of MSX_DE1_Top is
+architecture bevioural of MegaROM_Top is
 	
 	component decoder_7seg
 	port (
@@ -117,76 +117,88 @@ architecture rtl of MSX_DE1_Top is
 	signal NUMBER2		: std_logic_vector(3 downto 0);
 	signal NUMBER3		: std_logic_vector(3 downto 0);
 	
-	signal s_msx_a : std_logic_vector(15 downto 0);
-	signal s_msx_d : std_logic_vector(7 downto 0);
 	signal s_mreq: std_logic;
-	signal s_iorq_r: std_logic;
-	signal s_iorq_w: std_logic;
 	signal s_busd_en: std_logic;
-	signal s_iorq_r_reg: std_logic;
-	signal s_iorq_w_reg: std_logic;
 	signal s_reset: std_logic := '0';
 	
 	-- signals for cartridge emulation
 	signal s_rom_en : std_logic;
 	signal s_rom_d : std_logic_vector(7 downto 0);
-	signal s_rom_a : std_logic_vector(21 downto 0);
+	signal s_rom_a : std_logic_vector(31 downto 0);
 	signal s_cart_en: std_logic;
+
+	-- signals for MegaROM emulation
+	signal ffff				: std_logic;
+	signal slt_exp_n		: std_logic_vector(3 downto 0);
 	
-	-- signals for I/O Device Emulation
-	signal s_reg56: std_logic_vector(7 downto 0) := x"CD";
-	signal s_msxpi_en: std_logic;
-	 
+	-- Flash ASCII16
+	signal rom_bank_wr_s	: std_logic;
+	signal rom_bank1_q	: std_logic_vector(7 downto 0);
+	signal rom_bank2_q	: std_logic_vector(7 downto 0);
+	
+	signal s_flashbase	: std_logic_vector(23 downto 0);
 begin
-	
+	s_reset <= not KEY(0);
+	LEDG <= s_rom_en & rom_bank1_q(3 downto 0) & rom_bank2_q(2 downto 0);
 	-- Cartridge Emulation
-	s_cart_en <= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
+	s_cart_en <= SW(9);  -- Will only enable Cart emulation if SW(9) is '1'
 	FL_WE_N <= '1';
 	FL_RST_N <= '1';
 	FL_CE_N <= not s_rom_en;
-	FL_ADDR <= s_rom_a;
+	FL_ADDR <= s_rom_a(21 downto 0);
 	FL_OE_N <= RD_n;
-	s_rom_a <= ((A - x"4000") + (SW(5 downto 0) * x"2000"));
-	s_rom_en  <= '1' when (SLTSL_n = '0' and s_cart_en ='1') else '0';
+	-- s_rom_a <= ((A - x"4000") + (SW(5 downto 0) * x"2000"));
+
+	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(3 downto 0) & A(13 downto 0)) when A(15) = '0' and SLTSL_n = '0' else 				-- Bank1
+                           s_flashbase + (rom_bank2_q(3 downto 0) & A(13 downto 0)) when A(15) = '1'  and SLTSL_n = '0' else 		-- Bank2:
+	                        (others => '-');
+
+	s_flashbase <= x"040000" when SW(0) = '1' else
+	               x"080000" when SW(1) = '1' else
+						x"0C0000" when SW(2) = '1' else
+						x"000000";
 	
-	-- I/O Device Emulation - MSXPi port 0x56 is used to write/read a Register
-	s_iorq_r_reg <= '1' when A = x"56" and s_iorq_r = '1' else '0';
-	s_iorq_w_reg <= '1' when A = x"56" and s_iorq_w = '1' else '0';
-	s_msxpi_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
-	
-	-- Auxiliary Generic control signals
-   s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
-	s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
-	s_mreq <= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
-	s_msx_a <= A when s_busd_en = '1';	 
-   s_busd_en <= '1' when s_rom_en = '1' or s_msxpi_en = '1' else '0';
-	 
+	-- MegaROM Emulation
+   -- Slot Selects
+	s_rom_en <= (not SLTSL_n) when s_cart_en ='1' else '0';
+
 	-- Output signals to DE1
 	INT_n  <= 'Z';
 	WAIT_n <= 'Z';
-	BUSDIR_n <= not s_busd_en;	
-	D <=	FL_DQ when s_rom_en = '1' else               -- MSX reads data from FLASH RAM - Emulation of Cartridges
-	 		s_reg56 when s_iorq_r_reg = '1' else         -- MSX read Register on port 0x56
+	BUSDIR_n <= not s_rom_en;	
+	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 
-	 	 
-	 process(s_iorq_w_reg)
-	 begin
-		if s_reset = '1' then
-			s_reg56 <= x"00";
-		elsif rising_edge(s_iorq_w_reg) then
-			s_reg56 <= D;
-		end if;
-	 end process;
-	 
-    -- Display the current Memory Address in the 7 segment display
-    NUMBER0 <= s_reg56(3 downto 0);
-    NUMBER1 <= s_reg56(7 downto 4);
-    NUMBER2 <= s_msx_a(3 downto 0);
-    NUMBER3 <= s_msx_a(7 downto 4);
 
-    LEDG <= SLTSL_n & CS1_n & CS2_n & MREQ_n & IORQ_n & RD_n & wr_n & s_msxpi_en;
-    LEDR <= s_msx_a(15 downto 6);
-    
+	-- Bank write - Detect writes in addresses 6000h - 7800h
+	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
+	
+	-- Similar to this:
+	-- rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and (A >= x"6000" and A <= x"7800" and A(11) = '0') else '0';
+
+	process (s_reset, rom_bank_wr_s)
+	begin
+		if s_reset = '1' then
+			rom_bank1_q		<= (others => '0');
+			rom_bank2_q		<= (others => '0');
+		elsif falling_edge(rom_bank_wr_s) then
+			case A(12) is
+				when '0'   =>
+					rom_bank1_q		<= D;
+				when '1'   =>
+					rom_bank2_q		<= D;
+				when others =>
+					null;
+			end case;
+		end if;
+	end process;
+	
+	-- Display the current Memory Address in the 7 segment display
+	NUMBER0 <= s_rom_a(3 downto 0);
+	NUMBER1 <= s_rom_a(7 downto 4);
+	NUMBER2 <= s_rom_a(11 downto 8);
+	NUMBER3 <= s_rom_a(15 downto 12);
+	LEDR <= A(15 downto 6);
+	   
     DISPHEX0 : decoder_7seg PORT MAP (
     		NUMBER			=>	NUMBER0,
     		HEX_DISP		=>	HEX_DISP0
@@ -222,5 +234,18 @@ begin
 	HEX1 <= HEX_DISP1;
 	HEX2 <= HEX_DISP2;
 	HEX3 <= HEX_DISP3;
-	 	
-end rtl;
+
+	-- Expansor de slot
+	exp: entity work.exp_slot
+	port map (
+		reset_n		=> s_reset,
+		sltsl_n		=> not s_rom_en,
+		cpu_rd_n		=> RD_n,
+		cpu_wr_n		=> WR_n,
+		ffff			=> ffff,
+		cpu_a			=> A(15 downto 14),
+		cpu_d			=> D,
+		exp_n			=> slt_exp_n
+	);
+	
+end bevioural;
