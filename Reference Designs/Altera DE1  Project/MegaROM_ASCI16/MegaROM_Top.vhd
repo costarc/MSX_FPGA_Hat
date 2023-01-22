@@ -152,8 +152,14 @@ begin
 	FL_ADDR <= s_rom_a(21 downto 0);
 	FL_OE_N <= RD_n;
 
-	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when A(15) = '0' and SLTSL_n = '0' else 				-- Bank1
-                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when A(15) = '1'  and SLTSL_n = '0' else 		-- Bank2:
+	-- Bank write - Detect writes in addresses 6000h - 7800h
+	-- This works well with Zemmix, but not with Cano V-25 MSX2
+	-- rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
+
+	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
+	
+	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when A(15) = '0' and s_rom_en = '1' else		-- Bank1
+                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when A(15) = '1' and s_rom_en = '1' else 		-- Bank2:
 	                        (others => '-');
 
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
@@ -174,9 +180,6 @@ begin
 	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 
 
-	-- Bank write - Detect writes in addresses 6000h - 7800h
-	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
-	
 	-- Similar to this:
 	-- rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and (A >= x"6000" and A <= x"7800" and A(11) = '0') else '0';
 

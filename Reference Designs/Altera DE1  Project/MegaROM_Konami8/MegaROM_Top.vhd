@@ -136,9 +136,10 @@ architecture bevioural of MegaROM_Top is
 	
 	signal s_flashbase	: std_logic_vector(23 downto 0);
 begin
-	s_reset <= not KE	LEDG <= A(15 downto 8);
+	s_reset <= not KEY(0);
+	LEDG <= A(15 downto 8);
 	LEDR <= s_rom_en & rom_bank4_q(2 downto 0) & rom_bank3_q(2 downto 0) & rom_bank2_q(2 downto 0);
-Y(0);
+
 	-- Cartridge Emulation
 	s_cart_en <= SW(9);  -- Will only enable Cart emulation if SW(9) is '1'
 	FL_WE_N <= '1';

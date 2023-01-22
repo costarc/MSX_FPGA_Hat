@@ -130,12 +130,14 @@ architecture rtl of MSX_DE1_Top is
 	-- signals for cartridge emulation
 	signal s_rom_en : std_logic;
 	signal s_rom_d : std_logic_vector(7 downto 0);
-	signal s_rom_a : std_logic_vector(21 downto 0);
+	signal s_rom_a : std_logic_vector(23 downto 0);
 	signal s_cart_en: std_logic;
+	signal s_flashbase	: std_logic_vector(23 downto 0);
 	
 	-- signals for I/O Device Emulation
 	signal s_reg56: std_logic_vector(7 downto 0) := x"CD";
 	signal s_msxpi_en: std_logic;
+	
 	 
 begin
 	
@@ -144,10 +146,11 @@ begin
 	FL_WE_N <= '1';
 	FL_RST_N <= '1';
 	FL_CE_N <= not s_rom_en;
-	FL_ADDR <= s_rom_a;
+	FL_ADDR <= s_rom_a(21 downto 0);
 	FL_OE_N <= RD_n;
-	s_rom_a <= ((A - x"4000") + (SW(5 downto 0) * x"2000"));
+	s_rom_a <= s_flashbase + ((A - x"4000") + (SW(5 downto 0) * x"2000"));
 	s_rom_en  <= '1' when (SLTSL_n = '0' and s_cart_en ='1') else '0';
+	s_flashbase <= x"1A0000";
 	
 	-- I/O Device Emulation - MSXPi port 0x56 is used to write/read a Register
 	s_iorq_r_reg <= '1' when A = x"56" and s_iorq_r = '1' else '0';
@@ -173,7 +176,7 @@ begin
 	 begin
 		if s_reset = '1' then
 			s_reg56 <= x"00";
-		elsif rising_edge(s_iorq_w_reg) then
+		elsif falling_edge(s_iorq_w_reg) then
 			s_reg56 <= D;
 		end if;
 	 end process;
