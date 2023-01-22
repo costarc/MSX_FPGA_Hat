@@ -200,11 +200,8 @@ begin
 	s_busd_en <= '1' when s_map_en = '1' or s_io_en = '1' else '0';
 	BUSDIR_n		<= not s_busd_en;
 	
-	-- Cartridge Emulation
-	FL_WE_N <= '1';
+	-- ROM Signals
 	FL_RST_N <= '1';
-	FL_CE_N <= not s_rom_en;
-	FL_ADDR <= s_rom_a(21 downto 0);
 	FL_OE_N <= RD_n;
 	
 	-- Bank write - Detect writes in addresses 6000h - 7800h
@@ -223,7 +220,13 @@ begin
 	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
 	s_flashbase <= x"180000" when SW(8) = '0' else
 	               x"1CE000";
-	
+    FL_CE_N <= -- Excludes SPI range and regs range
+		'0'	when A(15 downto 14) = "01" and sltsl_rom_n_s = '0' and RD_n = '0'	and spi_cs_s = '0' and regs_cs_s = '0'	else
+		'0'	when A(15 downto 14) = "10" and sltsl_rom_n_s = '0' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
+		'1';
+    FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and sltsl_rom_n_s = '0' and WR_n = '0'	else 	'1';
+    FL_ADDR <= s_rom_a(21 downto 0);
+    
 	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
 	s_rom_en <= (not SLTSL_n) when s_cart_en ='1' else '0';
 
@@ -265,7 +268,7 @@ begin
 	-- 7F00 = 0111 1111
 	spi_cs_s	<= '1'  when	sltsl_rom_n_s = '0' and rom_bank1_q = "111" and	A >= X"7B00" and A < X"7F00"   else
 	            '0';
-
+    regs_cs_s <= '1'	when	sltsl_rom_n_s = '0' and A >= X"7FF0"  	else '0';
 				
 	tmr_wr_s <= '1' when sltsl_rom_n_s = '0' and WR_n = '0' and A = X"7FF1"	else '0';
 	tmr_rd_s <= '1' when sltsl_rom_n_s = '0' and RD_n = '0' and A = X"7FF1"	else '0';
@@ -320,7 +323,6 @@ begin
 		end if;
 	end process;
 
-	
 	-- SPI Control register write
 	process (s_reset, spi_ctrl_wr_s)
 	begin
