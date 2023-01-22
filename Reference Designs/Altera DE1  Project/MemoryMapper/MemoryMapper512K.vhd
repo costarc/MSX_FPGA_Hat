@@ -126,10 +126,12 @@ architecture bevioural of MemoryMapper512K_Top is
 	signal s_rom_d : std_logic_vector(7 downto 0);
 	signal s_rom_a : std_logic_vector(31 downto 0);
 	signal s_cart_en: std_logic;
-
-	-- signals for slot expansion
-	signal ffff				: std_logic;
-	signal slt_exp_n		: std_logic_vector(3 downto 0);
+	
+	signal s_fc: std_logic_vector(7 downto 0);
+	signal s_fd: std_logic_vector(7 downto 0);
+	signal s_fe: std_logic_vector(7 downto 0);
+	signal s_ff: std_logic_vector(7 downto 0);
+	signal s_mapper_reg_w: std_logic;
 	
 begin
 
@@ -142,7 +144,35 @@ begin
 	INT_n  <= 'Z';
 	WAIT_n <= 'Z';
 	BUSDIR_n <= not s_rom_en;	
+
+    -- Auxiliary Generic control signals
+    s_cart_en <= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
+    s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
+	s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
+	s_mreq <= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
+    s_rom_en  <= '1' when (SLTSL_n = '0' and s_cart_en ='1') else '0';
 	
+   	-- Mapper implementation
+   	-- Detects Access Writes to Mapper Registers 0xFC, 0xFD, 0xFE, 0xFF
+   	s_mapper_reg_w <= '1' when s_iorq_w = '1' and A(7 downto 0) >= "FC" else '0';
+    process(s_mapper_reg_w)
+    begin
+        if s_reset = '1' then
+            s_fc <= "00000011";
+			s_fd <= "00000010";
+			s_fe <= "00000001";
+			s_ff <= "00000000";
+		elsif falling_endge(s_mapper_reg_w) then
+            case A(7 downto 0) is
+                when x"FC" => s_fc <= D;
+                when x"FD" => s_fd <= D;
+                when x"FE" => s_fd <= D;
+                when x"FF" => s_ff <= D;
+                when others => null;
+            end case ;
+		end if;
+	end process:
+	 
 	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 
 	
