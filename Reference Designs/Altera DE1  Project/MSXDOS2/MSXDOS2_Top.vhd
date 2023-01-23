@@ -53,7 +53,7 @@ port (
     SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
     							
     SD_DAT:			inout std_logic;							--	SD Card Data
-    SD_DAT3:		inout std_logic;						--	SD Card Data 3
+    SD_DAT3:		inout std_logic;							--	SD Card Data 3
     SD_CMD:			inout std_logic;							--	SD Card Command Signal
     SD_CLK:			out std_logic;								--	SD Card Clock
     							
@@ -108,15 +108,6 @@ architecture bevioural of MSXDOS2_Top is
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
 
-	-- Clock 25 Mhz
-	component Clock_25MHz IS
-	PORT
-	(
-		inclk0		: IN STD_LOGIC  := '0';
-		c0		: OUT STD_LOGIC 
-	);
-	end component;
-	
 	signal HEX_DISP0	: std_logic_vector(6 downto 0);
 	signal HEX_DISP1	: std_logic_vector(6 downto 0);
 	signal HEX_DISP2	: std_logic_vector(6 downto 0);
@@ -160,10 +151,10 @@ architecture bevioural of MSXDOS2_Top is
 	
 	-- MSX-DOS & Nextor & SDCard
 	signal io_cs			: std_logic;
-	signal clock_i			: std_logic;
+	signal clock_i			: std_logic := '0';
 	signal sd_wp_i			: std_logic_vector(1 downto 0);
 	signal sd_pres_n_i	: std_logic_vector(1 downto 0);
-	signal sltsl_rom_n_s	: std_logic;
+	signal regs_cs_s		: std_logic;
 	
 	-- SPI port
 	signal spi_cs_s		: std_logic;
@@ -185,9 +176,11 @@ begin
 	WAIT_n	<= 'Z'	when wait_n_s = '1'	else '0';
 	INT_n  <= 'Z';
 	s_reset <= not KEY(0);
-	LEDG <= A(15 downto 8);
-	LEDR <= s_rom_en & rom_bank2_q(3 downto 0) & rom_bank1_q(4 downto 0);
-
+	
+	--LEDG <= A(15 downto 8);
+	LEDG <= rom_bank2_q(3 downto 0) & rom_bank1_q(3 downto 0);
+	LEDR <= spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & "0" & not sd_pres_n_i & not sd_pres_n_i;
+	
     -- Auxiliary Generic control signals
 	s_cart_en	<= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
 	s_iorq_r		<= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
@@ -221,10 +214,10 @@ begin
 	s_flashbase <= x"180000" when SW(8) = '0' else
 	               x"1CE000";
     FL_CE_N <= -- Excludes SPI range and regs range
-		'0'	when A(15 downto 14) = "01" and sltsl_rom_n_s = '0' and RD_n = '0'	and spi_cs_s = '0' and regs_cs_s = '0'	else
-		'0'	when A(15 downto 14) = "10" and sltsl_rom_n_s = '0' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
+		'0'	when A(15 downto 14) = "01" and s_rom_en = '1' and RD_n = '0'	and spi_cs_s = '0' and regs_cs_s = '0'	else
+		'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
 		'1';
-    FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and sltsl_rom_n_s = '0' and WR_n = '0'	else 	'1';
+    FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else 	'1';
     FL_ADDR <= s_rom_a(21 downto 0);
     
 	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
@@ -250,30 +243,31 @@ begin
 	-- b2 : 1=Write protecton enabled for SD card slot selected
 	-- b1 : 0=SD card present on slot selected
 	-- b0 : 1=SD Card on slot selected changed since last read
-	sd_pres_n_i <= SW(1 downto 0);		-- SW1/SW0 is Flag of SDCard Inserted
-	sd_wp_i <= SW(3 downto 2);				-- SW3/SW2 is Write Protect for the SD Cards
+	sd_pres_n_i <= not SW(1 downto 0);		-- SW1/SW0 is Flag of SDCard Inserted
+	sd_wp_i <= not SW(3 downto 2);				-- SW3/SW2 is Write Protect for the SD Cards
 	
 	--sd_chg_s <= "00";
 	
 	status_s	<= "0000000" & SW(9) when sd_sel_q = "00"	else										-- No SD selected
-					"00000" & not sd_wp_i(0) & not  sd_pres_n_i(0) & sd_chg_s(0) when sd_sel_q = "01" else		-- SD 1 selected
-					"00000" & not  sd_wp_i(1) & not  sd_pres_n_i(1) & sd_chg_s(1) when sd_sel_q = "10" else		-- SD 2 selected
+					"00000" & sd_wp_i(0) & sd_pres_n_i(0) & sd_chg_s(0) when sd_sel_q = "01" else		-- SD 1 selected
+					"00000" & sd_wp_i(1) & sd_pres_n_i(1) & sd_chg_s(1) when sd_sel_q = "10" else		-- SD 2 selected
 					(others => '-');
 	
-	sltsl_rom_n_s <= not s_rom_en;
-	spi_ctrl_wr_s <= '1' when sltsl_rom_n_s = '0' and WR_n = '0' and A = X"7FF0"	else '0';
-	spi_ctrl_rd_s <= '1' when sltsl_rom_n_s = '0' and RD_n = '0' and A = X"7FF0"	else '0';
+	spi_ctrl_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = X"7FF0"	else '0';
+	spi_ctrl_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = X"7FF0"	else '0';
+	
 	SD_DAT3 <= not sd_sel_q(0);		-- DE1 has only 1 sdcard.
+	
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
-	spi_cs_s	<= '1'  when	sltsl_rom_n_s = '0' and rom_bank1_q = "111" and	A >= X"7B00" and A < X"7F00"   else
+	spi_cs_s	<= '1'  when	s_rom_en = '1' and rom_bank1_q = "111" and	A >= X"7B00" and A < X"7F00"   else
 	            '0';
-    regs_cs_s <= '1'	when	sltsl_rom_n_s = '0' and A >= X"7FF0"  	else '0';
+	regs_cs_s <= '1'	when	s_rom_en = '1' and A >= X"7FF0"  	else '0';
 				
-	tmr_wr_s <= '1' when sltsl_rom_n_s = '0' and WR_n = '0' and A = X"7FF1"	else '0';
-	tmr_rd_s <= '1' when sltsl_rom_n_s = '0' and RD_n = '0' and A = X"7FF1"	else '0';
+	tmr_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = X"7FF1"	else '0';
+	tmr_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = X"7FF1"	else '0';
 
-		-- Disk change FFs
+	-- Disk change FFs
 	process (s_reset, spi_ctrl_rd_s, sd_sel_q, sd_pres_n_i(0))
 	begin
 		if s_reset = '0' then
@@ -283,19 +277,6 @@ begin
 		elsif falling_edge(spi_ctrl_rd_s) then
 			if sd_sel_q = "01" then
 				sd_chg_q(0) <= '0';
-			end if;
-		end if;
-	end process;
-
-	process (s_reset, spi_ctrl_rd_s, sd_sel_q, sd_pres_n_i(1))
-	begin
-		if s_reset = '0' then
-			sd_chg_q(1) <= '0';
-		elsif sd_pres_n_i(1) = '1' then
-			sd_chg_q(1) <= '1';
-		elsif falling_edge(spi_ctrl_rd_s) then
-			if sd_sel_q = "10" then
-				sd_chg_q(1) <= '0';
 			end if;
 		end if;
 	end process;
@@ -349,10 +330,17 @@ begin
 			end case;
 		end if;
 	end process;
+
+	i_clock_i: process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			clock_i <= not clock_i;
+		end if;
+	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= s_rom_a(3 downto 0);
-	NUMBER1 <= s_rom_a(7 downto 4);
+	NUMBER0 <= status_s(3 downto 0);
+	NUMBER1 <= status_s(7 downto 4);
 	NUMBER2 <= s_rom_a(11 downto 8);
 	NUMBER3 <= s_rom_a(15 downto 12);
 	   
@@ -376,11 +364,7 @@ begin
    		HEX_DISP		=>	HEX_DISP3
    	);
 
-	
-	i_clock: Clock_25MHz PORT MAP (
-		inclk0		=> CLOCK_50,
-		c0				=> clock_i
-	);
+
 
 	-- Porta SPI
 	portaspi: entity work.spi
@@ -399,14 +383,12 @@ begin
 		spi_miso_i		=> SD_DAT
 	);
 	
-    		
-    SD_DAT		<= 'Z';
     I2C_SDAT		<= 'Z';
     AUD_ADCLRCK	<= 'Z';
     AUD_DACLRCK	<= 'Z';
     AUD_BCLK		<= 'Z';
     DRAM_DQ		<= (others => 'Z');
-    FL_DQ			<= (others => 'Z');
+    FL_DQ		<= (others => 'Z');
     SRAM_DQ		<= (others => 'Z');
     GPIO_0		<= (others => 'Z');
 	 
