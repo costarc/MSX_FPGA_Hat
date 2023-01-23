@@ -226,10 +226,10 @@ begin
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= s_SRAM_D(3 downto 0);
-	NUMBER1 <= s_SRAM_D(3 downto 0);
-	NUMBER2 <= s_SRAM_Q(3 downto 0);
-	NUMBER3 <= s_SRAM_Q(3 downto 0);
+	NUMBER0 <= s_fc(3 downto 0);
+	NUMBER1 <= s_fd(3 downto 0);
+	NUMBER2 <= s_fe(3 downto 0);
+	NUMBER3 <= s_ff(3 downto 0);
 		
 	DISPHEX0 : decoder_7seg PORT MAP (
 			NUMBER		=>	NUMBER0,
