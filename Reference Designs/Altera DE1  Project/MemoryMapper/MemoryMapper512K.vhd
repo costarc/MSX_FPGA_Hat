@@ -141,10 +141,10 @@ architecture bevioural of MemoryMapper512K_Top is
 	signal s_io_en				: std_logic;
 	signal s_io_addr 			: std_logic_vector(7 downto 0);
 	signal s_cart_en			: std_logic;
-	signal s_fc					: std_logic_vector(7 downto 0) := "00000011";
-	signal s_fd					: std_logic_vector(7 downto 0) := "00000010";
-	signal s_fe					: std_logic_vector(7 downto 0) := "00000001";
-	signal s_ff					: std_logic_vector(7 downto 0) := "00000000";
+	signal s_fc					: std_logic_vector(4 downto 0) := "00011";
+	signal s_fd					: std_logic_vector(4 downto 0) := "00010";
+	signal s_fe					: std_logic_vector(4 downto 0) := "00001";
+	signal s_ff					: std_logic_vector(4 downto 0) := "00000";
 	signal s_mreq				: std_logic;
 	signal s_iorq_r			: std_logic;
 	signal s_iorq_w			: std_logic;
@@ -154,14 +154,15 @@ architecture bevioural of MemoryMapper512K_Top is
 	
 	signal s_SRAM_D:	std_logic_vector(7 downto 0);
 	signal s_SRAM_Q:	std_logic_vector(7 downto 0);
+	signal s_SRAM_REG:	std_logic_vector(7 downto 0);
 	signal s_SRAM_ADDR:	std_logic_vector(18 downto 0);	
 	signal s_SRAM_WE_N:	std_logic;								
 	signal s_SRAM_CE_N:	std_logic;	
 	
-	signal s_reset			: std_logic := '0';
-	signal s_segment: std_logic_vector(7 downto 0);
+	signal s_reset	: std_logic := '0';
+	signal s_segment: std_logic_vector(20 downto 0);
 	
-	signal s_reg_56				: std_logic_vector(7 downto 0) := "00000000";
+	signal s_reg_56			: std_logic_vector(7 downto 0) := "00000000";
 	
 begin
 
@@ -189,36 +190,37 @@ begin
 	-- Mapper implementation
 	s_SRAM_CE_N <= not s_map_en;
 	s_SRAM_WE_N <= WR_n;
-	s_SRAM_D <= D;
-
-	s_segment <= 	s_fc(7 downto 0) when A < x"4000" else
-						s_fd(7 downto 0) when A < x"8000" else
-						s_fe(7 downto 0) when A < x"c000" else
-						s_ff(7 downto 0);
+	s_SRAM_D <= D; --  when s_map_en = '1' and WR_n = '0' else (others => 'Z');
+	s_SRAM_REG <= s_SRAM_Q;
 	
-	s_SRAM_ADDR <= s_segment(4 downto 0) & A(13 downto 0);	
+	s_segment <= 	(s_fc * x"4000") + A when A < x"4000" else
+						(s_fd * x"4000") + A - x"4000" when A < x"8000" else
+						(s_fe * x"4000") + A - x"8000" when A < x"c000" else
+						(s_ff * x"4000") + A - x"C000";
 	
-	D <= s_SRAM_Q when s_map_en = '1' and s_mreq = '1' else 
-		  s_fc when s_iorq_r = '1' and A(7 downto 0) = x"FC" else
-		  s_fd when s_iorq_r = '1' and A(7 downto 0) = x"FD" else
-		  s_fe when s_iorq_r = '1' and A(7 downto 0) = x"FE" else
-		  s_ff when s_iorq_r = '1' and A(7 downto 0) = x"FF" else
+	s_SRAM_ADDR <= s_segment(4 downto 0) & A(13 downto 0) when s_map_en = '1';	
+	
+	D <= s_SRAM_REG when s_map_en = '1' and s_mreq = '1' else 
+		  "111" & s_fc when s_iorq_r = '1' and A(7 downto 0) = x"FC" else
+		  "111" & s_fd when s_iorq_r = '1' and A(7 downto 0) = x"FD" else
+		  "111" & s_fe when s_iorq_r = '1' and A(7 downto 0) = x"FE" else
+		  "111" & s_ff when s_iorq_r = '1' and A(7 downto 0) = x"FF" else
 		  s_reg_56 when s_iorq_r = '1' and A(7 downto 0) = x"56" else
 		  (others => 'Z');
 	
 	process(s_iorq_w_reg)
 	begin
 		if s_reset = '1' then
-			s_fc <= "00000011";
-			s_fd <= "00000010";
-			s_fe <= "00000001";
-			s_ff <= "00000000";
+			s_fc <= "00011";
+			s_fd <= "00010";
+			s_fe <= "00001";
+			s_ff <= "00000";
 		elsif falling_edge(s_iorq_w_reg) then
 			case s_io_addr is
-					when x"FC" => s_fc <= D;
-					when x"FD" => s_fd <= D;
-					when x"FE" => s_fe <= D;
-					when x"FF" => s_ff <= D;
+					when x"FC" => s_fc <= D(4 downto 0);
+					when x"FD" => s_fd <= D(4 downto 0);
+					when x"FE" => s_fe <= D(4 downto 0);
+					when x"FF" => s_ff <= D(4 downto 0);
 					when x"56" => s_reg_56 <= D;
 					when others => null;
 			end case ;
@@ -226,10 +228,10 @@ begin
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= s_SRAM_D(3 downto 0);
-	NUMBER1 <= s_SRAM_D(3 downto 0);
-	NUMBER2 <= s_SRAM_Q(3 downto 0);
-	NUMBER3 <= s_SRAM_Q(3 downto 0);
+	NUMBER0 <= s_SRAM_REG(3 downto 0);
+	NUMBER1 <= s_SRAM_REG(7 downto 4);
+	NUMBER2 <= s_SRAM_D(3 downto 0);
+	NUMBER3 <= s_SRAM_D(7 downto 4);
 		
 	DISPHEX0 : decoder_7seg PORT MAP (
 			NUMBER		=>	NUMBER0,
