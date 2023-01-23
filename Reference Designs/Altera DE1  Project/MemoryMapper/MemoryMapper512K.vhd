@@ -190,8 +190,7 @@ begin
 	-- Mapper implementation
 	s_SRAM_CE_N <= not s_map_en;
 	s_SRAM_WE_N <= WR_n;
-	s_SRAM_D <= D; --  when s_map_en = '1' and WR_n = '0' else (others => 'Z');
-	s_SRAM_REG <= s_SRAM_Q;
+	--s_SRAM_D <= D; --  when s_map_en = '1' and WR_n = '0' else (others => 'Z');
 	
 	s_segment <= 	(s_fc * x"4000") + A when A < x"4000" else
 						(s_fd * x"4000") + A - x"4000" when A < x"8000" else
@@ -200,13 +199,21 @@ begin
 	
 	s_SRAM_ADDR <= s_segment(4 downto 0) & A(13 downto 0) when s_map_en = '1';	
 	
-	D <= s_SRAM_REG when s_map_en = '1' and s_mreq = '1' else 
+	D <= SRAM_DQ(7 downto 0) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '0' else
+	     SRAM_DQ(15 downto 8) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '1' else
 		  "111" & s_fc when s_iorq_r = '1' and A(7 downto 0) = x"FC" else
 		  "111" & s_fd when s_iorq_r = '1' and A(7 downto 0) = x"FD" else
 		  "111" & s_fe when s_iorq_r = '1' and A(7 downto 0) = x"FE" else
 		  "111" & s_ff when s_iorq_r = '1' and A(7 downto 0) = x"FF" else
 		  s_reg_56 when s_iorq_r = '1' and A(7 downto 0) = x"56" else
 		  (others => 'Z');
+	
+	process(SLTSL_n,WR_n)
+	begin
+		if falling_edge(WR_n) then
+			s_SRAM_D <= D;
+		end if;
+	end process;
 	
 	process(s_iorq_w_reg)
 	begin
@@ -228,8 +235,8 @@ begin
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= s_SRAM_REG(3 downto 0);
-	NUMBER1 <= s_SRAM_REG(7 downto 4);
+	NUMBER0 <= s_SRAM_Q(3 downto 0);
+	NUMBER1 <= s_SRAM_Q(7 downto 4);
 	NUMBER2 <= s_SRAM_D(3 downto 0);
 	NUMBER3 <= s_SRAM_D(7 downto 4);
 		
