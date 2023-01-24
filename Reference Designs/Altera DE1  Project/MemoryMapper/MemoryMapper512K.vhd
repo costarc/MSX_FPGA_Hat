@@ -108,16 +108,10 @@ architecture bevioural of MemoryMapper512K_Top is
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
 
-	signal HEX_DISP0		: std_logic_vector(6 downto 0);
-	signal HEX_DISP1		: std_logic_vector(6 downto 0);
-	signal HEX_DISP2		: std_logic_vector(6 downto 0);
-	signal HEX_DISP3		: std_logic_vector(6 downto 0);
-	signal NUMBER0			: std_logic_vector(3 downto 0);
-	signal NUMBER1			: std_logic_vector(3 downto 0);	
-	signal NUMBER2			: std_logic_vector(3 downto 0);
-	signal NUMBER3			: std_logic_vector(3 downto 0);
-	
-
+	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT1		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
 	-- signals for cartridge emulation
 	signal s_map_en			: std_logic;
@@ -136,17 +130,11 @@ architecture bevioural of MemoryMapper512K_Top is
 	signal s_iorq_w_reg		: std_logic;
 	signal s_mapper_reg_w	: std_logic;
 	
-	signal s_SRAM_D:	std_logic_vector(7 downto 0);
-	signal s_SRAM_Q:	std_logic_vector(7 downto 0);
-	signal s_SRAM_REG:	std_logic_vector(7 downto 0);
 	signal s_SRAM_ADDR:	std_logic_vector(20 downto 0);	
-	signal s_SRAM_WE_N:	std_logic;								
-	signal s_SRAM_CE_N:	std_logic;	
-	
 	signal s_reset	: std_logic := '0';
 	signal s_segment: std_logic_vector(20 downto 0);
-	
-	signal s_reg_56			: std_logic_vector(7 downto 0) := "00000000";
+	signal ffff				: std_logic;
+	signal slt_exp_n		: std_logic_vector(3 downto 0);
 	
 begin
 
@@ -156,18 +144,24 @@ begin
 	-- Output signals to DE1
 	INT_n			<= 'Z';
 	WAIT_n		<= 'Z';
-	BUSDIR_n		<= not s_busd_en;
-
+	--BUSDIR_n		<= not ((RD_n nand slt_exp_n(0)) nand s_iorq_r); --'0' when (s_map_en = '1' or s_iorq_r_reg = '1') else '1';
+	--BUSDIR_n <= (s_mreq and slt_exp_n(0) and s_iorq_r);
+	--BUSDIR_n <= '0' when s_map_en = '1' or s_iorq_r_reg = '1' else '1';
+	--BUSDIR_n <= '0' when s_mreq = '0' and s_map_en = '1' else
+	--            '0' when s_iorq_r_reg = '0' else
+	--				'1';
+	BUSDIR_n <= not s_busd_en;
+	
     -- Auxiliary Generic control signals
 	s_cart_en	<= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
-	s_iorq_r		<= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
-	s_iorq_w		<= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
-	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
-	s_map_en		<= '1' when (SLTSL_n = '0' and s_cart_en ='1') else '0';
+	s_iorq_r		<= '1' when RD_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
+	s_iorq_w		<= '1' when WR_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
+	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
+	s_map_en		<= '1' when SLTSL_n = '0' and s_cart_en ='1' else '0';
 	
 	s_io_addr	<= A(7 downto 0);
-	s_iorq_r_reg <= '1' when s_iorq_r = '1' and (s_io_addr = x"56" or s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
-	s_iorq_w_reg <= '1' when s_iorq_w = '1' and (s_io_addr = x"56" or s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
+	s_iorq_r_reg <= '1' when s_iorq_r = '1' and (s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
+	s_iorq_w_reg <= '1' when s_iorq_w = '1' and (s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
 	s_io_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
 	s_busd_en <= '1' when s_map_en = '1' or s_io_en = '1' else '0';
 	
@@ -195,15 +189,7 @@ begin
 		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else
 		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else
 		  "111" & s_ff when s_iorq_r = '1' and s_io_addr = x"FF" else
-		  s_reg_56 when s_iorq_r = '1' and s_io_addr = x"56" else
 		  (others => 'Z');
-	
-	process(SLTSL_n,WR_n)
-	begin
-		if rising_edge(WR_n) then
-			s_SRAM_D <= D;
-		end if;
-	end process;
 	
 	process(s_iorq_w_reg)
 	begin
@@ -218,36 +204,35 @@ begin
 					when x"FD" => s_fd <= D(4 downto 0);
 					when x"FE" => s_fe <= D(4 downto 0);
 					when x"FF" => s_ff <= D(4 downto 0);
-					when x"56" => s_reg_56 <= D;
 					when others => null;
 			end case ;
 		end if;
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= s_SRAM_ADDR(7 downto 4);
-	NUMBER1 <= s_SRAM_ADDR(11 downto 8);
-	NUMBER2 <= s_SRAM_ADDR(15 downto 12);
-	NUMBER3 <= s_SRAM_ADDR(19 downto 16);
+	HEXDIGIT0 <= s_SRAM_ADDR(7 downto 4);
+	HEXDIGIT1 <= s_SRAM_ADDR(11 downto 8);
+	HEXDIGIT2 <= s_SRAM_ADDR(15 downto 12);
+	HEXDIGIT3 <= s_SRAM_ADDR(19 downto 16);
 		
-	DISPHEX0 : decoder_7seg PORT MAP (
-			NUMBER		=>	NUMBER0,
-			HEX_DISP		=>	HEX_DISP0
+		DISPHEX0 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT0,
+			HEX_DISP		=>	HEX0
 		);		
 	
 	DISPHEX1 : decoder_7seg PORT MAP (
-			NUMBER		=>	NUMBER1,
-			HEX_DISP		=>	HEX_DISP1
+			NUMBER		=>	HEXDIGIT1,
+			HEX_DISP		=>	HEX1
 		);		
 	
 	DISPHEX2 : decoder_7seg PORT MAP (
-			NUMBER		=>	NUMBER2,
-			HEX_DISP		=>	HEX_DISP2
+			NUMBER		=>	HEXDIGIT2,
+			HEX_DISP		=>	HEX2
 		);		
 	
 	DISPHEX3 : decoder_7seg PORT MAP (
-			NUMBER		=>	NUMBER3,
-			HEX_DISP		=>	HEX_DISP3
+			NUMBER		=>	HEXDIGIT3,
+			HEX_DISP		=>	HEX3
 		);
 		
 		SD_DAT		<= 'Z';
@@ -259,9 +244,17 @@ begin
 		FL_DQ		<= (others => 'Z');
 		GPIO_0		<= (others => 'Z');
 	
-	HEX0 <= HEX_DISP0;
-	HEX1 <= HEX_DISP1;
-	HEX2 <= HEX_DISP2;
-	HEX3 <= HEX_DISP3;
+	-- Expansor de slot
+	exp: entity work.exp_slot
+	port map (
+		reset_n		=> s_reset,
+		sltsl_n		=> not s_map_en,
+		cpu_rd_n		=> RD_n,
+		cpu_wr_n		=> WR_n,
+		ffff			=> ffff,
+		cpu_a			=> A(15 downto 14),
+		cpu_d			=> D,
+		exp_n			=> slt_exp_n
+	);
 	
 end bevioural;
