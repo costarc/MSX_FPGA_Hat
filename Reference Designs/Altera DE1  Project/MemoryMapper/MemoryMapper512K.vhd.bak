@@ -108,6 +108,22 @@ architecture bevioural of MemoryMapper512K_Top is
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
 
+	component SRAM512X8
+	port (
+    A:		in std_logic_vector(18 downto 0);
+    D:		in std_logic_vector(7 downto 0);
+    Q:		out std_logic_vector(7 downto 0);
+    WE_n: in std_logic;								
+    CE_n: in std_logic;								
+    SRAM_DQ:		inout std_logic_vector(15 downto 0);--	SRAM Data bus 16 Bits
+    SRAM_ADDR:		out std_logic_vector(17 downto 0);	--	SRAM Address bus 18 Bits
+    SRAM_UB_N:		out std_logic;								--	SRAM High-byte Data Mask 
+    SRAM_LB_N:		out std_logic;								--	SRAM Low-byte Data Mask 
+    SRAM_WE_N:		out std_logic;								--	SRAM Write Enable
+    SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
+    SRAM_OE_N:		out std_logic);								--	SRAM Output Enable
+	end component;
+	
 	signal HEX_DISP0		: std_logic_vector(6 downto 0);
 	signal HEX_DISP1		: std_logic_vector(6 downto 0);
 	signal HEX_DISP2		: std_logic_vector(6 downto 0);
@@ -171,17 +187,11 @@ begin
 	s_io_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
 	s_busd_en <= '1' when s_map_en = '1' or s_io_en = '1' else '0';
 	
-	-- Mapper implementation								
-	SRAM_CE_N <= not s_map_en;								
-	SRAM_OE_N <= '0';	
-	SRAM_WE_N <= WR_n;
-	SRAM_ADDR <= s_SRAM_ADDR(17 downto 0);
-	SRAM_UB_N <= not s_SRAM_ADDR(18);						
-	SRAM_LB_N <= s_SRAM_ADDR(18);
+	-- Mapper implementation
+	s_SRAM_CE_N <= not s_map_en;
+	s_SRAM_WE_N <= WR_n;
+	--s_SRAM_D <= D; --  when s_map_en = '1' and WR_n = '0' else (others => 'Z');
 	
-	SRAM_DQ(7 downto 0)  <= D when s_map_en = '1' and WR_n = '0' and s_SRAM_ADDR(18) = '0' else (others => 'Z');
-	SRAM_DQ(15 downto 8) <= D when s_map_en = '1' and WR_n = '0' and s_SRAM_ADDR(18) = '1' else (others => 'Z');
-					 
 	s_segment <= 	(s_fc * x"4000") + A when A < x"4000" else
 						(s_fd * x"4000") + A - x"4000" when A < x"8000" else
 						(s_fe * x"4000") + A - x"8000" when A < x"c000" else
@@ -191,16 +201,16 @@ begin
 	
 	D <= SRAM_DQ(7 downto 0) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '0' else
 	     SRAM_DQ(15 downto 8) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '1' else
-		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else
-		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else
-		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else
-		  "111" & s_ff when s_iorq_r = '1' and s_io_addr = x"FF" else
-		  s_reg_56 when s_iorq_r = '1' and s_io_addr = x"56" else
+		  "111" & s_fc when s_iorq_r = '1' and A(7 downto 0) = x"FC" else
+		  "111" & s_fd when s_iorq_r = '1' and A(7 downto 0) = x"FD" else
+		  "111" & s_fe when s_iorq_r = '1' and A(7 downto 0) = x"FE" else
+		  "111" & s_ff when s_iorq_r = '1' and A(7 downto 0) = x"FF" else
+		  s_reg_56 when s_iorq_r = '1' and A(7 downto 0) = x"56" else
 		  (others => 'Z');
 	
 	process(SLTSL_n,WR_n)
 	begin
-		if rising_edge(WR_n) then
+		if falling_edge(WR_n) then
 			s_SRAM_D <= D;
 		end if;
 	end process;
@@ -249,7 +259,22 @@ begin
 			NUMBER		=>	NUMBER3,
 			HEX_DISP		=>	HEX_DISP3
 		);
-		
+	
+	i_SRAM: SRAM512X8 PORT MAP (
+			A => s_SRAM_ADDR,
+			D => s_SRAM_D,
+			Q => s_SRAM_Q,
+			WE_n => s_SRAM_WE_N,								
+			CE_n => s_SRAM_CE_N,				
+			SRAM_DQ =>SRAM_DQ,
+			SRAM_ADDR => SRAM_ADDR,
+			SRAM_UB_N => SRAM_UB_N,
+			SRAM_LB_N => SRAM_LB_N,
+			SRAM_WE_N => SRAM_WE_N,						
+			SRAM_CE_N => SRAM_CE_N,
+			SRAM_OE_N => SRAM_OE_N						
+		);    
+				
 		SD_DAT		<= 'Z';
 		I2C_SDAT	<= 'Z';
 		AUD_ADCLRCK	<= 'Z';
