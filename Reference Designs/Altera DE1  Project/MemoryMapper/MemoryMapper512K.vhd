@@ -139,7 +139,7 @@ architecture bevioural of MemoryMapper512K_Top is
 	signal s_SRAM_D:	std_logic_vector(7 downto 0);
 	signal s_SRAM_Q:	std_logic_vector(7 downto 0);
 	signal s_SRAM_REG:	std_logic_vector(7 downto 0);
-	signal s_SRAM_ADDR:	std_logic_vector(18 downto 0);	
+	signal s_SRAM_ADDR:	std_logic_vector(20 downto 0);	
 	signal s_SRAM_WE_N:	std_logic;								
 	signal s_SRAM_CE_N:	std_logic;	
 	
@@ -182,12 +182,12 @@ begin
 	SRAM_DQ(7 downto 0)  <= D when s_map_en = '1' and WR_n = '0' and s_SRAM_ADDR(18) = '0' else (others => 'Z');
 	SRAM_DQ(15 downto 8) <= D when s_map_en = '1' and WR_n = '0' and s_SRAM_ADDR(18) = '1' else (others => 'Z');
 					 
-	s_segment <= 	(s_fc * x"4000") + A when A < x"4000" else
+	s_SRAM_ADDR <= 	(s_fc * x"4000") + A when A < x"4000" else
 						(s_fd * x"4000") + A - x"4000" when A < x"8000" else
 						(s_fe * x"4000") + A - x"8000" when A < x"c000" else
 						(s_ff * x"4000") + A - x"C000";
 	
-	s_SRAM_ADDR <= s_segment(4 downto 0) & A(13 downto 0) when s_map_en = '1';	
+	--s_SRAM_ADDR <= s_segment(4 downto 0) & A(13 downto 0) when s_map_en = '1';	
 	
 	D <= SRAM_DQ(7 downto 0) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '0' else
 	     SRAM_DQ(15 downto 8) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '1' else
@@ -225,10 +225,10 @@ begin
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= s_SRAM_Q(3 downto 0);
-	NUMBER1 <= s_SRAM_Q(7 downto 4);
-	NUMBER2 <= s_SRAM_D(3 downto 0);
-	NUMBER3 <= s_SRAM_D(7 downto 4);
+	NUMBER0 <= s_SRAM_ADDR(7 downto 4);
+	NUMBER1 <= s_SRAM_ADDR(11 downto 8);
+	NUMBER2 <= s_SRAM_ADDR(15 downto 12);
+	NUMBER3 <= s_SRAM_ADDR(19 downto 16);
 		
 	DISPHEX0 : decoder_7seg PORT MAP (
 			NUMBER		=>	NUMBER0,
