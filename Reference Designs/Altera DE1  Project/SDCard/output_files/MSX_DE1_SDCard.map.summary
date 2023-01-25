@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Wed Jan 25 19:27:04 2023
+Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
+Revision Name : MSX_DE1_SDCard
+Top-level Entity Name : MSX_DE1_SDCard
+Family : Cyclone II
+Total logic elements : 576
+    Total combinational functions : 567
+    Dedicated logic registers : 226
+Total registers : 226
+Total pins : 283
+Total virtual pins : 0
+Total memory bits : 0
+Embedded Multiplier 9-bit elements : 0
+Total PLLs : 0

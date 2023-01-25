@@ -158,11 +158,11 @@ begin
 	s_msxpi_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
 	
 	-- Auxiliary Generic control signals
-   s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
+	s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
 	s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
 	s_mreq <= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
 	s_msx_a <= A when s_busd_en = '1';	 
-   s_busd_en <= '1' when s_rom_en = '1' or s_msxpi_en = '1' else '0';
+	s_busd_en <= '1' when s_rom_en = '1' or s_msxpi_en = '1' else '0';
 	 
 	-- Output signals to DE1
 	INT_n  <= 'Z';
