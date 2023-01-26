@@ -121,8 +121,9 @@ architecture behavioral of MSX_DE1_SDCard is
 	signal s_iorq_r_reg	: std_logic;
 	signal s_iorq_w_reg	: std_logic;
 	signal s_io_cs			: std_logic;
-	signal s_bus_dir_en	: std_logic;
+	signal s_d_bus_out	: std_logic;
 	signal s_reset			: std_logic := '0';
+	signal s_reset2		: std_logic := '0';
 	
 	-- Regs
 	signal regs_cs_s		: std_logic;
@@ -153,7 +154,13 @@ architecture behavioral of MSX_DE1_SDCard is
 	signal s_sd_type		: std_logic_vector(1 downto 0);		
 	signal s_sd_fsm			: std_logic_vector(7 downto 0);	
 
-	signal s_reg56			: std_logic_vector(7 downto 0);
+	signal s_reg56_a			: std_logic_vector(7 downto 0);
+	signal s_reg56_d		: std_logic_vector(7 downto 0);
+	
+	-- debug signals
+	signal s_iorq_r_sd_reg	: std_logic;
+	signal s_iorq_r_sd_fsm	: std_logic;
+	signal s_ledr_counter	: std_logic_vector(31 downto 0);
 	
 begin
 
@@ -162,44 +169,67 @@ begin
 	s_iorq_w_reg <= '1' when A(7 downto 0) = x"56" and s_iorq_w = '1' else '0';
 	s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
 	s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
-	s_bus_dir_en <= '1' when s_iorq_r_reg = '1' else
-	                '1' when s_iorq_r = '1' and A(7 downto 0) = x"57" else
-						 '0';
-	BUSDIR_n <= '0' when s_bus_dir_en = '1' else '0';
+	s_d_bus_out <= '1' when (s_iorq_r_reg = '1' or s_iorq_r_sd_fsm = '1' or s_iorq_r_sd_reg = '1') else
+                  '0';
+	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
 	INT_n  <= 'Z';	
 	WAIT_n	<= 'Z';				 --	when wait_n_s = '1'	else '0';	
-	s_reset <= NOT KEY(0);			-- Reset is KEY0
+	--s_reset <= NOT KEY(0) and s_reset2;			-- Reset is KEY0
 	
 	-- Display the current Memory Address in the 7 segment display
-	HEXDIGIT0 <= s_reg56(3 downto 0);
-	HEXDIGIT1 <= s_reg56(7 downto 4);
-	HEXDIGIT2 <= A(11 downto 8);
-	HEXDIGIT3 <= A(15 downto 12);
+	HEXDIGIT0 <= s_reg56_d(3 downto 0);
+	HEXDIGIT1 <= s_reg56_d(7 downto 4);
+	HEXDIGIT2 <= s_reg56_a(3 downto 0);
+	HEXDIGIT3 <= s_reg56_a(7 downto 4);
 
 -- -------------------------------------------------------------------
+	-- Debug
+	process(CLOCK_50)
+	begin
+		if s_reset = '1' then
+			s_ledr_counter <= x"00000000";
+		elsif rising_edge(CLOCK_50) then
+			s_ledr_counter <= s_ledr_counter + 1;
+		end if;
+	end process;
+	
+	LEDR <= s_ledr_counter(31 downto 22);
+	
+	LEDG <= s_sd_busy & s_sd_error & s_sd_error_code & s_sd_q_avail & s_sd_type;
+	
+	s_sd_a <= x"00000000";
+	s_iorq_r_sd_reg <= '1' when A(7 downto 0) = x"5A" and s_iorq_r = '1' else '0'; 
+	s_iorq_r_sd_fsm <= '1' when A(7 downto 0) = x"57" and s_iorq_r = '1' else '0'; 
+
+	-- FF: RESET
+	-- 1A: READ
+	-- 1B: DATA TAKEN
+	
+	s_sd_rd <= '1' when s_iorq_w_reg = '1' and s_sd_busy = '0' and D = x"01" else '0';
+	s_sd_q_taken <= '1' when s_iorq_w_reg = '1' and D = x"02" else '0';
+		
 	-- SD Card
 	s_sd_pres <= '1';
 	s_d_wprot <= '1';
 
-	D <=	(s_sd_busy & s_sd_error & s_sd_error_code & '0' & s_sd_type) when A(7 downto 0) = x"57" and s_iorq_r = '1' else
-	 		s_reg56 when s_iorq_r_reg = '1' else
+	D <=	(s_sd_busy & s_sd_error & s_sd_error_code & s_sd_q_avail & s_sd_type) when s_iorq_r_reg = '1' else
+			s_sd_q when s_sd_q_avail = '1' and s_iorq_r_sd_reg = '1' else
+			s_sd_fsm when s_iorq_r_sd_fsm = '1' else
 			(others => 'Z'); 
 	
-	--process(s_iorq_r_reg)
-	--begin
-	--	if falling_edge(s_iorq_r_reg) then
-	--		if A(7 downto 0) = x"56" then
-	--			s_reg56 <= sd_busy & sd_error & sd_error_code & '0' & s_sd_type;
-	--		end if;
-	--	end if;
-	--end process;
-	
-	process(s_iorq_w_reg)
+	process(s_iorq_w_reg, s_reset)
 	begin
 		if s_reset = '1' then
-			s_reg56 <= x"00";
+			s_reset <= '0';
 		elsif falling_edge(s_iorq_w_reg) then
-			s_reg56 <= D;
+			if D = x"FF" then 
+				s_reset  <= '1';
+				s_reg56_a <= x"00";
+				s_reg56_d <= x"00";
+			else
+				s_reg56_a <= A(7 downto 0);
+				s_reg56_d <= D;
+			end if;
 		end if;
 	end process;
 	 

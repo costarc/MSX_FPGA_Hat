@@ -109,24 +109,19 @@ architecture bevioural of MegaROM_Top is
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
 	
-	signal HEX_DISP0	: std_logic_vector(6 downto 0);
-	signal HEX_DISP1	: std_logic_vector(6 downto 0);
-	signal HEX_DISP2	: std_logic_vector(6 downto 0);
-	signal HEX_DISP3	: std_logic_vector(6 downto 0);
-	signal NUMBER0		: std_logic_vector(3 downto 0);
-	signal NUMBER1		: std_logic_vector(3 downto 0);	
-	signal NUMBER2		: std_logic_vector(3 downto 0);
-	signal NUMBER3		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT1		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
 	signal s_mreq: std_logic;
-	signal s_busd_en: std_logic;
 	signal s_reset: std_logic := '0';
+	signal s_d_bus_out	: std_logic;
 	
 	-- signals for cartridge emulation
 	signal s_rom_en : std_logic;
 	signal s_rom_d : std_logic_vector(7 downto 0);
 	signal s_rom_a : std_logic_vector(23 downto 0);
-	signal s_cart_en: std_logic;
 	
 	-- Flash Konami8
 	signal rom_bank_wr_s	: std_logic;
@@ -135,13 +130,18 @@ architecture bevioural of MegaROM_Top is
 	signal rom_bank4_q	: std_logic_vector(7 downto 0);
 	
 	signal s_flashbase	: std_logic_vector(23 downto 0);
+	
 begin
+
+	s_d_bus_out <= '1' when s_rom_en ='1' else '0';
+	
+	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
+	
 	s_reset <= not KEY(0);
 	LEDG <= A(15 downto 8);
 	LEDR <= s_rom_en & rom_bank4_q(2 downto 0) & rom_bank3_q(2 downto 0) & rom_bank2_q(2 downto 0);
 
 	-- Cartridge Emulation
-	s_cart_en <= SW(9);  -- Will only enable Cart emulation if SW(9) is '1'
 	FL_WE_N <= '1';
 	FL_RST_N <= '1';
 	FL_CE_N <= not s_rom_en;
@@ -167,12 +167,12 @@ begin
 						x"100000";
 	
 	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
-	s_rom_en <= (not SLTSL_n) when s_cart_en ='1' else '0';
+	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 
 	-- Output signals to DE1
 	INT_n  <= 'Z';
 	WAIT_n <= 'Z';
-	BUSDIR_n <= not s_rom_en;	
+	
 	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 
 
@@ -200,32 +200,30 @@ begin
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= s_rom_a(3 downto 0);
-	NUMBER1 <= s_rom_a(7 downto 4);
-	NUMBER2 <= s_rom_a(11 downto 8);
-	NUMBER3 <= s_rom_a(15 downto 12);
-
-	   
-    DISPHEX0 : decoder_7seg PORT MAP (
-    		NUMBER			=>	NUMBER0,
-    		HEX_DISP		=>	HEX_DISP0
-    	);		
-    
-    DISPHEX1 : decoder_7seg PORT MAP (
-    		NUMBER			=>	NUMBER1,
-    		HEX_DISP		=>	HEX_DISP1
-    	);		
-    
-    DISPHEX2 : decoder_7seg PORT MAP (
-    		NUMBER			=>	NUMBER2,
-    		HEX_DISP		=>	HEX_DISP2
-    	);		
-    
-    DISPHEX3 : decoder_7seg PORT MAP (
-    		NUMBER			=>	NUMBER3,
-    		HEX_DISP		=>	HEX_DISP3
-    	);
-    
+	HEXDIGIT0 <= A(3 downto 0);
+	HEXDIGIT1 <= A(7 downto 4);
+	HEXDIGIT2 <= A(11 downto 8);
+	HEXDIGIT3 <= A(15 downto 12);
+		
+	DISPHEX0 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT0,
+			HEX_DISP		=>	HEX0
+		);		
+	
+	DISPHEX1 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT1,
+			HEX_DISP		=>	HEX1
+		);		
+	
+	DISPHEX2 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT2,
+			HEX_DISP		=>	HEX2
+		);		
+	
+	DISPHEX3 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT3,
+			HEX_DISP		=>	HEX3
+		);
     		
     SD_DAT		<= 'Z';
     I2C_SDAT		<= 'Z';
@@ -236,10 +234,5 @@ begin
     FL_DQ			<= (others => 'Z');
     SRAM_DQ		<= (others => 'Z');
     GPIO_0		<= (others => 'Z');
-	 
-	HEX0 <= HEX_DISP0;
-	HEX1 <= HEX_DISP1;
-	HEX2 <= HEX_DISP2;
-	HEX3 <= HEX_DISP3;
 	
 end bevioural;

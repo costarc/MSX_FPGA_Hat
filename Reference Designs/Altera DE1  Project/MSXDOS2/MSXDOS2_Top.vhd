@@ -173,6 +173,11 @@ architecture bevioural of MSXDOS2_Top is
 	
 begin
 
+	s_d_bus_out <= '1' when ()(SLTSL_n = '0' and s_cart_en ='1') or s_iorq_r_reg = '1') else
+                  '0';
+	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
+	--BUSDIR_n		<= not s_busd_en;
+	
 	WAIT_n	<= 'Z'	when wait_n_s = '1'	else '0';
 	INT_n  <= 'Z';
 	s_reset <= not KEY(0);
@@ -191,7 +196,7 @@ begin
 	s_iorq_w_reg <= '1' when s_iorq_w = '1' and (s_io_addr = x"56" or s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
 	s_io_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
 	s_busd_en <= '1' when s_map_en = '1' or s_io_en = '1' else '0';
-	BUSDIR_n		<= not s_busd_en;
+	
 	
 	-- ROM Signals
 	FL_RST_N <= '1';
