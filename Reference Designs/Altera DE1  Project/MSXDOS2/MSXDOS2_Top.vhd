@@ -81,7 +81,12 @@ port (
     AUD_BCLK:		inout std_logic;							--	Audio CODEC Bit-Stream Clock
     AUD_XCK:			out std_logic;								--	Audio CODEC Chip Clock
                     
-    GPIO_0:			inout std_logic_vector(35 downto 0);--	GPIO Connection 0
+    --GPIO_0:			inout std_logic_vector(35 downto 0);--	GPIO Connection 0
+    SD2_CS:	out std_logic;							--	SD Card Data
+    SD2_SCK:	out std_logic;							--	SD Card Data 3
+    SD2_MOSI: out std_logic;							--	SD Card Command Signal
+    SD2_MISO: in std_logic;								--	SD Card Clock
+	 
     
     -- MSX Bus
     A:					in std_logic_vector(15 downto 0);
@@ -108,24 +113,16 @@ architecture bevioural of MSXDOS2_Top is
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
 
-	signal HEX_DISP0	: std_logic_vector(6 downto 0);
-	signal HEX_DISP1	: std_logic_vector(6 downto 0);
-	signal HEX_DISP2	: std_logic_vector(6 downto 0);
-	signal HEX_DISP3	: std_logic_vector(6 downto 0);
-	signal NUMBER0		: std_logic_vector(3 downto 0);
-	signal NUMBER1		: std_logic_vector(3 downto 0);	
-	signal NUMBER2		: std_logic_vector(3 downto 0);
-	signal NUMBER3		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT1		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
+	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
 	signal s_reset: std_logic := '0';
 	
 	-- signals for cartridge emulation
-	signal s_map_en			: std_logic;
 	signal s_rom_en			: std_logic;
-	signal s_busd_en			: std_logic;
-	signal s_io_en				: std_logic;
 	signal s_io_addr 			: std_logic_vector(7 downto 0);
-	signal s_cart_en			: std_logic;
 	signal s_fc					: std_logic_vector(7 downto 0) := "00000011";
 	signal s_fd					: std_logic_vector(7 downto 0) := "00000010";
 	signal s_fe					: std_logic_vector(7 downto 0) := "00000001";
@@ -143,11 +140,12 @@ architecture bevioural of MSXDOS2_Top is
 	
 	-- Flash ASCII16
 	signal rom_bank_wr_s	: std_logic;
-	signal rom_bank1_q	: std_logic_vector(7 downto 0);
-	signal rom_bank2_q	: std_logic_vector(7 downto 0);
+	signal rom_bank1_q	: std_logic_vector(2 downto 0);
+	signal rom_bank2_q	: std_logic_vector(3 downto 0);
 	signal s_flashbase	: std_logic_vector(23 downto 0);
 	signal s_rom_d			: std_logic_vector(7 downto 0);
 	signal s_rom_a			: std_logic_vector(31 downto 0);
+	signal s_d_bus_out	: std_logic;
 	
 	-- MSX-DOS & Nextor & SDCard
 	signal io_cs			: std_logic;
@@ -171,32 +169,37 @@ architecture bevioural of MSXDOS2_Top is
 	signal tmr_wr_s		: std_logic;
 	signal tmr_rd_s		: std_logic;
 	
+	signal s_sd_clk		: std_logic;
+	signal s_sd_mosi		: std_logic;
+	signal s_sd_miso		: std_logic;
+	
 begin
 
-	s_d_bus_out <= '1' when ()(SLTSL_n = '0' and s_cart_en ='1') or s_iorq_r_reg = '1') else
-                  '0';
-	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
-	--BUSDIR_n		<= not s_busd_en;
+	SD_CLK <= s_SD_CLK;
+	LEDG <= rom_bank2_q(3 downto 0) & rom_bank1_q(2 downto 0) & '0';
+	LEDR <= s_SD_CLK & spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & not sd_wp_i & not sd_pres_n_i;
+	HEXDIGIT0 <= tmr_cnt_q(11 downto 8)	when tmr_rd_s = '1'; --status_s(3 downto 0);
+	HEXDIGIT1 <= tmr_cnt_q(15 downto 12)	when tmr_rd_s = '1'; --status_s(7 downto 4);
+	HEXDIGIT2 <= s_rom_a(11 downto 8);
+	HEXDIGIT3 <= s_rom_a(15 downto 12);
 	
-	WAIT_n	<= 'Z'	when wait_n_s = '1'	else '0';
+	
+	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
+	s_d_bus_out <= '1' when ((s_rom_en = '1') or (s_iorq_r_reg = '1')) else '0';
+	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
+
+	WAIT_n	<= 'Z' when wait_n_s = '1' else '0';
 	INT_n  <= 'Z';
 	s_reset <= not KEY(0);
-	
-	--LEDG <= A(15 downto 8);
-	LEDG <= rom_bank2_q(3 downto 0) & rom_bank1_q(3 downto 0);
-	LEDR <= spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & "0" & not sd_pres_n_i & not sd_pres_n_i;
+
 	
     -- Auxiliary Generic control signals
-	s_cart_en	<= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
 	s_iorq_r		<= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
 	s_iorq_w		<= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
-	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
-	s_map_en		<= '1' when (SLTSL_n = '0' and s_cart_en ='1') else '0';
+	
+	s_io_addr <= A(7 downto 0);
 	s_iorq_r_reg <= '1' when s_iorq_r = '1' and (s_io_addr = x"56" or s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
 	s_iorq_w_reg <= '1' when s_iorq_w = '1' and (s_io_addr = x"56" or s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
-	s_io_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
-	s_busd_en <= '1' when s_map_en = '1' or s_io_en = '1' else '0';
-	
 	
 	-- ROM Signals
 	FL_RST_N <= '1';
@@ -204,39 +207,40 @@ begin
 	
 	-- Bank write - Detect writes in addresses 6000h - 7800h
 	-- This works well with Zemmix, but not with Cano V-25 MSX2
-	-- rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
-
+	--rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
 	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
 	
 	-- Checks address being access. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
-	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
-                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
+	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(2 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
+                           s_flashbase + (rom_bank2_q(3 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
+	--s_rom_a(16 downto 14) <= rom_bank1_q when s_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
+   --                         rom_bank2_q(2 downto 0) when s_rom_en = '1' and A(15 downto 14) = "10" else							-- Bank2:
+	--                         (others => '-');
 
+	
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
 	-- where the roms for this cores is written.
 	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
 	s_flashbase <= x"180000" when SW(8) = '0' else
 	               x"1CE000";
-    FL_CE_N <= -- Excludes SPI range and regs range
+   FL_CE_N <= -- Excludes SPI range and regs range
 		'0'	when A(15 downto 14) = "01" and s_rom_en = '1' and RD_n = '0'	and spi_cs_s = '0' and regs_cs_s = '0'	else
 		'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
 		'1';
-    FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else 	'1';
-    FL_ADDR <= s_rom_a(21 downto 0);
+   FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else 	'1';
+   regs_cs_s <= '1'	when	s_rom_en = '1' and A >= x"7FF0" else '0';
+	
+	FL_ADDR <= s_rom_a(21 downto 0); -- "0000" & SW(4) & s_rom_a(16 downto 14) & A(13 downto 0);
     
-	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
-	s_rom_en <= (not SLTSL_n) when s_cart_en ='1' else '0';
-
-
 	D <=	status_s	when spi_ctrl_rd_s = '1' else						
-			tmr_cnt_q(15 downto 8)	when tmr_rd_s = '1' else
+		   tmr_cnt_q(15 downto 8)	when tmr_rd_s = '1' else
 			FL_DQ when s_rom_en = '1' and RD_n = '0' else  					-- MSX reads data from FLASH RAM - Emulation of Cartridges
-			(others => 'Z'); 
+	      (others => 'Z'); 
 
 			
 	-- SD Card Implementation
-	io_cs			<= not IORQ_n and M1_n and s_cart_en;
+	io_cs			<= not IORQ_n and M1_n and SW(9);
 
 	-- Status flags
 	-- If no SD card is selected:
@@ -253,7 +257,7 @@ begin
 	
 	--sd_chg_s <= "00";
 	
-	status_s	<= "0000000" & SW(9) when sd_sel_q = "00"	else										-- No SD selected
+	status_s	<= "000000" & SW(4) & SW(9) when sd_sel_q = "00"	else													-- No SD selected
 					"00000" & sd_wp_i(0) & sd_pres_n_i(0) & sd_chg_s(0) when sd_sel_q = "01" else		-- SD 1 selected
 					"00000" & sd_wp_i(1) & sd_pres_n_i(1) & sd_chg_s(1) when sd_sel_q = "10" else		-- SD 2 selected
 					(others => '-');
@@ -261,21 +265,27 @@ begin
 	spi_ctrl_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = X"7FF0"	else '0';
 	spi_ctrl_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = X"7FF0"	else '0';
 	
-	SD_DAT3 <= not sd_sel_q(0);		-- DE1 has only 1 sdcard.
+	SD_DAT3 <= not sd_sel_q(0);		-- cs	
+	SD_CLK <= s_sd_clk;
+	SD_CMD <= s_sd_mosi;
+
+	SD2_CS <= not sd_sel_q(1);	
+	SD2_SCK <= s_sd_clk;
+	SD2_MOSI <= s_sd_mosi;
+	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO;
 	
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
-	spi_cs_s	<= '1'  when	s_rom_en = '1' and rom_bank1_q = "111" and	A >= X"7B00" and A < X"7F00"   else
+	spi_cs_s	<= '1'  when s_rom_en = '1' and rom_bank1_q = "111" and	A >= x"7B00" and A < x"7F00" else
 	            '0';
-	regs_cs_s <= '1'	when	s_rom_en = '1' and A >= X"7FF0"  	else '0';
-				
-	tmr_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = X"7FF1"	else '0';
-	tmr_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = X"7FF1"	else '0';
+					
+	tmr_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = x"7FF1" else '0';
+	tmr_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = x"7FF1" else '0';
 
 	-- Disk change FFs
 	process (s_reset, spi_ctrl_rd_s, sd_sel_q, sd_pres_n_i(0))
 	begin
-		if s_reset = '0' then
+		if s_reset = '1' then
 			sd_chg_q(0) <= '0';
 		elsif sd_pres_n_i(0) = '1' then
 			sd_chg_q(0) <= '1';
@@ -286,9 +296,22 @@ begin
 		end if;
 	end process;
 
-	process (s_reset, spi_ctrl_rd_s)
+		process (s_reset, spi_ctrl_rd_s, sd_sel_q, sd_pres_n_i(1))
 	begin
 		if s_reset = '0' then
+			sd_chg_q(1) <= '0';
+		elsif sd_pres_n_i(1) = '1' then
+			sd_chg_q(1) <= '1';
+		elsif falling_edge(spi_ctrl_rd_s) then
+			if sd_sel_q = "10" then
+				sd_chg_q(1) <= '0';
+			end if;
+		end if;
+	end process;
+	
+	process (s_reset, spi_ctrl_rd_s)
+	begin
+		if s_reset = '1' then
 			sd_chg_s <= (others => '0');
 		elsif rising_edge(spi_ctrl_rd_s) then
 			sd_chg_s <= sd_chg_q;
@@ -312,13 +335,14 @@ begin
 	-- SPI Control register write
 	process (s_reset, spi_ctrl_wr_s)
 	begin
-		if s_reset = '0' then
+		if s_reset = '1' then
 			sd_sel_q		<= "00";
 		elsif falling_edge(spi_ctrl_wr_s) then
 			sd_sel_q		<= D(1 downto 0);
 		end if;
 	end process;
 	
+	-- Bank write
 	i_ROM_Banks:process (s_reset, rom_bank_wr_s)
 	begin
 		if s_reset = '1' then
@@ -327,9 +351,9 @@ begin
 		elsif falling_edge(rom_bank_wr_s) then
 			case A(12) is
 				when '0'   =>
-					rom_bank1_q		<= D;
+					rom_bank1_q		<= D(2 downto 0);
 				when '1'   =>
-					rom_bank2_q		<= D;
+					rom_bank2_q		<= D(3 downto 0);
 				when others =>
 					null;
 			end case;
@@ -342,40 +366,32 @@ begin
 			clock_i <= not clock_i;
 		end if;
 	end process;
-	
-	-- Display the current Memory Address in the 7 segment display
-	NUMBER0 <= status_s(3 downto 0);
-	NUMBER1 <= status_s(7 downto 4);
-	NUMBER2 <= s_rom_a(11 downto 8);
-	NUMBER3 <= s_rom_a(15 downto 12);
 	   
-   DISPHEX0 : decoder_7seg PORT MAP (
-   		NUMBER			=>	NUMBER0,
-   		HEX_DISP		=>	HEX_DISP0
-   	);		
-   
-   DISPHEX1 : decoder_7seg PORT MAP (
-   		NUMBER			=>	NUMBER1,
-   		HEX_DISP		=>	HEX_DISP1
-   	);		
-   
-   DISPHEX2 : decoder_7seg PORT MAP (
-   		NUMBER			=>	NUMBER2,
-   		HEX_DISP		=>	HEX_DISP2
-   	);		
-   
-   DISPHEX3 : decoder_7seg PORT MAP (
-   		NUMBER			=>	NUMBER3,
-   		HEX_DISP		=>	HEX_DISP3
-   	);
+	DISPHEX0 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT0,
+			HEX_DISP		=>	HEX0
+		);		
+	
+	DISPHEX1 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT1,
+			HEX_DISP		=>	HEX1
+	);		
+	
+	DISPHEX2 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT2,
+			HEX_DISP		=>	HEX2
+	);		
+	
+	DISPHEX3 : decoder_7seg PORT MAP (
+			NUMBER		=>	HEXDIGIT3,
+			HEX_DISP		=>	HEX3
+	);
 
-
-
-	-- Porta SPI
+	-- Porta SPI - https://www.fatalerrors.org/a/sd-card-initialization-and-command-details.html
 	portaspi: entity work.spi
 	port map (
-		clock_i			=> clock_i,
-		reset_n_i		=> s_reset,
+		clock_i			=> CLOCK_27(0),
+		reset_n_i		=> not s_reset,
 		-- CPU interface
 		cs_i				=> spi_cs_s,
 		data_bus_io		=> D,
@@ -383,9 +399,9 @@ begin
 		rd_n_i			=> RD_n,
 		wait_n_o			=> wait_n_s,
 		-- SD card interface
-		spi_sclk_o		=> SD_CLK,
-		spi_mosi_o		=> SD_CMD,
-		spi_miso_i		=> SD_DAT
+		spi_sclk_o		=> s_sd_clk,
+		spi_mosi_o		=> s_sd_mosi, --SD_CMD,
+		spi_miso_i		=> s_sd_miso  --SD_DAT 
 	);
 	
     I2C_SDAT		<= 'Z';
@@ -393,13 +409,7 @@ begin
     AUD_DACLRCK	<= 'Z';
     AUD_BCLK		<= 'Z';
     DRAM_DQ		<= (others => 'Z');
-    FL_DQ		<= (others => 'Z');
     SRAM_DQ		<= (others => 'Z');
-    GPIO_0		<= (others => 'Z');
-	 
-	HEX0 <= HEX_DISP0;
-	HEX1 <= HEX_DISP1;
-	HEX2 <= HEX_DISP2;
-	HEX3 <= HEX_DISP3;
+    --GPIO_0		<= (others => 'Z');
 	
 end bevioural;
