@@ -148,7 +148,6 @@ architecture bevioural of MSXDOS2_Top is
 	signal s_d_bus_out	: std_logic;
 	
 	-- MSX-DOS & Nextor & SDCard
-	signal io_cs			: std_logic;
 	signal clock_i			: std_logic := '0';
 	signal sd_wp_i			: std_logic_vector(1 downto 0);
 	signal sd_pres_n_i	: std_logic_vector(1 downto 0);
@@ -172,20 +171,27 @@ architecture bevioural of MSXDOS2_Top is
 	signal s_sd_clk		: std_logic;
 	signal s_sd_mosi		: std_logic;
 	signal s_sd_miso		: std_logic;
+	signal s_sd_q			: std_logic_vector(7 downto 0);
+
+	signal s_spi_tx_end	: std_logic;
+	signal s_sd_q_rdy		: std_logic;
+	
 	
 begin
 
-	SD_CLK <= s_SD_CLK;
 	LEDG <= rom_bank2_q(3 downto 0) & rom_bank1_q(2 downto 0) & '0';
-	LEDR <= s_SD_CLK & spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & not sd_wp_i & not sd_pres_n_i;
-	HEXDIGIT0 <= tmr_cnt_q(11 downto 8)	when tmr_rd_s = '1'; --status_s(3 downto 0);
-	HEXDIGIT1 <= tmr_cnt_q(15 downto 12)	when tmr_rd_s = '1'; --status_s(7 downto 4);
+	
+	LEDR <= s_d_bus_out & spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & not sd_wp_i & not sd_pres_n_i;
+	
+	HEXDIGIT0 <= D(3 downto 0) when spi_cs_s = '1' and RD_n = '0'; --status_s(3 downto 0);
+	HEXDIGIT1 <= D(7 downto 4) when spi_cs_s = '1' and RD_n = '0'; --status_s(7 downto 4);
 	HEXDIGIT2 <= s_rom_a(11 downto 8);
 	HEXDIGIT3 <= s_rom_a(15 downto 12);
 	
 	
 	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
-	s_d_bus_out <= '1' when ((s_rom_en = '1') or (s_iorq_r_reg = '1')) else '0';
+	s_d_bus_out <= '1' when  (spi_cs_s = '1' and RD_n = '0') else
+	               '1' when ((s_rom_en = '1') or (s_iorq_r_reg = '1')) else '0';
 	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 
 	WAIT_n	<= 'Z' when wait_n_s = '1' else '0';
@@ -222,25 +228,22 @@ begin
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
 	-- where the roms for this cores is written.
 	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
-	s_flashbase <= x"180000" when SW(8) = '0' else
-	               x"1CE000";
+	s_flashbase <= x"180000"; -- when SW(8) = '0' else x"1CE000";
+	
    FL_CE_N <= -- Excludes SPI range and regs range
-		'0'	when A(15 downto 14) = "01" and s_rom_en = '1' and RD_n = '0'	and spi_cs_s = '0' and regs_cs_s = '0'	else
+		'0'	when A(15 downto 14) = "01" and s_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' and regs_cs_s = '0'	else
 		'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
 		'1';
    FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else 	'1';
    regs_cs_s <= '1'	when	s_rom_en = '1' and A >= x"7FF0" else '0';
 	
-	FL_ADDR <= s_rom_a(21 downto 0); -- "0000" & SW(4) & s_rom_a(16 downto 14) & A(13 downto 0);
-    
+	FL_ADDR <= s_rom_a(21 downto 0); 
+	
 	D <=	status_s	when spi_ctrl_rd_s = '1' else						
 		   tmr_cnt_q(15 downto 8)	when tmr_rd_s = '1' else
-			FL_DQ when s_rom_en = '1' and RD_n = '0' else  					-- MSX reads data from FLASH RAM - Emulation of Cartridges
-	      (others => 'Z'); 
-
-			
-	-- SD Card Implementation
-	io_cs			<= not IORQ_n and M1_n and SW(9);
+			--s_sd_q when s_sd_q_rdy = '1' else
+			FL_DQ when s_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else  					-- MSX reads data from FLASH RAM - Emulation of Cartridges
+			(others => 'Z'); 
 
 	-- Status flags
 	-- If no SD card is selected:
@@ -255,9 +258,9 @@ begin
 	sd_pres_n_i <= not SW(1 downto 0);		-- SW1/SW0 is Flag of SDCard Inserted
 	sd_wp_i <= not SW(3 downto 2);				-- SW3/SW2 is Write Protect for the SD Cards
 	
-	--sd_chg_s <= "00";
-	
-	status_s	<= "000000" & SW(4) & SW(9) when sd_sel_q = "00"	else													-- No SD selected
+	-- SW(8) switch between Dev RoM and Main ROM
+	-- SW(9) is the ROM Enabled signal
+	status_s	<= "000000" & SW(8) & SW(9) when sd_sel_q = "00"	else															-- No SD selected
 					"00000" & sd_wp_i(0) & sd_pres_n_i(0) & sd_chg_s(0) when sd_sel_q = "01" else		-- SD 1 selected
 					"00000" & sd_wp_i(1) & sd_pres_n_i(1) & sd_chg_s(1) when sd_sel_q = "10" else		-- SD 2 selected
 					(others => '-');
@@ -265,20 +268,33 @@ begin
 	spi_ctrl_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = X"7FF0"	else '0';
 	spi_ctrl_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = X"7FF0"	else '0';
 	
-	SD_DAT3 <= not sd_sel_q(0);		-- cs	
-	SD_CLK <= s_sd_clk;
-	SD_CMD <= s_sd_mosi;
+	SD_DAT3 <= not sd_sel_q(0);	
+	SD_CLK  <= s_sd_clk;
+	SD_CMD  <= s_sd_mosi;
 
-	SD2_CS <= not sd_sel_q(1);	
-	SD2_SCK <= s_sd_clk;
-	SD2_MOSI <= s_sd_mosi;
+	SD2_CS    <= not sd_sel_q(1);	
+	SD2_SCK   <= s_sd_clk;
+	SD2_MOSI  <= s_sd_mosi;
+	
 	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO;
 	
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
 	spi_cs_s	<= '1'  when s_rom_en = '1' and rom_bank1_q = "111" and	A >= x"7B00" and A < x"7F00" else
 	            '0';
-					
+
+	 -- Detect the pulse from SPI that indicates end of SPI transmission
+	 proc_endtx: process(s_spi_tx_end, spi_cs_s , s_reset)
+	 begin
+		if s_reset = '1' then 
+			s_sd_q_rdy <= '0';
+		elsif spi_cs_s = '0' then
+			s_sd_q_rdy <= '0';
+		elsif rising_edge(s_spi_tx_end) then
+	 		s_sd_q_rdy <= '1';		
+	 	end if;
+	 end process;
+	
 	tmr_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = x"7FF1" else '0';
 	tmr_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = x"7FF1" else '0';
 
@@ -296,9 +312,9 @@ begin
 		end if;
 	end process;
 
-		process (s_reset, spi_ctrl_rd_s, sd_sel_q, sd_pres_n_i(1))
+	process (s_reset, spi_ctrl_rd_s, sd_sel_q, sd_pres_n_i(1))
 	begin
-		if s_reset = '0' then
+		if s_reset = '1' then
 			sd_chg_q(1) <= '0';
 		elsif sd_pres_n_i(1) = '1' then
 			sd_chg_q(1) <= '1';
@@ -318,7 +334,6 @@ begin
 		end if;
 	end process;
 
-	
 	-- Timer
 	process (clock_i)
 	begin
@@ -390,11 +405,12 @@ begin
 	-- Porta SPI - https://www.fatalerrors.org/a/sd-card-initialization-and-command-details.html
 	portaspi: entity work.spi
 	port map (
-		clock_i			=> CLOCK_27(0),
+		clock_i			=> clock_i,
 		reset_n_i		=> not s_reset,
 		-- CPU interface
 		cs_i				=> spi_cs_s,
 		data_bus_io		=> D,
+		--data_bus_io_q	=> s_sd_q,
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
 		wait_n_o			=> wait_n_s,
@@ -403,7 +419,23 @@ begin
 		spi_mosi_o		=> s_sd_mosi, --SD_CMD,
 		spi_miso_i		=> s_sd_miso  --SD_DAT 
 	);
-	
+
+	-- https://surf-vhdl.com/how-to-design-spi-controller-in-vhdl/
+--	 i_spi: entity work.spi_controller
+--	 port map (
+--	 	i_clk					=> CLOCK_50,
+--	 	i_rstb				=> not s_reset,
+--	 	i_tx_start			=> spi_cs_s,           
+--	 	o_tx_end				=>	s_spi_tx_end,
+--	 	o_wait_n          => wait_n_s,
+--	 	i_data_parallel	=> D,
+--	 	o_data_parallel   => s_sd_q,
+--	 	o_sclk            => SD_CLK,
+--	 	o_ss              => Open, --SD_DAT3,
+--	 	o_mosi            => SD_CMD,    
+--	 	i_miso				=> SD_DAT
+--	 );
+--
     I2C_SDAT		<= 'Z';
     AUD_ADCLRCK	<= 'Z';
     AUD_DACLRCK	<= 'Z';
