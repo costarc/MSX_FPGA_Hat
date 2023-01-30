@@ -82,10 +82,10 @@ port (
     AUD_XCK:			out std_logic;								--	Audio CODEC Chip Clock
                     
     --GPIO_0:			inout std_logic_vector(35 downto 0);--	GPIO Connection 0
-    SD2_CS:	out std_logic;							--	SD Card Data
-    SD2_SCK:	out std_logic;							--	SD Card Data 3
-    SD2_MOSI: out std_logic;							--	SD Card Command Signal
-    SD2_MISO: in std_logic;								--	SD Card Clock
+    SD2_CS:			out std_logic;							--	
+    SD2_SCK:		out std_logic;							--	
+    SD2_MOSI: 		out std_logic;							--	
+    SD2_MISO: 		in std_logic;							--	
 	 
     
     -- MSX Bus
@@ -168,6 +168,7 @@ architecture bevioural of MSXDOS2_Top is
 	signal tmr_wr_s		: std_logic;
 	signal tmr_rd_s		: std_logic;
 	
+	signal s_sd_cs			: std_logic;
 	signal s_sd_clk		: std_logic;
 	signal s_sd_mosi		: std_logic;
 	signal s_sd_miso		: std_logic;
@@ -183,8 +184,8 @@ begin
 	
 	LEDR <= s_d_bus_out & spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & not sd_wp_i & not sd_pres_n_i;
 	
-	HEXDIGIT0 <= D(3 downto 0) when spi_cs_s = '1' and RD_n = '0'; --status_s(3 downto 0);
-	HEXDIGIT1 <= D(7 downto 4) when spi_cs_s = '1' and RD_n = '0'; --status_s(7 downto 4);
+	HEXDIGIT0 <= s_sd_q(3 downto 0);-- when spi_cs_s = '1' and RD_n = '0'; --status_s(3 downto 0);
+	HEXDIGIT1 <= s_sd_q(7 downto 4);-- when spi_cs_s = '1' and RD_n = '0'; --status_s(7 downto 4);
 	HEXDIGIT2 <= s_rom_a(11 downto 8);
 	HEXDIGIT3 <= s_rom_a(15 downto 12);
 	
@@ -241,7 +242,7 @@ begin
 	
 	D <=	status_s	when spi_ctrl_rd_s = '1' else						
 		   tmr_cnt_q(15 downto 8)	when tmr_rd_s = '1' else
-			--s_sd_q when s_sd_q_rdy = '1' else
+			--s_sd_q when RD_n = '0' and spi_cs_s = '1' else
 			FL_DQ when s_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else  					-- MSX reads data from FLASH RAM - Emulation of Cartridges
 			(others => 'Z'); 
 
@@ -267,16 +268,6 @@ begin
 	
 	spi_ctrl_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = X"7FF0"	else '0';
 	spi_ctrl_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = X"7FF0"	else '0';
-	
-	SD_DAT3 <= not sd_sel_q(0);	
-	SD_CLK  <= s_sd_clk;
-	SD_CMD  <= s_sd_mosi;
-
-	SD2_CS    <= not sd_sel_q(1);	
-	SD2_SCK   <= s_sd_clk;
-	SD2_MOSI  <= s_sd_mosi;
-	
-	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO;
 	
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
@@ -423,19 +414,30 @@ begin
 	-- https://surf-vhdl.com/how-to-design-spi-controller-in-vhdl/
 --	 i_spi: entity work.spi_controller
 --	 port map (
---	 	i_clk					=> CLOCK_50,
+--	 	i_clk					=> clock_i,
 --	 	i_rstb				=> not s_reset,
 --	 	i_tx_start			=> spi_cs_s,           
 --	 	o_tx_end				=>	s_spi_tx_end,
 --	 	o_wait_n          => wait_n_s,
 --	 	i_data_parallel	=> D,
 --	 	o_data_parallel   => s_sd_q,
---	 	o_sclk            => SD_CLK,
---	 	o_ss              => Open, --SD_DAT3,
---	 	o_mosi            => SD_CMD,    
---	 	i_miso				=> SD_DAT
+--	 	o_sclk            => s_sd_clk,   -- SD_CLK,
+--	 	o_ss              => s_sd_cs,
+--	 	o_mosi            => s_sd_mosi, -- SD_CMD,    
+--	 	i_miso				=> s_sd_miso  -- SD_DAT
 --	 );
---
+
+	 	
+	SD_DAT3	<= '0' when sd_sel_q(0) = '1' else '1';	
+	SD_CLK	<= s_sd_clk;
+	SD_CMD	<= s_sd_mosi;
+
+	SD2_CS	<= '0' when sd_sel_q(1) = '1' else '1';
+	SD2_SCK	<= s_sd_clk;
+	SD2_MOSI	<= s_sd_mosi;
+
+	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO when sd_sel_q(1) = '1';
+	
     I2C_SDAT		<= 'Z';
     AUD_ADCLRCK	<= 'Z';
     AUD_DACLRCK	<= 'Z';

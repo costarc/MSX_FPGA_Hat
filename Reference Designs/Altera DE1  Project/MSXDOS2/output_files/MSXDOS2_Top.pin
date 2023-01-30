@@ -81,10 +81,10 @@ VGA_B[2]                     : A10       : output : 3.3-V LVTTL       :         
 VGA_HS                       : A11       : output : 3.3-V LVTTL       :         : 3         : Y              
 CLOCK_24[1]                  : A12       : input  : 3.3-V LVTTL       :         : 4         : Y              
 GND*                         : A13       :        :                   :         : 4         :                
-GND*                         : A14       :        :                   :         : 4         :                
-SD_CMD                       : A15       : bidir  : 3.3-V LVTTL       :         : 4         : N              
+SD_CLK                       : A14       : output : 3.3-V LVTTL       :         : 4         : N              
+GND*                         : A15       :        :                   :         : 4         :                
 GND*                         : A16       :        :                   :         : 4         :                
-GND*                         : A17       :        :                   :         : 4         :                
+SD_CMD                       : A17       : bidir  : 3.3-V LVTTL       :         : 4         : N              
 GND*                         : A18       :        :                   :         : 4         :                
 GND*                         : A19       :        :                   :         : 4         :                
 GND*                         : A20       :        :                   :         : 4         :                
@@ -171,13 +171,13 @@ VCCIO4                       : C12       : power  :                   : 3.3V    
 GND*                         : C13       :        :                   :         : 4         :                
 WR_n                         : C14       : input  : 3.3-V LVTTL       :         : 4         : Y              
 GND                          : C15       : gnd    :                   :         :           :                
-SD_CLK                       : C16       : output : 3.3-V LVTTL       :         : 4         : N              
+GND*                         : C16       :        :                   :         : 4         :                
 A[11]                        : C17       : input  : 3.3-V LVTTL       :         : 4         : Y              
 A[10]                        : C18       : input  : 3.3-V LVTTL       :         : 4         : Y              
 A[6]                         : C19       : input  : 3.3-V LVTTL       :         : 5         : Y              
 A[7]                         : C20       : input  : 3.3-V LVTTL       :         : 5         : Y              
 GND*                         : C21       :        :                   :         : 5         :                
-GND*                         : C22       :        :                   :         : 5         :                
+CS2_n                        : C22       : input  : 3.3-V LVTTL       :         : 5         : N              
 HEX1[6]                      : D1        : output : 3.3-V LVTTL       :         : 2         : Y              
 HEX1[5]                      : D2        : output : 3.3-V LVTTL       :         : 2         : Y              
 HEX2[6]                      : D3        : output : 3.3-V LVTTL       :         : 2         : Y              
@@ -199,7 +199,7 @@ GND                          : D18       : gnd    :                   :         
 A[8]                         : D19       : input  : 3.3-V LVTTL       :         : 5         : Y              
 A[12]                        : D20       : input  : 3.3-V LVTTL       :         : 5         : Y              
 GND*                         : D21       :        :                   :         : 5         :                
-GND*                         : D22       :        :                   :         : 5         :                
+SD_DAT                       : D22       : bidir  : 3.3-V LVTTL       :         : 5         : N              
 HEX1[0]                      : E1        : output : 3.3-V LVTTL       :         : 2         : Y              
 HEX0[6]                      : E2        : output : 3.3-V LVTTL       :         : 2         : Y              
 HEX2[4]                      : E3        : output : 3.3-V LVTTL       :         : 2         : Y              
@@ -276,7 +276,7 @@ GND*                         : H7        :        :                   :         
 GND*                         : H8        :        :                   :         : 3         :                
 GND*                         : H9        :        :                   :         : 3         :                
 GND*                         : H10       :        :                   :         : 3         :                
-CS2_n                        : H11       : input  : 3.3-V LVTTL       :         : 3         : N              
+GND*                         : H11       :        :                   :         : 3         :                
 WAIT_n                       : H12       : output : 3.3-V LVTTL       :         : 4         : Y              
 MSX_CLK                      : H13       : input  : 3.3-V LVTTL       :         : 4         : Y              
 INT_n                        : H14       : output : 3.3-V LVTTL       :         : 4         : Y              
@@ -371,7 +371,7 @@ VCCINT                       : M14       : power  :                   : 1.2V    
 NC                           : M15       :        :                   :         :           :                
 NC                           : M16       :        :                   :         :           :                
 MSEL0                        : M17       :        :                   :         : 6         :                
-SD_DAT                       : M18       : bidir  : 3.3-V LVTTL       :         : 6         : N              
+GND*                         : M18       :        :                   :         : 6         :                
 GND*                         : M19       :        :                   :         : 6         :                
 VCCIO6                       : M20       : power  :                   : 3.3V    : 6         :                
 EXT_CLOCK                    : M21       : input  : 3.3-V LVTTL       :         : 6         : Y              
