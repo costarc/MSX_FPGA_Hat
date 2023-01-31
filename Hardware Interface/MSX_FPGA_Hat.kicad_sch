@@ -1971,6 +1971,11 @@
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid 128fb218-bcaf-4dd2-bd95-0dcdc5ae050c)
   )
+  (text "/C_U1_D_OE pin must be asserted according to the direction of data \nin the MSX Data Bus (U1 in the interface)"
+    (at 113.538 21.336 0)
+    (effects (font (size 1.27 1.27)) (justify left bottom))
+    (uuid 37c8913c-ab35-48b5-a6dd-fcc264bc5d60)
+  )
   (text "RFSH signal is trace nearby Input U5/In Pin 4/Out Pin 16.\nTo use this signal, a GPIO pin will need to be re-wired to pin 16.\n\nJ2: Use this jumper to choose to send CS2_n or CS12_n to IDC pin 6:\n    1-2: CS2_n\n    2-3: CS12_n\n\nJ3: Use this jumper to choose to send CLOCK or RESET signal to IDC pin 2:\n    1-2: CLOCK\n    2-3: RESET\n\nJ3&J4: Route RFSH to U5 pin4/pin16. Needs additional wiring to use this siganl,\n       from J4 to the IdC connector.\n\nJ5&J6: Available pin in U5 pin6/14."
     (at 110.236 191.516 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
