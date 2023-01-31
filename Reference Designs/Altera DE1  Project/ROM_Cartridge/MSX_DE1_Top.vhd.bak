@@ -138,7 +138,7 @@ begin
 	s_d_bus_out <= '1' when ((s_rom_en ='1') or (s_iorq_r_reg = '1')) else
                   '0';
 	
-	--BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
+	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
 	
 	-- Cartridge Emulation
  
