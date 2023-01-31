@@ -1,3 +1,23 @@
+-- MSX_DE0/DE1 FPGA Interface
+-- Ronivon Costa @ 2023
+--
+-- MSXDOS2 (acutally it has Nextor Operating System in the Flash) is one of the many Reference Designs
+-- I created for the MSX FPGA Interface.
+-- MSX_FPGA_Interface is an interface the allows MSX computers to connect to the mentioned FPGA development boards,
+-- safely (provides needed signal level shift between 3.3v and 5v).
+-- This connecton makes it possible to user the development boards as generic peripherals.
+-- --------------------------------------------------------------------------------------------------------------------------------------
+-- Acknowledgment:
+--
+-- Most of this core was re-used from the amazing MSX SD Mapper V2, by Fabio Belavenuto - https://github.com/fbelavenuto/msxsdmapperv2
+-- I had to make many changes to make it work in with the MSX FPGA Interface and the Terasic DE0/DE1 boards.
+--  
+-- Notable parts I changed includes:
+--  -> ROM address decoding, where I prefer using a more natural "mathematical" language rather than "bit" language
+--  -> SD Card signal assigments - I added some additional signals to the top-level and drive the SD card signals from there.
+--  -> The 25MHZ clock for the SPI is created from the internal 50MHZ clock in the DE0/DE1
+--  -> Many more, check the comments thorughout the code.
+-- --------------------------------------------------------------------------------------------------------------------------------------
 library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
@@ -51,7 +71,9 @@ port (
     SRAM_WE_N:		out std_logic;								--	SRAM Write Enable
     SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
     SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
-    							
+ 
+    -- SD Card Pins - Please review https://github.com/costarc/HowToCollection/blob/master/Terasic%20DE1%20SD%20Card%20Pins
+	 -- A change change in the device is requried to allow the use of SD_DAT pin.
     SD_DAT:			inout std_logic;							--	SD Card Data
     SD_DAT3:		inout std_logic;							--	SD Card Data 3
     SD_CMD:			inout std_logic;							--	SD Card Command Signal
@@ -118,32 +140,14 @@ architecture bevioural of MSXDOS2_Top is
 	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
-	signal s_reset: std_logic := '0';
-	
-	-- signals for cartridge emulation
-	signal s_rom_en			: std_logic;
-	signal s_io_addr 			: std_logic_vector(7 downto 0);
-	signal s_fc					: std_logic_vector(7 downto 0) := "00000011";
-	signal s_fd					: std_logic_vector(7 downto 0) := "00000010";
-	signal s_fe					: std_logic_vector(7 downto 0) := "00000001";
-	signal s_ff					: std_logic_vector(7 downto 0) := "00000000";
-	signal s_mreq				: std_logic;
-	signal s_iorq_r			: std_logic;
-	signal s_iorq_w			: std_logic;
-	signal s_iorq_r_reg		: std_logic;
-	signal s_iorq_w_reg		: std_logic;
-	signal s_mapper_reg_w	: std_logic;
-
-	-- signals for MegaROM emulation
-	signal ffff				: std_logic;
-	signal slt_exp_n		: std_logic_vector(3 downto 0);
+	signal s_reset			: std_logic := '0';
+	signal s_rom_en		: std_logic;	
 	
 	-- Flash ASCII16
 	signal rom_bank_wr_s	: std_logic;
 	signal rom_bank1_q	: std_logic_vector(2 downto 0);
 	signal rom_bank2_q	: std_logic_vector(3 downto 0);
 	signal s_flashbase	: std_logic_vector(23 downto 0);
-	signal s_rom_d			: std_logic_vector(7 downto 0);
 	signal s_rom_a			: std_logic_vector(31 downto 0);
 	signal s_d_bus_out	: std_logic;
 	
@@ -172,43 +176,33 @@ architecture bevioural of MSXDOS2_Top is
 	signal s_sd_clk		: std_logic;
 	signal s_sd_mosi		: std_logic;
 	signal s_sd_miso		: std_logic;
-	signal s_sd_q			: std_logic_vector(7 downto 0);
-
-	signal s_spi_tx_end	: std_logic;
-	signal s_sd_q_rdy		: std_logic;
-	
 	
 begin
 
+	-- Some cool lighs flashing while you play games with your Real MSX and DE1 as Disk Drives
+	-- Also used for debugging.
 	LEDG <= rom_bank2_q(3 downto 0) & rom_bank1_q(2 downto 0) & '0';
-	
 	LEDR <= s_d_bus_out & spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & not sd_wp_i & not sd_pres_n_i;
-	
-	HEXDIGIT0 <= s_sd_q(3 downto 0);-- when spi_cs_s = '1' and RD_n = '0'; --status_s(3 downto 0);
-	HEXDIGIT1 <= s_sd_q(7 downto 4);-- when spi_cs_s = '1' and RD_n = '0'; --status_s(7 downto 4);
+	HEXDIGIT0 <= D(3 downto 0) when spi_cs_s = '1' and RD_n = '0';
+	HEXDIGIT1 <= D(7 downto 4) when spi_cs_s = '1' and RD_n = '0';
 	HEXDIGIT2 <= s_rom_a(11 downto 8);
 	HEXDIGIT3 <= s_rom_a(15 downto 12);
 	
-	
+	-- BUSDIR_n is essential for any of this to work with the MSX_DE1_Interface
+	-- BUSDIR_n not only assert the BUS for MSX, but it also enable the DIR pin the 74LVC245 in the interface,
+	--          which sets the correct direction for Data BUS in the U1 CI.
 	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
 	s_d_bus_out <= '1' when  (spi_cs_s = '1' and RD_n = '0') else
-	               '1' when ((s_rom_en = '1') or (s_iorq_r_reg = '1')) else '0';
+	               '1' when s_rom_en = '1' else '0';
+						
 	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 
+	-- /WAIT_n is needed for the SPI/SD Card operation. It's asserted inside the SPI component
 	WAIT_n	<= 'Z' when wait_n_s = '1' else '0';
 	INT_n  <= 'Z';
-	s_reset <= not KEY(0);
+	s_reset <= not KEY(0);			-- Reset is set HIGH. KEY(0) in the DE0/DE1 will send a reset to the components.
 
-	
-    -- Auxiliary Generic control signals
-	s_iorq_r		<= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
-	s_iorq_w		<= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
-	
-	s_io_addr <= A(7 downto 0);
-	s_iorq_r_reg <= '1' when s_iorq_r = '1' and (s_io_addr = x"56" or s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
-	s_iorq_w_reg <= '1' when s_iorq_w = '1' and (s_io_addr = x"56" or s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
-	
-	-- ROM Signals
+	-- FlashRAm (ROM) constant control signals
 	FL_RST_N <= '1';
 	FL_OE_N <= RD_n;
 	
@@ -216,35 +210,34 @@ begin
 	-- This works well with Zemmix, but not with Cano V-25 MSX2
 	--rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
 	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
+
+	-- The FLASHRAM is shared with other cores. This register allows to define
+	-- a specific address in the flash where the roms for this cores is written.
+	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
+	s_flashbase <= x"180000";		-- FlashRAM Address for Nextor Operating System
 	
 	-- Checks address being access. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
 	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(2 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
                            s_flashbase + (rom_bank2_q(3 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
-	--s_rom_a(16 downto 14) <= rom_bank1_q when s_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
-   --                         rom_bank2_q(2 downto 0) when s_rom_en = '1' and A(15 downto 14) = "10" else							-- Bank2:
-	--                         (others => '-');
-
-	
-	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
-	-- where the roms for this cores is written.
-	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
-	s_flashbase <= x"180000"; -- when SW(8) = '0' else x"1CE000";
 	
    FL_CE_N <= -- Excludes SPI range and regs range
 		'0'	when A(15 downto 14) = "01" and s_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' and regs_cs_s = '0'	else
 		'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
 		'1';
-   FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else 	'1';
+		
+	-- Writting to the FLASHRAM is not OK! The FLASH is shared with other cores in this project, and I don't wnat to mess with that.
+   -- FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else 	'1';
    regs_cs_s <= '1'	when	s_rom_en = '1' and A >= x"7FF0" else '0';
 	
 	FL_ADDR <= s_rom_a(21 downto 0); 
-	
-	D <=	status_s	when spi_ctrl_rd_s = '1' else						
-		   tmr_cnt_q(15 downto 8)	when tmr_rd_s = '1' else
-			--s_sd_q when RD_n = '0' and spi_cs_s = '1' else
-			FL_DQ when s_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else  					-- MSX reads data from FLASH RAM - Emulation of Cartridges
-			(others => 'Z'); 
+
+	-- Load the MSX BUS with data from the devices in the core.
+	-- Note that data from/to SD Card is loaded inside the SPI component, not here.
+	D <= status_s	when spi_ctrl_rd_s = '1' else						
+        tmr_cnt_q(15 downto 8)	when tmr_rd_s = '1' else
+        FL_DQ when s_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else 
+		 (others => 'Z'); 
 
 	-- Status flags
 	-- If no SD card is selected:
@@ -272,20 +265,7 @@ begin
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
 	spi_cs_s	<= '1'  when s_rom_en = '1' and rom_bank1_q = "111" and	A >= x"7B00" and A < x"7F00" else
-	            '0';
-
-	 -- Detect the pulse from SPI that indicates end of SPI transmission
-	 proc_endtx: process(s_spi_tx_end, spi_cs_s , s_reset)
-	 begin
-		if s_reset = '1' then 
-			s_sd_q_rdy <= '0';
-		elsif spi_cs_s = '0' then
-			s_sd_q_rdy <= '0';
-		elsif rising_edge(s_spi_tx_end) then
-	 		s_sd_q_rdy <= '1';		
-	 	end if;
-	 end process;
-	
+	            '0';	
 	tmr_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A = x"7FF1" else '0';
 	tmr_rd_s <= '1' when s_rom_en = '1' and RD_n = '0' and A = x"7FF1" else '0';
 
@@ -366,13 +346,49 @@ begin
 		end if;
 	end process;
 
+	-- Generate the 25MHz clock_i for the SPI component
 	i_clock_i: process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
 			clock_i <= not clock_i;
 		end if;
 	end process;
-	   
+
+	-- SPI Interface to the SD Cards
+	portaspi: entity work.spi
+	port map (
+		clock_i			=> clock_i,
+		reset_n_i		=> not s_reset,
+		-- CPU interface
+		cs_i				=> spi_cs_s,
+		data_bus_io		=> D,
+		wr_n_i			=> WR_n,
+		rd_n_i			=> RD_n,
+		wait_n_o			=> wait_n_s,
+		-- SD card interface
+		spi_sclk_o		=> s_sd_clk,
+		spi_mosi_o		=> s_sd_mosi, --SD_CMD,
+		spi_miso_i		=> s_sd_miso  --SD_DAT 
+	);
+ 	
+	-- Signals to drive the SD Cards
+	-- Device Drive 1 is the SD Card in the DE1
+	SD_DAT3	<= '0' when sd_sel_q(0) = '1' else '1';	
+	SD_CLK	<= s_sd_clk;
+	SD_CMD	<= s_sd_mosi;
+	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO when sd_sel_q(1) = '1';
+	
+	-- Device Drive 2 is aN Optional 2nd SD Card connected to GPIO_0:
+	-- GPIO_0[1] = SD2_CS
+	-- GPIO_0[3] = SD2_SCK
+	-- GPIO_0[5] = SD2_MOSI
+	-- GPIO_0[7] = SD2_MISO
+	SD2_CS	<= '0' when sd_sel_q(1) = '1' else '1';
+	SD2_SCK	<= s_sd_clk;
+	SD2_MOSI	<= s_sd_mosi;
+
+	-- Interface for the 7 Segment Display
+	-- Provides some cool flashing lights for you.
 	DISPHEX0 : decoder_7seg PORT MAP (
 			NUMBER		=>	HEXDIGIT0,
 			HEX_DISP		=>	HEX0
@@ -392,58 +408,13 @@ begin
 			NUMBER		=>	HEXDIGIT3,
 			HEX_DISP		=>	HEX3
 	);
-
-	-- Porta SPI - https://www.fatalerrors.org/a/sd-card-initialization-and-command-details.html
-	portaspi: entity work.spi
-	port map (
-		clock_i			=> clock_i,
-		reset_n_i		=> not s_reset,
-		-- CPU interface
-		cs_i				=> spi_cs_s,
-		data_bus_io		=> D,
-		--data_bus_io_q	=> s_sd_q,
-		wr_n_i			=> WR_n,
-		rd_n_i			=> RD_n,
-		wait_n_o			=> wait_n_s,
-		-- SD card interface
-		spi_sclk_o		=> s_sd_clk,
-		spi_mosi_o		=> s_sd_mosi, --SD_CMD,
-		spi_miso_i		=> s_sd_miso  --SD_DAT 
-	);
-
-	-- https://surf-vhdl.com/how-to-design-spi-controller-in-vhdl/
---	 i_spi: entity work.spi_controller
---	 port map (
---	 	i_clk					=> clock_i,
---	 	i_rstb				=> not s_reset,
---	 	i_tx_start			=> spi_cs_s,           
---	 	o_tx_end				=>	s_spi_tx_end,
---	 	o_wait_n          => wait_n_s,
---	 	i_data_parallel	=> D,
---	 	o_data_parallel   => s_sd_q,
---	 	o_sclk            => s_sd_clk,   -- SD_CLK,
---	 	o_ss              => s_sd_cs,
---	 	o_mosi            => s_sd_mosi, -- SD_CMD,    
---	 	i_miso				=> s_sd_miso  -- SD_DAT
---	 );
-
-	 	
-	SD_DAT3	<= '0' when sd_sel_q(0) = '1' else '1';	
-	SD_CLK	<= s_sd_clk;
-	SD_CMD	<= s_sd_mosi;
-
-	SD2_CS	<= '0' when sd_sel_q(1) = '1' else '1';
-	SD2_SCK	<= s_sd_clk;
-	SD2_MOSI	<= s_sd_mosi;
-
-	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO when sd_sel_q(1) = '1';
 	
-    I2C_SDAT		<= 'Z';
-    AUD_ADCLRCK	<= 'Z';
-    AUD_DACLRCK	<= 'Z';
-    AUD_BCLK		<= 'Z';
-    DRAM_DQ		<= (others => 'Z');
-    SRAM_DQ		<= (others => 'Z');
-    --GPIO_0		<= (others => 'Z');
+	I2C_SDAT		<= 'Z';
+   AUD_ADCLRCK	<= 'Z';
+   AUD_DACLRCK	<= 'Z';
+   AUD_BCLK		<= 'Z';
+   DRAM_DQ		<= (others => 'Z');
+   SRAM_DQ		<= (others => 'Z');
+   --GPIO_0		<= (others => 'Z');
 	
 end bevioural;

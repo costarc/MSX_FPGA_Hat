@@ -324,6 +324,14 @@ set_instance_assignment -name IO_STANDARD LVTTL -to PS2_CLK
 set_instance_assignment -name IO_STANDARD LVTTL -to PS2_DAT
 set_instance_assignment -name IO_STANDARD LVTTL -to UART_RXD
 set_instance_assignment -name IO_STANDARD LVTTL -to UART_TXD
+set_location_assignment PIN_V20 -to SD_CLK
+set_location_assignment PIN_Y20 -to SD_CMD
+set_location_assignment PIN_W20 -to SD_DAT
+set_location_assignment PIN_U20 -to SD_DAT3
+set_instance_assignment -name IO_STANDARD LVTTL -to SD_CLK
+set_instance_assignment -name IO_STANDARD LVTTL -to SD_CMD
+set_instance_assignment -name IO_STANDARD LVTTL -to SD_DAT
+set_instance_assignment -name IO_STANDARD LVTTL -to SD_DAT3
 set_location_assignment PIN_E8 -to TDI
 set_location_assignment PIN_D8 -to TCS
 set_location_assignment PIN_C7 -to TCK
@@ -401,8 +409,8 @@ set_location_assignment PIN_V2 -to DRAM_DQ[3]
 set_location_assignment PIN_W1 -to DRAM_DQ[4]
 set_location_assignment PIN_W2 -to DRAM_DQ[5]
 set_location_assignment PIN_Y1 -to DRAM_DQ[6]
-set_location_assignment PIN_Y2 -to DRAM_DQ[7]
-set_location_assignment PIN_N1 -to DRAM_DQ[8]
+#set_location_assignment PIN_Y2 -to DRAM_DQ[7]
+#set_location_assignment PIN_N1 -to DRAM_DQ[8]
 set_location_assignment PIN_N2 -to DRAM_DQ[9]
 set_location_assignment PIN_P1 -to DRAM_DQ[10]
 set_location_assignment PIN_P2 -to DRAM_DQ[11]
@@ -497,6 +505,9 @@ set_location_assignment PIN_B13 -to SD2_CS
 set_location_assignment PIN_B14 -to SD2_SCK
 set_location_assignment PIN_B15 -to SD2_MOSI
 set_location_assignment PIN_B16 -to SD2_MISO
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "USE AS REGULAR IO"
 set_global_assignment -name VHDL_FILE spi.vhd
 set_global_assignment -name VHDL_FILE MSXDOS2_Top.vhd
 set_global_assignment -name VHDL_FILE decoder_7seg.vhd
