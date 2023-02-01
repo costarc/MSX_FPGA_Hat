@@ -91,7 +91,7 @@ port (
     MREQ_n:			in std_logic;
     IORQ_n:			in std_logic;
     SLTSL_n:			in std_logic;
-    CS1_n:			in std_logic;
+    U1OE_n:			out std_logic;
     CS2_n:			in std_logic;
     BUSDIR_n:		out std_logic;
     M1_n:				in std_logic;
@@ -151,6 +151,8 @@ begin
 	--            '0' when s_iorq_r_reg = '0' else
 	--				'1';
 	BUSDIR_n <= not s_busd_en;
+		
+	U1OE_n <= not s_d_bus_out;
 	
     -- Auxiliary Generic control signals
 	s_cart_en	<= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'

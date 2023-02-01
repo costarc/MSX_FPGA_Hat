@@ -1,4 +1,5 @@
 # -------------------------------------------------------------------------- #
+# -------------------------------------------------------------------------- #
 #
 # Copyright (C) 1991-2013 Altera Corporation
 # Your use of Altera Corporation's design tools, logic functions
@@ -88,7 +89,7 @@ set_location_assignment PIN_H14 -to INT_n
 set_location_assignment PIN_G15 -to M1_n
 set_location_assignment PIN_E14 -to BUSDIR_n
 set_location_assignment PIN_E15 -to CS12_n
-set_location_assignment PIN_F15 -to CS1_n
+set_location_assignment PIN_F15 -to U1OE_n
 set_location_assignment PIN_G16 -to SLTSL_n
 set_location_assignment PIN_F12 -to IORQ_n
 set_location_assignment PIN_F13 -to MREQ_n
@@ -182,7 +183,7 @@ set_instance_assignment -name IO_STANDARD LVTTL -to WR_n
 set_instance_assignment -name IO_STANDARD LVTTL -to MREQ_n
 set_instance_assignment -name IO_STANDARD LVTTL -to IORQ_n
 set_instance_assignment -name IO_STANDARD LVTTL -to SLTSL_n
-set_instance_assignment -name IO_STANDARD LVTTL -to CS1_n
+set_instance_assignment -name IO_STANDARD LVTTL -to U1OE_n
 set_instance_assignment -name IO_STANDARD LVTTL -to CS2_n
 set_instance_assignment -name IO_STANDARD LVTTL -to BUSDIR_n
 set_instance_assignment -name IO_STANDARD LVTTL -to M1_n

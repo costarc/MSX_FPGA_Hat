@@ -118,7 +118,7 @@ port (
     MREQ_n:			in std_logic;
     IORQ_n:			in std_logic;
     SLTSL_n:			in std_logic;
-    CS1_n:			in std_logic;
+    U1OE_n:			out std_logic;
     CS2_n:			in std_logic;
     BUSDIR_n:		out std_logic;
     M1_n:				in std_logic;
@@ -191,6 +191,9 @@ begin
 	-- BUSDIR_n is essential for any of this to work with the MSX_DE1_Interface
 	-- BUSDIR_n not only assert the BUS for MSX, but it also enable the DIR pin the 74LVC245 in the interface,
 	--          which sets the correct direction for Data BUS in the U1 CI.
+	
+	U1OE_n <= not s_d_bus_out;
+	
 	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
 	s_d_bus_out <= '1' when  (spi_cs_s = '1' and RD_n = '0') else
 	               '1' when s_rom_en = '1' else '0';

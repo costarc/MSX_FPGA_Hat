@@ -91,7 +91,7 @@ port (
     MREQ_n:			in std_logic;
     IORQ_n:			in std_logic;
     SLTSL_n:			in std_logic;
-    CS1_n:			in std_logic;
+    U1OE_n:			out std_logic;
     CS2_n:			in std_logic;
     BUSDIR_n:		out std_logic;
     M1_n:				in std_logic;
@@ -135,10 +135,22 @@ architecture rtl of MSX_DE1_Top is
 	 
 begin
 
-	s_d_bus_out <= '1' when ((s_rom_en ='1') or (s_iorq_r_reg = '1')) else
-                  '0';
+	-- Display the current Memory Address in the 7 segment display
+	HEXDIGIT0 <= s_reg56_d(3 downto 0);
+	HEXDIGIT1 <= s_reg56_d(7 downto 4);
+	HEXDIGIT2 <= s_msx_a(11 downto 8);
+	HEXDIGIT3 <= s_msx_a(15 downto 12);
+
+    LEDG <= SLTSL_n & s_d_bus_out & '0' & MREQ_n & IORQ_n & RD_n & WR_n & '0';
+    LEDR <= s_msx_a(15 downto 6);
+	 
+	s_d_bus_out <= s_rom_en or s_iorq_r_reg or s_iorq_w_reg;
 	
-	--BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
+	U1OE_n <= not s_d_bus_out;
+	
+	BUSDIR_n <= not s_iorq_r_reg;
+	
+	s_reset <= not KEY(0);
 	
 	-- Cartridge Emulation
  
@@ -164,7 +176,7 @@ begin
 	INT_n  <= 'Z';
 	WAIT_n <= 'Z';
 
-	D <=	FL_DQ when s_rom_en = '1' else               -- MSX reads data from FLASH RAM - Emulation of Cartridges
+	D <=	FL_DQ when s_rom_en = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		s_reg56_d when s_iorq_r_reg = '1' else         -- MSX read Register on port 0x56
 	 		(others => 'Z'); 
 	 	 
@@ -172,7 +184,7 @@ begin
 	 begin
 		if s_reset = '1' then
 			s_reg56_d <= x"00";
-			s_msx_a <= x"00";
+			s_msx_a <= x"0000";
 		elsif s_rom_en = '1' then
 			s_msx_a <= A;
 			s_reg56_d <= A(7 downto 0);
@@ -180,17 +192,6 @@ begin
 			s_reg56_d <= D;
 		end if;
 	 end process;
-	 
-	-- Display the current Memory Address in the 7 segment display
-	HEXDIGIT0 <= s_reg56_d(3 downto 0);
-	HEXDIGIT1 <= s_reg56_d(7 downto 4);
-	HEXDIGIT2 <= s_msx_a(11 downto 8);
-	HEXDIGIT3 <= s_msx_a(15 downto 12);
-
-    LEDG <= SLTSL_n & CS1_n & CS2_n & MREQ_n & IORQ_n & RD_n & wr_n & '0';
-    LEDR <= s_msx_a(15 downto 6);
-    
-
 		
 	DISPHEX0 : decoder_7seg PORT MAP (
 			NUMBER		=>	HEXDIGIT0,

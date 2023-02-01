@@ -2,65 +2,121 @@
 TimeQuest Timing Analyzer Summary
 ------------------------------------------------------------
 
-Type  : Slow Model Setup 'SLTSL_n'
-Slack : 0.289
+Type  : Slow Model Setup 'A[0]'
+Slack : 0.174
 TNS   : 0.000
 
-Type  : Slow Model Setup 'A[0]'
-Slack : 1.119
+Type  : Slow Model Setup 'SLTSL_n'
+Slack : 0.830
 TNS   : 0.000
+
+Type  : Slow Model Setup 'KEY[0]'
+Slack : 1.039
+TNS   : 0.000
+
+Type  : Slow Model Hold 'KEY[0]'
+Slack : -1.619
+TNS   : -1.619
 
 Type  : Slow Model Hold 'SLTSL_n'
-Slack : -0.801
-TNS   : -0.801
+Slack : -1.410
+TNS   : -1.410
 
 Type  : Slow Model Hold 'A[0]'
-Slack : -0.718
-TNS   : -4.416
+Slack : -0.311
+TNS   : -1.437
 
 Type  : Slow Model Recovery 'A[0]'
-Slack : 0.884
+Slack : 0.122
 TNS   : 0.000
 
+Type  : Slow Model Recovery 'SLTSL_n'
+Slack : 0.563
+TNS   : 0.000
+
+Type  : Slow Model Recovery 'KEY[0]'
+Slack : 1.160
+TNS   : 0.000
+
+Type  : Slow Model Removal 'KEY[0]'
+Slack : -2.067
+TNS   : -15.839
+
+Type  : Slow Model Removal 'SLTSL_n'
+Slack : -1.858
+TNS   : -29.955
+
 Type  : Slow Model Removal 'A[0]'
-Slack : -0.660
-TNS   : -5.168
+Slack : -0.220
+TNS   : -1.702
 
 Type  : Slow Model Minimum Pulse Width 'A[0]'
 Slack : -1.469
 TNS   : -11.245
 
+Type  : Slow Model Minimum Pulse Width 'KEY[0]'
+Slack : -1.469
+TNS   : -1.469
+
 Type  : Slow Model Minimum Pulse Width 'SLTSL_n'
 Slack : -1.469
 TNS   : -1.469
 
-Type  : Fast Model Setup 'SLTSL_n'
-Slack : 0.962
+Type  : Fast Model Setup 'A[0]'
+Slack : 0.445
 TNS   : 0.000
 
-Type  : Fast Model Setup 'A[0]'
-Slack : 1.112
+Type  : Fast Model Setup 'SLTSL_n'
+Slack : 1.035
 TNS   : 0.000
+
+Type  : Fast Model Setup 'KEY[0]'
+Slack : 1.125
+TNS   : 0.000
+
+Type  : Fast Model Hold 'KEY[0]'
+Slack : -0.996
+TNS   : -0.996
 
 Type  : Fast Model Hold 'SLTSL_n'
-Slack : -0.815
-TNS   : -0.815
+Slack : -0.906
+TNS   : -0.906
 
 Type  : Fast Model Hold 'A[0]'
-Slack : -0.352
-TNS   : -2.349
+Slack : -0.225
+TNS   : -1.389
 
 Type  : Fast Model Recovery 'A[0]'
-Slack : 0.551
+Slack : 0.756
 TNS   : 0.000
 
+Type  : Fast Model Recovery 'SLTSL_n'
+Slack : 0.925
+TNS   : 0.000
+
+Type  : Fast Model Recovery 'KEY[0]'
+Slack : 1.159
+TNS   : 0.000
+
+Type  : Fast Model Removal 'KEY[0]'
+Slack : -1.164
+TNS   : -9.006
+
+Type  : Fast Model Removal 'SLTSL_n'
+Slack : -1.074
+TNS   : -18.046
+
 Type  : Fast Model Removal 'A[0]'
-Slack : -0.188
-TNS   : -1.436
+Slack : -0.562
+TNS   : -4.466
 
 Type  : Fast Model Minimum Pulse Width 'A[0]'
 Slack : -1.222
 TNS   : -9.222
+
+Type  : Fast Model Minimum Pulse Width 'KEY[0]'
+Slack : -1.222
+TNS   : -1.222
 
 Type  : Fast Model Minimum Pulse Width 'SLTSL_n'
 Slack : -1.222

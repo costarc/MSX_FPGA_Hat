@@ -91,7 +91,7 @@ port (
     MREQ_n:			in std_logic;
     IORQ_n:			in std_logic;
     SLTSL_n:			in std_logic;
-    CS1_n:			in std_logic;
+    U1OE_n:			out std_logic;
     CS2_n:			in std_logic;
     BUSDIR_n:		out std_logic;
     M1_n:				in std_logic;
@@ -142,6 +142,8 @@ begin
 	-- BUSDIR_n <= not s_rom_en;
 	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
 	
+	U1OE_n <= not s_d_bus_out;
+		
 	s_reset <= not KEY(0);
 	LEDG <= A(15 downto 8);
 	LEDR <= s_rom_en & rom_bank2_q(3 downto 0) & rom_bank1_q(4 downto 0);
