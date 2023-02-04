@@ -114,11 +114,9 @@ architecture bevioural of MemoryMapper512K_Top is
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
 	-- signals for cartridge emulation
-	signal s_map_en			: std_logic;
+	signal s_sltsl_en			: std_logic;
 	signal s_busd_en			: std_logic;
-	signal s_io_en				: std_logic;
 	signal s_io_addr 			: std_logic_vector(7 downto 0);
-	signal s_cart_en			: std_logic;
 	signal s_fc					: std_logic_vector(4 downto 0) := "00011";
 	signal s_fd					: std_logic_vector(4 downto 0) := "00010";
 	signal s_fe					: std_logic_vector(4 downto 0) := "00001";
@@ -139,54 +137,44 @@ architecture bevioural of MemoryMapper512K_Top is
 begin
 
 	s_reset		<= not KEY(0);
-	LEDR			<= s_map_en & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
+	LEDR			<= slt_exp_n(0) & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
 
 	-- Output signals to DE1
 	INT_n			<= 'Z';
 	WAIT_n		<= 'Z';
-	--BUSDIR_n		<= not ((RD_n nand slt_exp_n(0)) nand s_iorq_r); --'0' when (s_map_en = '1' or s_iorq_r_reg = '1') else '1';
-	--BUSDIR_n <= (s_mreq and slt_exp_n(0) and s_iorq_r);
-	--BUSDIR_n <= '0' when s_map_en = '1' or s_iorq_r_reg = '1' else '1';
-	--BUSDIR_n <= '0' when s_mreq = '0' and s_map_en = '1' else
-	--            '0' when s_iorq_r_reg = '0' else
-	--				'1';
-	BUSDIR_n <= not s_busd_en;
+
+	BUSDIR_n <= not s_iorq_r_reg;
 		
-	U1OE_n <= not s_d_bus_out;
+	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
 	
     -- Auxiliary Generic control signals
-	s_cart_en	<= SW(9);  -- Will only enable Cart emulaiton if SW(9) is '1'
 	s_iorq_r		<= '1' when RD_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
 	s_iorq_w		<= '1' when WR_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
 	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
-	s_map_en		<= '1' when SLTSL_n = '0' and s_cart_en ='1' else '0';
+	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';
 	
 	s_io_addr	<= A(7 downto 0);
 	s_iorq_r_reg <= '1' when s_iorq_r = '1' and (s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
 	s_iorq_w_reg <= '1' when s_iorq_w = '1' and (s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
-	s_io_en <= '1' when (s_iorq_r_reg = '1' or s_iorq_w_reg = '1') else '0';
-	s_busd_en <= '1' when s_map_en = '1' or s_io_en = '1' else '0';
 	
 	-- Mapper implementation								
-	SRAM_CE_N <= not s_map_en;								
+	SRAM_CE_N <= slt_exp_n(0);								
 	SRAM_OE_N <= '0';	
 	SRAM_WE_N <= WR_n;
 	SRAM_ADDR <= s_SRAM_ADDR(17 downto 0);
 	SRAM_UB_N <= not s_SRAM_ADDR(18);						
 	SRAM_LB_N <= s_SRAM_ADDR(18);
 	
-	SRAM_DQ(7 downto 0)  <= D when s_map_en = '1' and WR_n = '0' and s_SRAM_ADDR(18) = '0' else (others => 'Z');
-	SRAM_DQ(15 downto 8) <= D when s_map_en = '1' and WR_n = '0' and s_SRAM_ADDR(18) = '1' else (others => 'Z');
+	SRAM_DQ(7 downto 0)  <= D when slt_exp_n(0) = '0' and WR_n = '0' and s_SRAM_ADDR(18) = '0' else (others => 'Z');
+	SRAM_DQ(15 downto 8) <= D when slt_exp_n(0) = '0' and WR_n = '0' and s_SRAM_ADDR(18) = '1' else (others => 'Z');
 					 
-	s_SRAM_ADDR <= 	(s_fc * x"4000") + A when A < x"4000" else
+	s_SRAM_ADDR <= (s_fc * x"4000") + A when A < x"4000" else
 						(s_fd * x"4000") + A - x"4000" when A < x"8000" else
 						(s_fe * x"4000") + A - x"8000" when A < x"c000" else
 						(s_ff * x"4000") + A - x"C000";
-	
-	--s_SRAM_ADDR <= s_segment(4 downto 0) & A(13 downto 0) when s_map_en = '1';	
-	
-	D <= SRAM_DQ(7 downto 0) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '0' else
-	     SRAM_DQ(15 downto 8) when s_map_en = '1' and s_mreq = '1' and s_SRAM_ADDR(18) = '1' else
+		
+	D <= SRAM_DQ(7 downto 0) when slt_exp_n(0) = '0' and s_mreq = '1' and s_SRAM_ADDR(18) = '0' else
+	     SRAM_DQ(15 downto 8) when slt_exp_n(0) = '0' and s_mreq = '1' and s_SRAM_ADDR(18) = '1' else
 		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else
 		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else
 		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else
@@ -246,11 +234,12 @@ begin
 		FL_DQ		<= (others => 'Z');
 		GPIO_0		<= (others => 'Z');
 	
+	ffff    <= '1' when A = X"FFFF" else '0';
 	-- Expansor de slot
 	exp: entity work.exp_slot
 	port map (
 		reset_n		=> s_reset,
-		sltsl_n		=> not s_map_en,
+		sltsl_n		=> not s_sltsl_en,
 		cpu_rd_n		=> RD_n,
 		cpu_wr_n		=> WR_n,
 		ffff			=> ffff,

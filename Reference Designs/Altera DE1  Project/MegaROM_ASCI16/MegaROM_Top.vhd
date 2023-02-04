@@ -149,14 +149,18 @@ begin
 	LEDR <= s_rom_en & rom_bank2_q(3 downto 0) & rom_bank1_q(4 downto 0);
 	
 	-- Cartridge Emulation
-	FL_WE_N <= '1';
+	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
+	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
+	
+	-- FlashRAM control
 	FL_RST_N <= '1';
-	FL_CE_N <= not s_rom_en;
 	FL_ADDR <= s_rom_a(21 downto 0);
 	FL_OE_N <= RD_n;
-
+   FL_CE_N <= not s_rom_en;
+	FL_WE_N	<=	'0' when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else '1';
+   FL_DQ <= D when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0' and SW(8) = '1' else (others => 'Z'); -- Flash Write enable if SW(8) = 1
+	
 	-- Bank write - Detect writes in addresses 6000h - 7800h
-	-- This works well with Zemmix, but not with Cano V-25 MSX2
 	-- rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
 
 	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
@@ -165,7 +169,7 @@ begin
 	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
                            s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
-
+						
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
 	-- where the roms for this cores is written.
 	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
@@ -173,17 +177,9 @@ begin
 	               x"080000" when SW(1) = '1' else
 						x"0C0000" when SW(2) = '1' else
 						x"000000";
-	
-	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
-	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
-
-
 
 	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 
-
-	-- Similar to this:
-	-- rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and (A >= x"6000" and A <= x"7800" and A(11) = '0') else '0';
 
 	process (s_reset, rom_bank_wr_s)
 	begin
@@ -235,7 +231,6 @@ begin
     AUD_DACLRCK	<= 'Z';
     AUD_BCLK		<= 'Z';
     DRAM_DQ		<= (others => 'Z');
-    FL_DQ			<= (others => 'Z');
     SRAM_DQ		<= (others => 'Z');
     GPIO_0		<= (others => 'Z');
 	
