@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MSX_DE1_Top
-Tue Jan 31 23:31:26 2023
+Sat Feb 04 14:42:35 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -42,13 +42,13 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Tue Jan 31 23:31:26 2023           ;
+; Analysis & Synthesis Status        ; Successful - Sat Feb 04 14:42:35 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_DE1_Top                                     ;
 ; Top-level Entity Name              ; MSX_DE1_Top                                     ;
 ; Family                             ; Cyclone II                                      ;
-; Total logic elements               ; 103                                             ;
-;     Total combinational functions  ; 103                                             ;
+; Total logic elements               ; 101                                             ;
+;     Total combinational functions  ; 101                                             ;
 ;     Dedicated logic registers      ; 8                                               ;
 ; Total registers                    ; 8                                               ;
 ; Total pins                         ; 283                                             ;
@@ -170,16 +170,16 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +---------------------------------------------+--------+
 ; Resource                                    ; Usage  ;
 +---------------------------------------------+--------+
-; Estimated Total logic elements              ; 103    ;
+; Estimated Total logic elements              ; 101    ;
 ;                                             ;        ;
-; Total combinational functions               ; 103    ;
+; Total combinational functions               ; 101    ;
 ; Logic element usage by number of LUT inputs ;        ;
-;     -- 4 input functions                    ; 69     ;
+;     -- 4 input functions                    ; 67     ;
 ;     -- 3 input functions                    ; 6      ;
 ;     -- <=2 input functions                  ; 28     ;
 ;                                             ;        ;
 ; Logic elements by mode                      ;        ;
-;     -- normal mode                          ; 93     ;
+;     -- normal mode                          ; 91     ;
 ;     -- arithmetic mode                      ; 10     ;
 ;                                             ;        ;
 ; Total registers                             ; 8      ;
@@ -189,9 +189,9 @@ Parallel compilation was disabled, but you have multiple processors available. E
 ; I/O pins                                    ; 283    ;
 ; Embedded Multiplier 9-bit elements          ; 0      ;
 ; Maximum fan-out node                        ; KEY[0] ;
-; Maximum fan-out                             ; 28     ;
-; Total fan-out                               ; 455    ;
-; Average fan-out                             ; 1.15   ;
+; Maximum fan-out                             ; 26     ;
+; Total fan-out                               ; 448    ;
+; Average fan-out                             ; 1.14   ;
 +---------------------------------------------+--------+
 
 
@@ -200,7 +200,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
 ; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                ; Library Name ;
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
-; |MSX_DE1_Top               ; 103 (75)          ; 8 (8)        ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MSX_DE1_Top                       ; work         ;
+; |MSX_DE1_Top               ; 101 (73)          ; 8 (8)        ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MSX_DE1_Top                       ; work         ;
 ;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX0 ; work         ;
 ;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_DE1_Top|decoder_7seg:DISPHEX2 ; work         ;
@@ -209,23 +209,21 @@ Parallel compilation was disabled, but you have multiple processors available. E
 Note: For table entries with two numbers listed, the numbers in parentheses indicate the number of resources of the given type used by the specific entity alone. The numbers listed outside of parentheses indicate the total resources of the given type used by the specific entity and all of its sub-entities in the hierarchy.
 
 
-+----------------------------------------------------------------------------------------------------+
-; User-Specified and Inferred Latches                                                                ;
-+-----------------------------------------------------+---------------------+------------------------+
-; Latch Name                                          ; Latch Enable Signal ; Free of Timing Hazards ;
-+-----------------------------------------------------+---------------------+------------------------+
-; s_msx_a[8]                                          ; s_rom_en            ; yes                    ;
-; s_msx_a[9]                                          ; s_rom_en            ; yes                    ;
-; s_msx_a[10]                                         ; s_rom_en            ; yes                    ;
-; s_msx_a[11]                                         ; s_rom_en            ; yes                    ;
-; s_msx_a[12]                                         ; s_rom_en            ; yes                    ;
-; s_msx_a[13]                                         ; s_rom_en            ; yes                    ;
-; s_msx_a[14]                                         ; s_rom_en            ; yes                    ;
-; s_msx_a[15]                                         ; s_rom_en            ; yes                    ;
-; s_msx_a[6]                                          ; s_rom_en            ; yes                    ;
-; s_msx_a[7]                                          ; s_rom_en            ; yes                    ;
-; Number of user-specified and inferred latches = 10  ;                     ;                        ;
-+-----------------------------------------------------+---------------------+------------------------+
++---------------------------------------------------------------------------------------------------+
+; User-Specified and Inferred Latches                                                               ;
++----------------------------------------------------+---------------------+------------------------+
+; Latch Name                                         ; Latch Enable Signal ; Free of Timing Hazards ;
++----------------------------------------------------+---------------------+------------------------+
+; s_msx_a[8]                                         ; s_rom_en            ; yes                    ;
+; s_msx_a[9]                                         ; s_rom_en            ; yes                    ;
+; s_msx_a[10]                                        ; s_rom_en            ; yes                    ;
+; s_msx_a[11]                                        ; s_rom_en            ; yes                    ;
+; s_msx_a[12]                                        ; s_rom_en            ; yes                    ;
+; s_msx_a[13]                                        ; s_rom_en            ; yes                    ;
+; s_msx_a[14]                                        ; s_rom_en            ; yes                    ;
+; s_msx_a[15]                                        ; s_rom_en            ; yes                    ;
+; Number of user-specified and inferred latches = 8  ;                     ;                        ;
++----------------------------------------------------+---------------------+------------------------+
 Note: All latches listed above may not be present at the end of synthesis due to various synthesis optimizations.
 
 
@@ -259,7 +257,7 @@ Note: All latches listed above may not be present at the end of synthesis due to
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Tue Jan 31 23:31:25 2023
+    Info: Processing started: Sat Feb 04 14:42:33 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MSX_DE1_Top -c MSX_DE1_Top
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Info (12021): Found 2 design units, including 1 entities, in source file decoder_7seg.vhd
@@ -302,8 +300,6 @@ Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(185): signal 
 Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(189): signal "A" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
 Warning (10492): VHDL Process Statement warning at MSX_DE1_Top.vhd(190): signal "A" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
 Warning (10631): VHDL Process Statement warning at MSX_DE1_Top.vhd(183): inferring latch(es) for signal or variable "s_msx_a", which holds its previous value in one or more paths through the process
-Info (10041): Inferred latch for "s_msx_a[6]" at MSX_DE1_Top.vhd(183)
-Info (10041): Inferred latch for "s_msx_a[7]" at MSX_DE1_Top.vhd(183)
 Info (10041): Inferred latch for "s_msx_a[8]" at MSX_DE1_Top.vhd(183)
 Info (10041): Inferred latch for "s_msx_a[9]" at MSX_DE1_Top.vhd(183)
 Info (10041): Inferred latch for "s_msx_a[10]" at MSX_DE1_Top.vhd(183)
@@ -327,7 +323,6 @@ Warning (13004): Presettable and clearable registers converted to equivalent cir
     Warning (13310): Register "s_reg56_d[7]" is converted into an equivalent circuit using register "s_reg56_d[7]~_emulated" and latch "s_reg56_d[7]~36"
 Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "LEDG[0]" is stuck at GND
-    Warning (13410): Pin "LEDG[5]" is stuck at GND
     Warning (13410): Pin "UART_TXD" is stuck at GND
     Warning (13410): Pin "DRAM_ADDR[0]" is stuck at GND
     Warning (13410): Pin "DRAM_ADDR[1]" is stuck at GND
@@ -397,7 +392,7 @@ Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "AUD_XCK" is stuck at GND
 Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
     Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
-Warning (21074): Design contains 22 input pin(s) that do not drive logic
+Warning (21074): Design contains 19 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "CLOCK_24[0]"
     Warning (15610): No output dependent on input pin "CLOCK_24[1]"
     Warning (15610): No output dependent on input pin "CLOCK_27[0]"
@@ -407,9 +402,6 @@ Warning (21074): Design contains 22 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "KEY[1]"
     Warning (15610): No output dependent on input pin "KEY[2]"
     Warning (15610): No output dependent on input pin "KEY[3]"
-    Warning (15610): No output dependent on input pin "SW[6]"
-    Warning (15610): No output dependent on input pin "SW[7]"
-    Warning (15610): No output dependent on input pin "SW[8]"
     Warning (15610): No output dependent on input pin "UART_RXD"
     Warning (15610): No output dependent on input pin "PS2_DAT"
     Warning (15610): No output dependent on input pin "PS2_CLK"
@@ -420,15 +412,15 @@ Warning (21074): Design contains 22 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "CS2_n"
     Warning (15610): No output dependent on input pin "M1_n"
     Warning (15610): No output dependent on input pin "MSX_CLK"
-Info (21057): Implemented 386 device resources after synthesis - the final resource count might be different
+Info (21057): Implemented 384 device resources after synthesis - the final resource count might be different
     Info (21058): Implemented 51 input pins
     Info (21059): Implemented 141 output pins
     Info (21060): Implemented 91 bidirectional pins
-    Info (21061): Implemented 103 logic cells
-Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 139 warnings
-    Info: Peak virtual memory: 4631 megabytes
-    Info: Processing ended: Tue Jan 31 23:31:26 2023
-    Info: Elapsed time: 00:00:01
+    Info (21061): Implemented 101 logic cells
+Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 135 warnings
+    Info: Peak virtual memory: 4644 megabytes
+    Info: Processing ended: Sat Feb 04 14:42:35 2023
+    Info: Elapsed time: 00:00:02
     Info: Total CPU time (on all processors): 00:00:01
 
 

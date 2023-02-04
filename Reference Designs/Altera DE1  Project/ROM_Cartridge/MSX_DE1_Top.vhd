@@ -141,12 +141,12 @@ begin
 	HEXDIGIT2 <= s_msx_a(11 downto 8);
 	HEXDIGIT3 <= s_msx_a(15 downto 12);
 
-    LEDG <= SLTSL_n & s_d_bus_out & '0' & MREQ_n & IORQ_n & RD_n & WR_n & '0';
-    LEDR <= s_msx_a(15 downto 6);
+    LEDG <= s_rom_en & SLTSL_n & s_d_bus_out & MREQ_n & IORQ_n & RD_n & WR_n & '0';
+    LEDR <= SW; -- s_msx_a(15 downto 6);
 	 
 	s_d_bus_out <= s_rom_en or s_iorq_r_reg or s_iorq_w_reg;
 	
-	U1OE_n <= not s_d_bus_out;
+	U1OE_n <= not s_d_bus_out; --'0' when s_rom_en = '1' or s_iorq_r_reg = '1' or s_iorq_w_reg = '1' else '1';
 	
 	BUSDIR_n <= not s_iorq_r_reg;
 	

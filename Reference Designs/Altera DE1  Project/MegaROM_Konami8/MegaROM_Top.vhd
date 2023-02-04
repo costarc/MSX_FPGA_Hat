@@ -114,13 +114,10 @@ architecture bevioural of MegaROM_Top is
 	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
-	signal s_mreq: std_logic;
 	signal s_reset: std_logic := '0';
-	signal s_d_bus_out	: std_logic;
 	
 	-- signals for cartridge emulation
 	signal s_rom_en : std_logic;
-	signal s_rom_d : std_logic_vector(7 downto 0);
 	signal s_rom_a : std_logic_vector(23 downto 0);
 	
 	-- Flash Konami8
@@ -133,11 +130,13 @@ architecture bevioural of MegaROM_Top is
 	
 begin
 
-	s_d_bus_out <= '1' when s_rom_en ='1' else '0';
+	-- Output signals to DE1
+	INT_n  <= 'Z';
+	WAIT_n <= 'Z';
+	BUSDIR_n <= 'Z';
 	
-	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
-	
-	U1OE_n <= not s_d_bus_out;
+	-- Enable output in U1 (74LVC245)
+	U1OE_n <= not s_rom_en;
 	
 	s_reset <= not KEY(0);
 	LEDG <= A(15 downto 8);

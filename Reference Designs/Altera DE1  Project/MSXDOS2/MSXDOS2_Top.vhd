@@ -179,6 +179,16 @@ architecture bevioural of MSXDOS2_Top is
 	
 begin
 
+	-- Output signals to DE1
+	INT_n  <= 'Z';
+	BUSDIR_n <= 'Z';
+
+	-- /WAIT_n is needed for the SPI/SD Card operation. It's asserted inside the SPI component
+	WAIT_n <= 'Z' when wait_n_s = '1' else '0';
+	
+	-- Enable output in U1 (74LVC245)
+	U1OE_n <= not (s_rom_en or spi_cs_s);
+	
 	-- Some cool lighs flashing while you play games with your Real MSX and DE1 as Disk Drives
 	-- Also used for debugging.
 	LEDG <= rom_bank2_q(3 downto 0) & rom_bank1_q(2 downto 0) & '0';
@@ -187,22 +197,10 @@ begin
 	HEXDIGIT1 <= D(7 downto 4) when spi_cs_s = '1' and RD_n = '0';
 	HEXDIGIT2 <= s_rom_a(11 downto 8);
 	HEXDIGIT3 <= s_rom_a(15 downto 12);
-	
-	-- BUSDIR_n is essential for any of this to work with the MSX_DE1_Interface
-	-- BUSDIR_n not only assert the BUS for MSX, but it also enable the DIR pin the 74LVC245 in the interface,
-	--          which sets the correct direction for Data BUS in the U1 CI.
-	
-	U1OE_n <= not s_d_bus_out;
-	
-	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
-	s_d_bus_out <= '1' when  (spi_cs_s = '1' and RD_n = '0') else
-	               '1' when s_rom_en = '1' else '0';
-						
+					
 	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 
-	-- /WAIT_n is needed for the SPI/SD Card operation. It's asserted inside the SPI component
-	WAIT_n	<= 'Z' when wait_n_s = '1' else '0';
-	INT_n  <= 'Z';
+
 	s_reset <= not KEY(0);			-- Reset is set HIGH. KEY(0) in the DE0/DE1 will send a reset to the components.
 
 	-- FlashRAm (ROM) constant control signals

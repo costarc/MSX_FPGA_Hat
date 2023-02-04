@@ -122,7 +122,6 @@ architecture bevioural of MegaROM_Top is
 	signal s_rom_d : std_logic_vector(7 downto 0);
 	signal s_rom_a : std_logic_vector(31 downto 0);
 	signal s_cart_en: std_logic;
-	signal s_d_bus_out	: std_logic;
 	
 	-- signals for MegaROM emulation
 	signal ffff				: std_logic;
@@ -137,12 +136,13 @@ architecture bevioural of MegaROM_Top is
 	
 begin
 
-	s_d_bus_out <= '1' when s_rom_en = '1' else '0';
+	-- Output signals to DE1
+	INT_n  <= 'Z';
+	WAIT_n <= 'Z';
+	BUSDIR_n <= 'Z';
 	
-	-- BUSDIR_n <= not s_rom_en;
-	BUSDIR_n <= '0' when s_d_bus_out = '1' else '0';
-	
-	U1OE_n <= not s_d_bus_out;
+	-- Enable output in U1 (74LVC245)
+	U1OE_n <= not s_rom_en;
 		
 	s_reset <= not KEY(0);
 	LEDG <= A(15 downto 8);
@@ -177,10 +177,7 @@ begin
 	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
 	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 
-	-- Output signals to DE1
-	INT_n  <= 'Z';
-	WAIT_n <= 'Z';
-	
+
 
 	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 
