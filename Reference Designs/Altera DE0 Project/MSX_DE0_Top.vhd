@@ -74,8 +74,8 @@ port (
 	VGA_B:   		out std_logic_vector(3 downto 0);		--	VGA Blue[3:0]
 															
 	GPIO_0:			inout std_logic_vector(31 downto 0);	--	GPIO Connection 0
-	GPIO0_CLKIN:	in std_logic_vector(1 downto 0);		-- GPIO Connection 0 Clock In Bus
-	GPIO0_CLKOUT:	out std_logic_vector(1 downto 0);		-- GPIO Connection 0 Clock Out Bus
+	GPIO0_CLKIN:	inout std_logic_vector(1 downto 0);		-- GPIO Connection 0 Clock In Bus
+	GPIO0_CLKOUT:	inout std_logic_vector(1 downto 0);		-- GPIO Connection 0 Clock Out Bus
 
 	-- MSX Bus
 	A:					in std_logic_vector(15 downto 0);
