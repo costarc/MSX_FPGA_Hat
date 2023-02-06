@@ -137,8 +137,9 @@ architecture bevioural of MemoryMapper512K_Top is
 begin
 
 	s_reset		<= not KEY(0);
-	LEDR			<= slt_exp_n(0) & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
-
+	LEDR			<= '0' & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
+	LEDG			<= s_sltsl_en & slt_exp_n & "00" & s_reset;
+	
 	-- Output signals to DE1
 	INT_n			<= 'Z';
 	WAIT_n		<= 'Z';
@@ -234,11 +235,11 @@ begin
 		FL_DQ		<= (others => 'Z');
 		GPIO_0		<= (others => 'Z');
 	
-	ffff    <= '1' when A = X"FFFF" else '0';
+	ffff    <= '1' when A = x"FFFF" else '0';
 	-- Expansor de slot
 	exp: entity work.exp_slot
 	port map (
-		reset_n		=> s_reset,
+		reset_n		=> not s_reset,
 		sltsl_n		=> not s_sltsl_en,
 		cpu_rd_n		=> RD_n,
 		cpu_wr_n		=> WR_n,
@@ -247,5 +248,4 @@ begin
 		cpu_d			=> D,
 		exp_n			=> slt_exp_n
 	);
-	
 end bevioural;

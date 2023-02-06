@@ -1,5 +1,5 @@
 Assembler report for MegaRAM
-Sat Feb 04 22:30:45 2023
+Mon Feb 06 00:53:33 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -38,7 +38,7 @@ applicable agreement for further details.
 +---------------------------------------------------------------+
 ; Assembler Summary                                             ;
 +-----------------------+---------------------------------------+
-; Assembler Status      ; Successful - Sat Feb 04 22:30:45 2023 ;
+; Assembler Status      ; Successful - Mon Feb 06 00:53:33 2023 ;
 ; Revision Name         ; MegaRAM                               ;
 ; Top-level Entity Name ; MegaRAM                               ;
 ; Family                ; Cyclone II                            ;
@@ -94,8 +94,8 @@ applicable agreement for further details.
 ; Option         ; Setting                                                                                                                   ;
 +----------------+---------------------------------------------------------------------------------------------------------------------------+
 ; Device         ; EP2C20F484C7                                                                                                              ;
-; JTAG usercode  ; 0x001DC7CF                                                                                                                ;
-; Checksum       ; 0x001DC7CF                                                                                                                ;
+; JTAG usercode  ; 0x001DE4FB                                                                                                                ;
+; Checksum       ; 0x001DE4FB                                                                                                                ;
 +----------------+---------------------------------------------------------------------------------------------------------------------------+
 
 
@@ -106,7 +106,7 @@ applicable agreement for further details.
 +--------------------+-----------------------------------------------------------------------------------------------------------------------+
 ; Device             ; EPCS16                                                                                                                ;
 ; JTAG usercode      ; 0x00000000                                                                                                            ;
-; Checksum           ; 0x1DD3A3A1                                                                                                            ;
+; Checksum           ; 0x1DD302DF                                                                                                            ;
 ; Compression Ratio  ; 3                                                                                                                     ;
 +--------------------+-----------------------------------------------------------------------------------------------------------------------+
 
@@ -117,13 +117,13 @@ applicable agreement for further details.
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Assembler
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Sat Feb 04 22:30:44 2023
+    Info: Processing started: Mon Feb 06 00:53:32 2023
 Info: Command: quartus_asm --read_settings_files=off --write_settings_files=off MegaRAM -c MegaRAM
 Info (115031): Writing out detailed assembly data for power analysis
 Info (115030): Assembler is generating device programming files
 Info: Quartus II 64-Bit Assembler was successful. 0 errors, 0 warnings
     Info: Peak virtual memory: 4552 megabytes
-    Info: Processing ended: Sat Feb 04 22:30:45 2023
+    Info: Processing ended: Mon Feb 06 00:53:33 2023
     Info: Elapsed time: 00:00:01
     Info: Total CPU time (on all processors): 00:00:01
 

@@ -134,17 +134,15 @@ architecture bevioural of MegaRAM is
 	signal ffff				: std_logic;
 	signal slt_exp_n		: std_logic_vector(3 downto 0);
 	
-	
-	signal s_mgram_cs		: std_logic;
-	signal s_mgram_we		: std_logic := '0';
-	signal s_mgram_en		: std_logic := '0';
-	signal s_mgram_io		: std_logic;
+	signal s_mgram_we		: std_logic;
+	signal s_mgram_reg_en: std_logic;
+	signal s_mgram_mem_en: std_logic;
 	
 begin
 
 	s_reset	<= not KEY(0);
-	LEDR		<= "00" & s_mgram4(1 downto 0) & s_mgram6(1 downto 0) & s_mgram8(1 downto 0) & s_mgrama(1 downto 0);
-   LEDG		<= s_mgram_en & s_mgram_we & "0000" & s_iorq_r & s_iorq_W;
+	LEDR		<= s_mgram_we & s_iorq_w & s_mgram4(1 downto 0) & s_mgram6(1 downto 0) & s_mgram8(1 downto 0) & s_mgrama(1 downto 0);
+   LEDG		<= slt_exp_n & '0' & ffff & '0' & s_reset;
 	
 	-- Output signals to DE1
 	INT_n			<= 'Z';
@@ -159,74 +157,63 @@ begin
 	s_iorq_w		<= '1' when A(7 downto 0) = x"8E" and WR_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
 	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
 	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';
-	s_mgram_io  <= s_iorq_r or s_iorq_w;
-   s_mgram_cs  <= '1' when slt_exp_n(0) = '0' and (A = x"4000" or A = x"6000" or A = x"8000" or A = x"A000") and s_mgram_en = '1' else '0';
-	
+   
 	-- Mapper implementation								
-	SRAM_CE_N <= slt_exp_n(0);								
+	SRAM_CE_N <= not s_sltsl_en;--slt_exp_n(0);								
 	SRAM_OE_N <= '0';	
-	SRAM_WE_N <= WR_n;
+	SRAM_WE_N <= WR_n; --'0' when s_mgram_mem_en = '1' and Wr_n = '0' else '1';
 	SRAM_ADDR <= s_SRAM_ADDR(17 downto 0);
 	SRAM_UB_N <= not s_SRAM_ADDR(18);						
 	SRAM_LB_N <= s_SRAM_ADDR(18);
 	
-	SRAM_DQ(7 downto 0)  <= D when slt_exp_n(0) = '0' and WR_n = '0' and s_SRAM_ADDR(18) = '0' and s_mgram_we = '1' else (others => 'Z');
-	SRAM_DQ(15 downto 8) <= D when slt_exp_n(0) = '0' and WR_n = '0' and s_SRAM_ADDR(18) = '1' and s_mgram_we = '1' else (others => 'Z');
+	SRAM_DQ(7 downto 0)  <= D when s_SRAM_ADDR(18) = '0' and WR_n = '0' and s_mgram_we = '1' else (others => 'Z');
+	SRAM_DQ(15 downto 8) <= D when s_SRAM_ADDR(18) = '1' and WR_n = '0' and s_mgram_we = '1' else (others => 'Z');
 					 
 	s_SRAM_ADDR <= (s_mgram4 * x"2000") + A - x"4000" when A < x"6000" else
 						(s_mgram6 * x"2000") + A - x"6000" when A < x"8000" else
 						(s_mgram8 * x"2000") + A - x"8000" when A < x"A000" else
-						(s_mgrama * x"2000") + A - x"A000";
+						(s_mgrama * x"2000") + A - x"A000" when A < x"C000";
 		
-	D <= SRAM_DQ(7 downto 0)  when slt_exp_n(0) = '0' and s_mreq = '1' and s_SRAM_ADDR(18) = '0' else
-	     SRAM_DQ(15 downto 8) when slt_exp_n(0) = '0' and s_mreq = '1' and s_SRAM_ADDR(18) = '1' else
-		  --s_mgram4 when s_mgram_cs = '1' and RD_n = '0' and A = x"4000" else
-		  --s_mgram6 when s_mgram_cs = '1' and RD_n = '0' and A = x"6000" else
-		  --s_mgram8 when s_mgram_cs = '1' and RD_n = '0' and A = x"8000" else
-		  --s_mgrama when s_mgram_cs = '1' and RD_n = '0' and A = x"A000" else
+	D <= SRAM_DQ(7 downto 0)  when s_SRAM_ADDR(18) = '0' and RD_n = '0' and s_sltsl_en = '1' else
+	     SRAM_DQ(15 downto 8) when s_SRAM_ADDR(18) = '1' and RD_n = '0' and s_sltsl_en = '1' else
 		  (others => 'Z');
-
-    process(s_mgram_io,s_reset)
-	 begin
-		if s_reset = '1' then
-			s_mgram_en <= '0';
-			s_mgram_we <= '0';
-		elsif rising_edge(s_mgram_io) then
-			if WR_n = '0' then 
-				s_io_addr <= D;
-				s_mgram_en <= not s_mgram_en;
-				s_mgram_we <= '0';
-			elsif RD_n = '0' then
-				s_mgram_we <= '1';
-			end if;
-		end if;
-	 end process;
 	
-	process(s_mgram_cs,s_reset)
+	-- Prepare MegaRAM for bank switching
+	s_mgram_mem_en <= '1' when s_mgram_we = '1' and s_sltsl_en = '1' else '0';
+	s_mgram_reg_en <= '1' when s_mgram_we = '0' and s_sltsl_en = '1' and Wr_n = '0' else '0';
+	
+	process (s_reset, s_iorq_w,s_iorq_r)
+	begin
+		if s_reset = '1' or s_iorq_w = '1' then
+			s_mgram_we <= '0';								-- Disable Write-Access to Megaram / Enable Registry access
+		elsif falling_edge(s_iorq_r) then	
+			s_mgram_we <= '1';								-- Enable Write-access to MegaRAM
+		end if;
+	end process;
+	
+	process(s_mgram_reg_en,s_reset)
 	begin
 		if s_reset = '1' then
 			s_mgram4 <= "00000000";
 			s_mgram6 <= "00000001";
 			s_mgram8 <= "00000010";
 			s_mgrama <= "00000011";
-		elsif falling_edge(s_mgram_cs) then
-			if slt_exp_n(0) = '0' and WR_n = '0' and s_mgram_we = '1' and s_mgram_en = '1' then 
-				case A is
-					when x"4000" => s_mgram4 <= D;
-					when x"6000" => s_mgram6 <= D;
-					when x"8000" => s_mgram8 <= D;
-					when x"a000" => s_mgrama <= D;
-					when others => null;
-				end case ;
-			end if;
+		elsif falling_edge(s_mgram_reg_en) then
+			case A is
+				when x"4000" => s_mgram4 <= D;
+				when x"6000" => s_mgram6 <= D;
+				when x"8000" => s_mgram8 <= D;
+				when x"A000" => s_mgrama <= D;
+				when others => null;
+			end case ;
 		end if;
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
 	HEXDIGIT0 <= s_mgram4(3 downto 0);
-	HEXDIGIT1 <= s_mgram4(7 downto 4);
-	HEXDIGIT2 <= s_io_addr(3 downto 0);
-	HEXDIGIT3 <= s_io_addr(7 downto 4);
+	HEXDIGIT1 <= s_mgram6(3 downto 0);
+	HEXDIGIT2 <= s_mgram8(3 downto 0);
+	HEXDIGIT3 <= s_mgrama(3 downto 0);
 		
 		DISPHEX0 : decoder_7seg PORT MAP (
 			NUMBER		=>	HEXDIGIT0,
@@ -257,11 +244,11 @@ begin
 		FL_DQ		<= (others => 'Z');
 		GPIO_0		<= (others => 'Z');
 	
-	ffff    <= '1' when A = X"FFFF" else '0';
+	ffff    <= '1' when A = x"FFFF" else '0';
 	-- Expansor de slot
 	exp: entity work.exp_slot
 	port map (
-		reset_n		=> s_reset,
+		reset_n		=> not s_reset,
 		sltsl_n		=> not s_sltsl_en,
 		cpu_rd_n		=> RD_n,
 		cpu_wr_n		=> WR_n,
