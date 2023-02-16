@@ -778,9 +778,9 @@ CS2_n => ~NO_FANOUT~
 BUSDIR_n <= s_iorq_r_reg.DB_MAX_OUTPUT_PORT_TYPE
 M1_n => s_iorq_r.IN1
 M1_n => s_iorq_w.IN1
-INT_n <= <VCC>
-MSX_CLK => ~NO_FANOUT~
+INT_n <= INT_n.DB_MAX_OUTPUT_PORT_TYPE
 WAIT_n <= WAIT_n.DB_MAX_OUTPUT_PORT_TYPE
+RESET_n => ~NO_FANOUT~
 
 
 |SDMapper_TOP|spi:portaspi

@@ -278,7 +278,7 @@ GND*                         : H9        :        :                   :         
 GND*                         : H10       :        :                   :         : 3         :                
 GND*                         : H11       :        :                   :         : 3         :                
 WAIT_n                       : H12       : output : 3.3-V LVTTL       :         : 4         : Y              
-MSX_CLK                      : H13       : input  : 3.3-V LVTTL       :         : 4         : Y              
+RESET_n                      : H13       : input  : 3.3-V LVTTL       :         : 4         : Y              
 INT_n                        : H14       : output : 3.3-V LVTTL       :         : 4         : Y              
 PS2_CLK                      : H15       : input  : 3.3-V LVTTL       :         : 4         : Y              
 GND*                         : H16       :        :                   :         : 5         :                

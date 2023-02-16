@@ -1,0 +1,14 @@
+Analysis & Synthesis Status : Successful - Wed Feb 15 13:50:34 2023
+Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
+Revision Name : MSXPi_Top
+Top-level Entity Name : MSXPi_Top
+Family : Cyclone III
+Total logic elements : 73
+    Total combinational functions : 65
+    Dedicated logic registers : 25
+Total registers : 25
+Total pins : 252
+Total virtual pins : 0
+Total memory bits : 0
+Embedded Multiplier 9-bit elements : 0
+Total PLLs : 0

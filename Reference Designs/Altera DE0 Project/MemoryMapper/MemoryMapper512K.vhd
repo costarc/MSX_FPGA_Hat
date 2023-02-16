@@ -4,94 +4,99 @@ use IEEE.std_logic_unsigned.all;
 
 Entity MemoryMapper512K_Top is
 port (
-    CLOCK_24:	  	in std_logic_vector(1 downto 0);		-- 24 MHz
-    CLOCK_27:		in std_logic_vector(1 downto 0);		--	27 MHz
-    CLOCK_50:		in std_logic;								--	50 MHz
-    EXT_CLOCK:		in std_logic;								--	External Clock
+    CLOCK_50:		in std_logic;		--	50 MHz
+    CLOCK_50_2:		in std_logic;								--	50 MHz
                     
-    KEY:				in std_logic_vector(3 downto 0);		--	Pushbutton[3:0]
+    KEY:			in std_logic_vector(2 downto 0);		--	Pushbutton[3:0]             
+    SW:			in std_logic_vector(9 downto 0);		--	Toggle Switch[9:0]
                     
-    SW:				in std_logic_vector(9 downto 0);		--	Toggle Switch[9:0]
+    HEX0:			out std_logic_vector(6 downto 0);		--	Seven Segment Digit 0
+    HEX1:			out std_logic_vector(6 downto 0);		--	Seven Segment Digit 1
+    HEX2:			out std_logic_vector(6 downto 0);		--	Seven Segment Digit 2
+    HEX3:			out std_logic_vector(6 downto 0);		--	Seven Segment Digit 3
+    HEX0_DP:		out std_logic;
+    HEX1_DP:		out std_logic;	
+    HEX2_DP:		out std_logic;	
+    HEX3_DP:		out std_logic;	
                     
-    HEX0:				out std_logic_vector(6 downto 0);	--	Seven Segment Digit 0
-    HEX1:				out std_logic_vector(6 downto 0);	--	Seven Segment Digit 1
-    HEX2:				out std_logic_vector(6 downto 0);	--	Seven Segment Digit 2
-    HEX3:				out std_logic_vector(6 downto 0);	--	Seven Segment Digit 3
+    LEDG:			out std_logic_vector(9 downto 0);		--	LED Green[7:0]
                     
-    LEDG:				out std_logic_vector(7 downto 0);	--	LED Green[7:0]
-    LEDR:				out std_logic_vector(9 downto 0);	--	LED Red[9:0]
-                    
-    UART_TXD:		out std_logic;								--	UART Transmitter
-    UART_RXD:		in std_logic;								--	UART Receiver
-                    
-    DRAM_DQ:			inout std_logic_vector(15 downto 0);--	SDRAM Data bus 16 Bits
-    DRAM_ADDR:		out std_logic_vector(11 downto 0);	--	SDRAM Address bus 12 Bits
-    DRAM_LDQM:		out std_logic;								--	SDRAM Low-byte Data Mask 
-    DRAM_UDQM:		out std_logic;								--	SDRAM High-byte Data Mask
-    DRAM_WE_N:		out std_logic;								--	SDRAM Write Enable
-    DRAM_CAS_N:		out std_logic;								--	SDRAM Column Address Strobe
-    DRAM_RAS_N:		out std_logic;								--	SDRAM Row Address Strobe
-    DRAM_CS_N:		out std_logic;								--	SDRAM Chip Select
-    DRAM_BA_0:		out std_logic;								--	SDRAM Bank Address 0
-    DRAM_BA_1:		out std_logic;								--	SDRAM Bank Address 0
-    DRAM_CLK:		out std_logic;								--	SDRAM Clock
-    DRAM_CKE:		out std_logic;								--	SDRAM Clock Enable
-                    
-    FL_DQ:			inout std_logic_vector(7 downto 0);	--	FLASH Data bus 8 Bits
-    FL_ADDR:			out std_logic_vector(21 downto 0);	--	FLASH Address bus 22 Bits
-    FL_WE_N:			out std_logic;								--	FLASH Write Enable
-    FL_RST_N:		out std_logic;								--	FLASH Reset
-    FL_OE_N:			out std_logic;								--	FLASH Output Enable
-    FL_CE_N:			out std_logic;								--	FLASH Chip Enable
-    							
-    SD_DAT:			inout std_logic;							--	SD Card Data
+    UART_TXD:		out std_logic;							--	UART Transmitter
+    UART_RXD:		in std_logic;							--	UART Receiver
+    UART_CTS:		out std_logic;							--	UART Clear To Send
+    UART_RTS:		in std_logic;							--	UART Request To Send
+                 
+    DRAM_DQ:		inout std_logic_vector(15 downto 0);	--	SDRAM Data bus 16 Bits
+    DRAM_ADDR:		out std_logic_vector(12 downto 0);		--	SDRAM Address bus 13 Bits
+    DRAM_LDQM:		out std_logic;							--	SDRAM Low-byte Data Mask 
+    DRAM_UDQM:		out std_logic;							--	SDRAM High-byte Data Mask
+    DRAM_WE_N:		out std_logic;							--	SDRAM Write Enable
+    DRAM_CAS_N:		out std_logic;							--	SDRAM Column Address Strobe
+    DRAM_RAS_N:		out std_logic;							--	SDRAM Row Address Strobe
+    DRAM_CS_N:		out std_logic;							--	SDRAM Chip Select
+    DRAM_BA_0:		out std_logic;							--	SDRAM Bank Address 0
+    DRAM_BA_1:		out std_logic;							--	SDRAM Bank Address 0
+    DRAM_CLK:		out std_logic;							--	SDRAM Clock
+    DRAM_CKE:		out std_logic;							--	SDRAM Clock Enable
+    														
+    FL_DQ:			inout std_logic_vector(14 downto 0);	--	FLASH Data bus 15 Bits
+    FL_DQ15_AM1:	inout std_logic;						--	FLASH Data bus Bit 15 or Address A-1
+    FL_ADDR:		out std_logic_vector(21 downto 0);		--	FLASH Address bus 22 Bits
+    FL_WE_N:		out std_logic;							--	FLASH Write Enable
+    FL_RST_N:		out std_logic;							--	FLASH Reset
+    FL_OE_N:		out std_logic;							--	FLASH Output Enable
+    FL_CE_N:		out std_logic;							--	FLASH Chip Enable
+    FL_WP_N:		out std_logic;							--	FLASH Hardware Write Protect
+    FL_BYTE_N:		out std_logic;							--	FLASH Selects 8/16-bit mode
+    FL_RY:			in std_logic;							--	FLASH Ready/Busy
+       
+    LCD_DATA:		inout std_logic_vector(7 downto 0);		-- LCD Data bus 8 bits
+    LCD_BLON:		out std_logic;							-- LCD Back Light ON/OFF
+    LCD_RW:			out std_logic;							-- CD Read/Write Select, 0 = Write, 1 = Read
+    LCD_EN:			out std_logic;							-- LCD Enable
+    LCD_RS:			out std_logic;							-- LCD Command/Data Select, 0 = Command, 1 = Data
+    														
+    SD_DAT:			inout std_logic;						--	SD Card Data
     SD_DAT3:		inout std_logic;						--	SD Card Data 3
-    SD_CMD:			inout std_logic;							--	SD Card Command Signal
-    SD_CLK:			out std_logic;								--	SD Card Clock
-    							
-    I2C_SDAT:		inout std_logic;							--	I2C Data
-    I2C_SCLK:		out std_logic;								--	I2C Clock
-    							
-    PS2_DAT:			in std_logic;							--	PS2 Data
-    PS2_CLK:			in std_logic;							--	PS2 Clock
-    							
-    TDI:				in std_logic;  							-- CPLD -> FPGA (data in)
-    TCK:				in std_logic;  							-- CPLD -> FPGA (clk)
-    TCS:				in std_logic;  							-- CPLD -> FPGA (CS)
-    TDO:				out std_logic; 							-- FPGA -> CPLD (data out)
-    							
-    VGA_HS:			out std_logic;								--	VGA H_SYNC
-    VGA_VS:			out std_logic;								--	VGA V_SYNC
-    VGA_R:   		out std_logic_vector(3 downto 0);	--	VGA Red[3:0]
-    VGA_G:	 		out std_logic_vector(3 downto 0);	--	VGA Green[3:0]
-    VGA_B:   		out std_logic_vector(3 downto 0);	--	VGA Blue[3:0]
-                    
-    AUD_ADCLRCK:	inout std_logic;							--	Audio CODEC ADC LR Clock
-    AUD_ADCDAT:		in std_logic;								--	Audio CODEC ADC Data
-    AUD_DACLRCK:	inout std_logic;							--	Audio CODEC DAC LR Clock
-    AUD_DACDAT:		out std_logic;								--	Audio CODEC DAC Data
-    AUD_BCLK:		inout std_logic;							--	Audio CODEC Bit-Stream Clock
-    AUD_XCK:			out std_logic;								--	Audio CODEC Chip Clock
-                    
-    GPIO0_CLKIN:			in std_logic_vector(1 downto 0);
-    GPIO0_CLKOUT:		out std_logic_vector(1 downto 0);
-    GPIO_0:			inout std_logic_vector(35 downto 0);--	GPIO Connection 0
+    SD_CMD:			inout std_logic;						--	SD Card Command Signal
+    SD_CLK:			out std_logic;							--	SD Card Clock
+    SD_WP_N:		in std_logic;							--	SD Card Write Protect
+    														
+    PS2_KBDAT:		inout std_logic;		 				--	PS2 Data
+    PS2_KBCLK:		inout std_logic;						--	PS2 Clock
+    PS2_MSDAT:		inout std_logic;		 				--	PS2 Data
+    PS2_MSCLK:		inout std_logic;						--	PS2 Clock
+    														
+    VGA_HS:			out std_logic;							--	VGA H_SYNC
+    VGA_VS:			out std_logic;							--	VGA V_SYNC
+    VGA_R:   		out std_logic_vector(3 downto 0);		--	VGA Red[3:0]
+    VGA_G:	 		out std_logic_vector(3 downto 0);		--	VGA Green[3:0]
+    VGA_B:   		out std_logic_vector(3 downto 0);		--	VGA Blue[3:0]    FL_CE_N:			out std_logic;								--	FLASH Chip Enable
     
+    -- SRAM Addon Conencted to GPIO_0
+    SRAM_DQ:		inout std_logic_vector(7 downto 0);--	SRAM Data bus 16 Bits
+    SRAM_ADDR:		out std_logic_vector(17 downto 0);	--	SRAM Address bus 18 Bits
+    SRAM_UB_N:		out std_logic;								--	SRAM High-byte Data Mask 
+    SRAM_LB_N:		out std_logic;								--	SRAM Low-byte Data Mask 
+    SRAM_WE_N:		out std_logic;								--	SRAM Write Enable
+    SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
+    SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
+    							
     -- MSX Bus
+	U1OE_n:				out std_logic;
     A:					in std_logic_vector(15 downto 0);
     D:					inout std_logic_vector(7 downto 0);
     RD_n:				in std_logic;
     WR_n:				in std_logic;
-    MREQ_n:			in std_logic;
-    IORQ_n:			in std_logic;
+    MREQ_n:				in std_logic;
+    IORQ_n:				in std_logic;
     SLTSL_n:			in std_logic;
-    U1OE_n:			out std_logic;
-    CS_n:			in std_logic;
-    BUSDIR_n:		out std_logic;
+    CS_n:				in std_logic;
+    BUSDIR_n:			out std_logic;
     M1_n:				in std_logic;
-    INT_n:			out std_logic;
+    INT_n:				out std_logic;
     RESET_n:			in std_logic;
-    WAIT_n:			out std_logic); 
+    WAIT_n:				out std_logic); 
 end MemoryMapper512K_Top;
 
 architecture bevioural of MemoryMapper512K_Top is
@@ -131,9 +136,8 @@ architecture bevioural of MemoryMapper512K_Top is
 	
 begin
 
-	s_reset		<= (not KEY(0)) or (not RESET_n);
-	LEDR			<= '0' & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
-	LEDG			<= s_sltsl_en & slt_exp_n & "00" & s_reset;
+	s_reset		<= not (KEY(0) and RESET_n);
+	LEDG			<= '0' & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
 	
 	-- Output signals to DE1
 	INT_n			<= 'Z';

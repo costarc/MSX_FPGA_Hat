@@ -1,5 +1,5 @@
 Analysis & Synthesis report for SDMapper
-Mon Feb 06 22:46:41 2023
+Fri Feb 10 12:30:18 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -46,7 +46,7 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Mon Feb 06 22:46:41 2023           ;
+; Analysis & Synthesis Status        ; Successful - Fri Feb 10 12:30:18 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; SDMapper                                        ;
 ; Top-level Entity Name              ; SDMapper_TOP                                    ;
@@ -328,8 +328,8 @@ Note: All latches listed above may not be present at the end of synthesis due to
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Mon Feb 06 22:46:39 2023
-Info: Command: quartus_map --read_settings_files=on --write_settings_files=off SDMapper -c SDMapper
+    Info: Processing started: Fri Feb 10 12:30:16 2023
+Info: Command: quartus_map --read_settings_files=on --write_settings_files=off SDMapper_Top -c SDMapper
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Info (12021): Found 2 design units, including 1 entities, in source file exp_slot.vhd
     Info (12022): Found design unit 1: exp_slot-rtl
@@ -366,8 +366,8 @@ Warning (10541): VHDL Signal Declaration warning at SDMapper_Top.vhd(96): used i
 Warning (10541): VHDL Signal Declaration warning at SDMapper_Top.vhd(97): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at SDMapper_Top.vhd(102): used implicit default value for signal "AUD_DACDAT" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at SDMapper_Top.vhd(104): used implicit default value for signal "AUD_XCK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10036): Verilog HDL or VHDL warning at SDMapper_Top.vhd(186): object "s_mreq" assigned a value but never read
-Info (10041): Inferred latch for "s_sd_miso" at SDMapper_Top.vhd(451)
+Warning (10036): Verilog HDL or VHDL warning at SDMapper_Top.vhd(187): object "s_mreq" assigned a value but never read
+Info (10041): Inferred latch for "s_sd_miso" at SDMapper_Top.vhd(452)
 Info (12128): Elaborating entity "spi" for hierarchy "spi:portaspi"
 Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
 Info (12128): Elaborating entity "exp_slot" for hierarchy "exp_slot:exp"
@@ -474,7 +474,6 @@ Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "VGA_B[3]" is stuck at GND
     Warning (13410): Pin "AUD_DACDAT" is stuck at GND
     Warning (13410): Pin "AUD_XCK" is stuck at GND
-    Warning (13410): Pin "INT_n" is stuck at VCC
 Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
     Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
 Warning (21074): Design contains 21 input pin(s) that do not drive logic
@@ -498,15 +497,15 @@ Warning (21074): Design contains 21 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "AUD_ADCDAT"
     Warning (15610): No output dependent on input pin "MREQ_n"
     Warning (15610): No output dependent on input pin "CS2_n"
-    Warning (15610): No output dependent on input pin "MSX_CLK"
+    Warning (15610): No output dependent on input pin "RESET_n"
 Info (21057): Implemented 594 device resources after synthesis - the final resource count might be different
     Info (21058): Implemented 52 input pins
     Info (21059): Implemented 144 output pins
     Info (21060): Implemented 55 bidirectional pins
     Info (21061): Implemented 343 logic cells
-Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 140 warnings
+Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 139 warnings
     Info: Peak virtual memory: 4635 megabytes
-    Info: Processing ended: Mon Feb 06 22:46:41 2023
+    Info: Processing ended: Fri Feb 10 12:30:18 2023
     Info: Elapsed time: 00:00:02
     Info: Total CPU time (on all processors): 00:00:02
 

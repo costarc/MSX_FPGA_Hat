@@ -1,0 +1,77 @@
+------------------------------------------------------------
+TimeQuest Timing Analyzer Summary
+------------------------------------------------------------
+
+Type  : Slow 1200mV 85C Model Setup 'SRAM_ADDR[6]'
+Slack : -2.824
+TNS   : -46.872
+
+Type  : Slow 1200mV 85C Model Hold 'SRAM_ADDR[6]'
+Slack : 0.150
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Recovery 'SRAM_ADDR[6]'
+Slack : -2.485
+TNS   : -23.945
+
+Type  : Slow 1200mV 85C Model Removal 'SRAM_ADDR[6]'
+Slack : 0.075
+TNS   : 0.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'SRAM_ADDR[6]'
+Slack : -3.000
+TNS   : -28.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'A[0]'
+Slack : -3.000
+TNS   : -3.000
+
+Type  : Slow 1200mV 0C Model Setup 'SRAM_ADDR[6]'
+Slack : -2.451
+TNS   : -40.186
+
+Type  : Slow 1200mV 0C Model Hold 'SRAM_ADDR[6]'
+Slack : 0.083
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Recovery 'SRAM_ADDR[6]'
+Slack : -2.107
+TNS   : -20.517
+
+Type  : Slow 1200mV 0C Model Removal 'SRAM_ADDR[6]'
+Slack : 0.031
+TNS   : 0.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'SRAM_ADDR[6]'
+Slack : -3.000
+TNS   : -28.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'A[0]'
+Slack : -3.000
+TNS   : -3.000
+
+Type  : Fast 1200mV 0C Model Setup 'SRAM_ADDR[6]'
+Slack : -1.474
+TNS   : -27.868
+
+Type  : Fast 1200mV 0C Model Hold 'SRAM_ADDR[6]'
+Slack : 0.065
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Recovery 'SRAM_ADDR[6]'
+Slack : -1.298
+TNS   : -15.247
+
+Type  : Fast 1200mV 0C Model Removal 'SRAM_ADDR[6]'
+Slack : 0.011
+TNS   : 0.000
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'SRAM_ADDR[6]'
+Slack : -3.000
+TNS   : -41.401
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'A[0]'
+Slack : -3.000
+TNS   : -5.422
+
+------------------------------------------------------------

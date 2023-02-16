@@ -111,20 +111,21 @@ port (
 	 
     
     -- MSX Bus
-    A:					in std_logic_vector(15 downto 0);
-    D:					inout std_logic_vector(7 downto 0);
-    RD_n:				in std_logic;
-    WR_n:				in std_logic;
+    A:				in std_logic_vector(15 downto 0);
+    D:				inout std_logic_vector(7 downto 0);
+    RD_n:			in std_logic;
+    WR_n:			in std_logic;
     MREQ_n:			in std_logic;
     IORQ_n:			in std_logic;
-    SLTSL_n:			in std_logic;
+    SLTSL_n:		in std_logic;
     U1OE_n:			out std_logic;
     CS2_n:			in std_logic;
     BUSDIR_n:		out std_logic;
-    M1_n:				in std_logic;
+    M1_n:			in std_logic;
     INT_n:			out std_logic;
-    MSX_CLK:			in std_logic;
-    WAIT_n:			out std_logic); 
+    --MSX_CLK:		in std_logic;
+    WAIT_n:			out std_logic;
+	 RESET_n:		in std_logic); 
 end SDMapper_TOP;
 
 architecture bevioural of SDMapper_TOP is
@@ -209,14 +210,14 @@ begin
 	HEXDIGIT3 <= rom_bank2_q(3 downto 0);
 	
 	-- Generic Outputs signals to DE1
-	INT_n  <= 'H';
+	INT_n  <= 'Z';
 	BUSDIR_n <= not s_iorq_r_reg;
 	s_sltsl_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 	s_reset <= not KEY(0);												-- Reset is set HIGH. KEY(0) in the DE0/DE1 will send a reset to the components.
 	-- /WAIT_n is needed for the SPI/SD Card operation. It's asserted inside the SPI component
 	WAIT_n <= 'Z' when wait_n_s = '1' else '0';
 	-- Enable output in U1 (74LVC245)
-	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
+	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg or spi_cs_s);
 
 	-- Detect access to slots - to be used with the slot expansor
 	s_ffff_slt    <= '1' when A = x"FFFF" else '0';
