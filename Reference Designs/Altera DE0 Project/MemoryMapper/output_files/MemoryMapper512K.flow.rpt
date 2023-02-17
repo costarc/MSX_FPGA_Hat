@@ -1,5 +1,5 @@
 Flow report for MemoryMapper512K
-Mon Feb 06 16:25:15 2023
+Fri Feb 17 00:05:49 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -40,21 +40,21 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Flow Summary                                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Flow Status                        ; Successful - Mon Feb 06 16:25:14 2023           ;
+; Flow Status                        ; Successful - Fri Feb 17 00:05:47 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MemoryMapper512K                                ;
 ; Top-level Entity Name              ; MemoryMapper512K_Top                            ;
-; Family                             ; Cyclone II                                      ;
-; Device                             ; EP2C20F484C7                                    ;
+; Family                             ; Cyclone III                                     ;
+; Device                             ; EP3C16F484C6                                    ;
 ; Timing Models                      ; Final                                           ;
-; Total logic elements               ; 157 / 18,752 ( < 1 % )                          ;
-;     Total combinational functions  ; 157 / 18,752 ( < 1 % )                          ;
-;     Dedicated logic registers      ; 28 / 18,752 ( < 1 % )                           ;
+; Total logic elements               ; 147 / 15,408 ( < 1 % )                          ;
+;     Total combinational functions  ; 147 / 15,408 ( < 1 % )                          ;
+;     Dedicated logic registers      ; 28 / 15,408 ( < 1 % )                           ;
 ; Total registers                    ; 28                                              ;
-; Total pins                         ; 283 / 315 ( 90 % )                              ;
+; Total pins                         ; 247 / 347 ( 71 % )                              ;
 ; Total virtual pins                 ; 0                                               ;
-; Total memory bits                  ; 0 / 239,616 ( 0 % )                             ;
-; Embedded Multiplier 9-bit elements ; 0 / 52 ( 0 % )                                  ;
+; Total memory bits                  ; 0 / 516,096 ( 0 % )                             ;
+; Embedded Multiplier 9-bit elements ; 0 / 112 ( 0 % )                                 ;
 ; Total PLLs                         ; 0 / 4 ( 0 % )                                   ;
 +------------------------------------+-------------------------------------------------+
 
@@ -64,7 +64,7 @@ applicable agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 02/06/2023 16:25:07 ;
+; Start date & time ; 02/17/2023 00:05:36 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; MemoryMapper512K    ;
 +-------------------+---------------------+
@@ -75,9 +75,13 @@ applicable agreement for further details.
 +-------------------------------------+---------------------------------------+------------------+----------------------+------------+
 ; Assignment Name                     ; Value                                 ; Default Value    ; Entity Name          ; Section Id ;
 +-------------------------------------+---------------------------------------+------------------+----------------------+------------+
-; COMPILER_SIGNATURE_ID               ; 53447168746495.167570070613284        ; --               ; --                   ; --         ;
+; COMPILER_SIGNATURE_ID               ; 53447168746495.167659233609768        ; --               ; --                   ; --         ;
 ; MAX_CORE_JUNCTION_TEMP              ; 85                                    ; --               ; --                   ; --         ;
 ; MIN_CORE_JUNCTION_TEMP              ; 0                                     ; --               ; --                   ; --         ;
+; OUTPUT_IO_TIMING_FAR_END_VMEAS      ; Half Signal Swing                     ; --               ; --                   ; --         ;
+; OUTPUT_IO_TIMING_FAR_END_VMEAS      ; Half Signal Swing                     ; --               ; --                   ; --         ;
+; OUTPUT_IO_TIMING_NEAR_END_VMEAS     ; Half Vccio                            ; --               ; --                   ; --         ;
+; OUTPUT_IO_TIMING_NEAR_END_VMEAS     ; Half Vccio                            ; --               ; --                   ; --         ;
 ; PARTITION_COLOR                     ; 16764057                              ; --               ; MemoryMapper512K_Top ; Top        ;
 ; PARTITION_FITTER_PRESERVATION_LEVEL ; PLACEMENT_AND_ROUTING                 ; --               ; MemoryMapper512K_Top ; Top        ;
 ; PARTITION_NETLIST_TYPE              ; SOURCE                                ; --               ; MemoryMapper512K_Top ; Top        ;
@@ -93,11 +97,11 @@ applicable agreement for further details.
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Module Name               ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis      ; 00:00:02     ; 1.0                     ; 4640 MB             ; 00:00:01                           ;
-; Fitter                    ; 00:00:04     ; 1.0                     ; 4846 MB             ; 00:00:03                           ;
-; Assembler                 ; 00:00:01     ; 1.0                     ; 4552 MB             ; 00:00:01                           ;
-; TimeQuest Timing Analyzer ; 00:00:01     ; 1.0                     ; 4546 MB             ; 00:00:01                           ;
-; Total                     ; 00:00:08     ; --                      ; --                  ; 00:00:06                           ;
+; Analysis & Synthesis      ; 00:00:01     ; 1.0                     ; 4617 MB             ; 00:00:01                           ;
+; Fitter                    ; 00:00:07     ; 1.0                     ; 4914 MB             ; 00:00:07                           ;
+; Assembler                 ; 00:00:01     ; 1.0                     ; 4545 MB             ; 00:00:01                           ;
+; TimeQuest Timing Analyzer ; 00:00:02     ; 1.0                     ; 4597 MB             ; 00:00:02                           ;
+; Total                     ; 00:00:11     ; --                      ; --                  ; 00:00:11                           ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 

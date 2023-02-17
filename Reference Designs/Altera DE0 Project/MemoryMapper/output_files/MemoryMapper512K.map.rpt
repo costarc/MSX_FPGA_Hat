@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MemoryMapper512K
-Mon Feb 06 16:25:08 2023
+Fri Feb 17 00:05:38 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -13,11 +13,13 @@ Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edit
   5. Analysis & Synthesis Source Files Read
   6. Analysis & Synthesis Resource Usage Summary
   7. Analysis & Synthesis Resource Utilization by Entity
-  8. General Register Statistics
-  9. Inverted Register Statistics
- 10. Multiplexer Restructuring Statistics (Restructuring Performed)
- 11. Elapsed Time Per Partition
- 12. Analysis & Synthesis Messages
+  8. User-Specified and Inferred Latches
+  9. General Register Statistics
+ 10. Inverted Register Statistics
+ 11. Multiplexer Restructuring Statistics (Restructuring Performed)
+ 12. Port Connectivity Checks: "exp_slot:exp"
+ 13. Elapsed Time Per Partition
+ 14. Analysis & Synthesis Messages
 
 
 
@@ -43,16 +45,16 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Mon Feb 06 16:25:08 2023           ;
+; Analysis & Synthesis Status        ; Successful - Fri Feb 17 00:05:38 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MemoryMapper512K                                ;
 ; Top-level Entity Name              ; MemoryMapper512K_Top                            ;
-; Family                             ; Cyclone II                                      ;
-; Total logic elements               ; 181                                             ;
-;     Total combinational functions  ; 157                                             ;
+; Family                             ; Cyclone III                                     ;
+; Total logic elements               ; 171                                             ;
+;     Total combinational functions  ; 147                                             ;
 ;     Dedicated logic registers      ; 28                                              ;
 ; Total registers                    ; 28                                              ;
-; Total pins                         ; 283                                             ;
+; Total pins                         ; 247                                             ;
 ; Total virtual pins                 ; 0                                               ;
 ; Total memory bits                  ; 0                                               ;
 ; Embedded Multiplier 9-bit elements ; 0                                               ;
@@ -65,9 +67,9 @@ applicable agreement for further details.
 +----------------------------------------------------------------------------+----------------------+--------------------+
 ; Option                                                                     ; Setting              ; Default Value      ;
 +----------------------------------------------------------------------------+----------------------+--------------------+
-; Device                                                                     ; EP2C20F484C7         ;                    ;
+; Device                                                                     ; EP3C16F484C6         ;                    ;
 ; Top-level entity name                                                      ; MemoryMapper512K_Top ; MemoryMapper512K   ;
-; Family name                                                                ; Cyclone II           ; Cyclone IV GX      ;
+; Family name                                                                ; Cyclone III          ; Cyclone IV GX      ;
 ; Use smart compilation                                                      ; Off                  ; Off                ;
 ; Enable parallel Assembler and TimeQuest Timing Analyzer during compilation ; On                   ; On                 ;
 ; Enable compact report table                                                ; Off                  ; Off                ;
@@ -106,12 +108,14 @@ applicable agreement for further details.
 ; Perform WYSIWYG Primitive Resynthesis                                      ; Off                  ; Off                ;
 ; Auto ROM Replacement                                                       ; On                   ; On                 ;
 ; Auto RAM Replacement                                                       ; On                   ; On                 ;
+; Auto DSP Block Replacement                                                 ; On                   ; On                 ;
 ; Auto Shift Register Replacement                                            ; Auto                 ; Auto               ;
 ; Allow Shift Register Merging across Hierarchies                            ; Auto                 ; Auto               ;
 ; Auto Clock Enable Replacement                                              ; On                   ; On                 ;
 ; Strict RAM Replacement                                                     ; Off                  ; Off                ;
 ; Allow Synchronous Control Signals                                          ; On                   ; On                 ;
 ; Force Use of Synchronous Clear Signals                                     ; Off                  ; Off                ;
+; Auto RAM Block Balancing                                                   ; On                   ; On                 ;
 ; Auto RAM to Logic Cell Conversion                                          ; Off                  ; Off                ;
 ; Auto Resource Sharing                                                      ; Off                  ; Off                ;
 ; Allow Any RAM Size For Recognition                                         ; Off                  ; Off                ;
@@ -119,7 +123,7 @@ applicable agreement for further details.
 ; Allow Any Shift Register Size For Recognition                              ; Off                  ; Off                ;
 ; Use LogicLock Constraints during Resource Balancing                        ; On                   ; On                 ;
 ; Ignore translate_off and synthesis_off directives                          ; Off                  ; Off                ;
-; Timing-Driven Synthesis                                                    ; Off                  ; Off                ;
+; Timing-Driven Synthesis                                                    ; On                   ; On                 ;
 ; Report Parameter Settings                                                  ; On                   ; On                 ;
 ; Report Source Assignments                                                  ; On                   ; On                 ;
 ; Report Connectivity Checks                                                 ; On                   ; On                 ;
@@ -156,45 +160,45 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+--------+
 
 
-+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Analysis & Synthesis Source Files Read                                                                                                                                                             ;
-+----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------------------------------------------+---------+
-; File Name with User-Entered Path ; Used in Netlist ; File Type       ; File Name with Absolute Path                                                                                      ; Library ;
-+----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------------------------------------------+---------+
-; exp_slot.vhd                     ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE1  Project/MemoryMapper/exp_slot.vhd         ;         ;
-; MemoryMapper512K.vhd             ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE1  Project/MemoryMapper/MemoryMapper512K.vhd ;         ;
-; decoder_7seg.vhd                 ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE1  Project/MemoryMapper/decoder_7seg.vhd     ;         ;
-+----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------------------------------------------+---------+
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Analysis & Synthesis Source Files Read                                                                                                                                                            ;
++----------------------------------+-----------------+-----------------+------------------------------------------------------------------------------------------------------------------+---------+
+; File Name with User-Entered Path ; Used in Netlist ; File Type       ; File Name with Absolute Path                                                                                     ; Library ;
++----------------------------------+-----------------+-----------------+------------------------------------------------------------------------------------------------------------------+---------+
+; MemoryMapper512K.vhd             ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MemoryMapper/MemoryMapper512K.vhd ;         ;
+; exp_slot.vhd                     ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MemoryMapper/exp_slot.vhd         ;         ;
+; decoder_7seg.vhd                 ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MemoryMapper/decoder_7seg.vhd     ;         ;
++----------------------------------+-----------------+-----------------+------------------------------------------------------------------------------------------------------------------+---------+
 
 
-+------------------------------------------------------+
-; Analysis & Synthesis Resource Usage Summary          ;
-+---------------------------------------------+--------+
-; Resource                                    ; Usage  ;
-+---------------------------------------------+--------+
-; Estimated Total logic elements              ; 181    ;
-;                                             ;        ;
-; Total combinational functions               ; 157    ;
-; Logic element usage by number of LUT inputs ;        ;
-;     -- 4 input functions                    ; 92     ;
-;     -- 3 input functions                    ; 22     ;
-;     -- <=2 input functions                  ; 43     ;
-;                                             ;        ;
-; Logic elements by mode                      ;        ;
-;     -- normal mode                          ; 123    ;
-;     -- arithmetic mode                      ; 34     ;
-;                                             ;        ;
-; Total registers                             ; 28     ;
-;     -- Dedicated logic registers            ; 28     ;
-;     -- I/O registers                        ; 0      ;
-;                                             ;        ;
-; I/O pins                                    ; 283    ;
-; Embedded Multiplier 9-bit elements          ; 0      ;
-; Maximum fan-out node                        ; KEY[0] ;
-; Maximum fan-out                             ; 29     ;
-; Total fan-out                               ; 723    ;
-; Average fan-out                             ; 1.54   ;
-+---------------------------------------------+--------+
++------------------------------------------------------------+
+; Analysis & Synthesis Resource Usage Summary                ;
++---------------------------------------------+--------------+
+; Resource                                    ; Usage        ;
++---------------------------------------------+--------------+
+; Estimated Total logic elements              ; 171          ;
+;                                             ;              ;
+; Total combinational functions               ; 147          ;
+; Logic element usage by number of LUT inputs ;              ;
+;     -- 4 input functions                    ; 81           ;
+;     -- 3 input functions                    ; 26           ;
+;     -- <=2 input functions                  ; 40           ;
+;                                             ;              ;
+; Logic elements by mode                      ;              ;
+;     -- normal mode                          ; 113          ;
+;     -- arithmetic mode                      ; 34           ;
+;                                             ;              ;
+; Total registers                             ; 28           ;
+;     -- Dedicated logic registers            ; 28           ;
+;     -- I/O registers                        ; 0            ;
+;                                             ;              ;
+; I/O pins                                    ; 247          ;
+; Embedded Multiplier 9-bit elements          ; 0            ;
+; Maximum fan-out node                        ; KEY[0]~input ;
+; Maximum fan-out                             ; 29           ;
+; Total fan-out                               ; 974          ;
+; Average fan-out                             ; 1.33         ;
++---------------------------------------------+--------------+
 
 
 +-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -202,14 +206,32 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+---------------------------------------------+--------------+
 ; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                         ; Library Name ;
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+---------------------------------------------+--------------+
-; |MemoryMapper512K_Top      ; 157 (112)         ; 28 (20)      ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MemoryMapper512K_Top                       ; work         ;
+; |MemoryMapper512K_Top      ; 147 (103)         ; 28 (20)      ; 0           ; 0            ; 0       ; 0         ; 247  ; 0            ; |MemoryMapper512K_Top                       ; work         ;
 ;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX0 ; work         ;
 ;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX2 ; work         ;
 ;    |decoder_7seg:DISPHEX3| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX3 ; work         ;
-;    |exp_slot:exp|          ; 17 (17)           ; 8 (8)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|exp_slot:exp          ; work         ;
+;    |exp_slot:exp|          ; 16 (16)           ; 8 (8)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|exp_slot:exp          ; work         ;
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+---------------------------------------------+--------------+
 Note: For table entries with two numbers listed, the numbers in parentheses indicate the number of resources of the given type used by the specific entity alone. The numbers listed outside of parentheses indicate the total resources of the given type used by the specific entity and all of its sub-entities in the hierarchy.
+
+
++---------------------------------------------------------------------------------------------------+
+; User-Specified and Inferred Latches                                                               ;
++----------------------------------------------------+---------------------+------------------------+
+; Latch Name                                         ; Latch Enable Signal ; Free of Timing Hazards ;
++----------------------------------------------------+---------------------+------------------------+
+; exp_slot:exp|cpu_q[0]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; exp_slot:exp|cpu_q[1]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; exp_slot:exp|cpu_q[2]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; exp_slot:exp|cpu_q[3]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; exp_slot:exp|cpu_q[4]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; exp_slot:exp|cpu_q[5]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; exp_slot:exp|cpu_q[6]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; exp_slot:exp|cpu_q[7]$latch                        ; exp_slot:exp|exp_rd ; yes                    ;
+; Number of user-specified and inferred latches = 8  ;                     ;                        ;
++----------------------------------------------------+---------------------+------------------------+
+Note: All latches listed above may not be present at the end of synthesis due to various synthesis optimizations.
 
 
 +------------------------------------------------------+
@@ -240,17 +262,25 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +----------------------------------------+---------+
 
 
-+-----------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Multiplexer Restructuring Statistics (Restructuring Performed)                                                                                            ;
-+--------------------+-----------+---------------+----------------------+------------------------+------------+---------------------------------------------+
-; Multiplexer Inputs ; Bus Width ; Baseline Area ; Area if Restructured ; Saving if Restructured ; Registered ; Example Multiplexer Output                  ;
-+--------------------+-----------+---------------+----------------------+------------------------+------------+---------------------------------------------+
-; 4:1                ; 2 bits    ; 4 LEs         ; 4 LEs                ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|exp_slot:exp|Mux0     ;
-; 4:1                ; 2 bits    ; 4 LEs         ; 2 LEs                ; 2 LEs                  ; No         ; |MemoryMapper512K_Top|exp_slot:exp|exp_n[3] ;
-; 4:1                ; 6 bits    ; 12 LEs        ; 12 LEs               ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|HEXDIGIT2[2]          ;
-; 3:1                ; 3 bits    ; 6 LEs         ; 6 LEs                ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|D[5]                  ;
-; 6:1                ; 5 bits    ; 20 LEs        ; 20 LEs               ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|D[4]                  ;
-+--------------------+-----------+---------------+----------------------+------------------------+------------+---------------------------------------------+
++-------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Multiplexer Restructuring Statistics (Restructuring Performed)                                                                                        ;
++--------------------+-----------+---------------+----------------------+------------------------+------------+-----------------------------------------+
+; Multiplexer Inputs ; Bus Width ; Baseline Area ; Area if Restructured ; Saving if Restructured ; Registered ; Example Multiplexer Output              ;
++--------------------+-----------+---------------+----------------------+------------------------+------------+-----------------------------------------+
+; 4:1                ; 2 bits    ; 4 LEs         ; 4 LEs                ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|exp_slot:exp|Mux1 ;
+; 3:1                ; 3 bits    ; 6 LEs         ; 6 LEs                ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|D[5]              ;
+; 4:1                ; 6 bits    ; 12 LEs        ; 12 LEs               ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|HEXDIGIT2[2]      ;
+; 6:1                ; 5 bits    ; 20 LEs        ; 20 LEs               ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|D[4]              ;
++--------------------+-----------+---------------+----------------------+------------------------+------------+-----------------------------------------+
+
+
++-----------------------------------------------------------------------------------------------------------------------+
+; Port Connectivity Checks: "exp_slot:exp"                                                                              ;
++-------------+--------+----------+-------------------------------------------------------------------------------------+
+; Port        ; Type   ; Severity ; Details                                                                             ;
++-------------+--------+----------+-------------------------------------------------------------------------------------+
+; exp_n[3..1] ; Output ; Info     ; Connected to dangling logic. Logic that only feeds a dangling port will be removed. ;
++-------------+--------+----------+-------------------------------------------------------------------------------------+
 
 
 +-------------------------------+
@@ -268,61 +298,91 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Mon Feb 06 16:25:06 2023
+    Info: Processing started: Fri Feb 17 00:05:36 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MemoryMapper512K -c MemoryMapper512K
 Warning (20028): Parallel compilation is not licensed and has been disabled
+Info (12021): Found 2 design units, including 1 entities, in source file memorymapper512k.vhd
+    Info (12022): Found design unit 1: MemoryMapper512K_Top-behavioural
+    Info (12023): Found entity 1: MemoryMapper512K_Top
 Info (12021): Found 2 design units, including 1 entities, in source file exp_slot.vhd
     Info (12022): Found design unit 1: exp_slot-rtl
     Info (12023): Found entity 1: exp_slot
-Info (12021): Found 2 design units, including 1 entities, in source file memorymapper512k.vhd
-    Info (12022): Found design unit 1: MemoryMapper512K_Top-bevioural
-    Info (12023): Found entity 1: MemoryMapper512K_Top
 Info (12021): Found 2 design units, including 1 entities, in source file decoder_7seg.vhd
     Info (12022): Found design unit 1: decoder_7seg-rtl
     Info (12023): Found entity 1: decoder_7seg
 Info (12127): Elaborating entity "MemoryMapper512K_Top" for the top level hierarchy
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(17): used implicit default value for signal "HEX0_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(18): used implicit default value for signal "HEX1_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(19): used implicit default value for signal "HEX2_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(20): used implicit default value for signal "HEX3_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(24): used implicit default value for signal "UART_TXD" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(28): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(29): used implicit default value for signal "DRAM_LDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(30): used implicit default value for signal "DRAM_UDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(31): used implicit default value for signal "DRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(32): used implicit default value for signal "DRAM_CAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(33): used implicit default value for signal "DRAM_RAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(34): used implicit default value for signal "DRAM_CS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(35): used implicit default value for signal "DRAM_BA_0" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(36): used implicit default value for signal "DRAM_BA_1" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(37): used implicit default value for signal "DRAM_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(38): used implicit default value for signal "DRAM_CKE" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(41): used implicit default value for signal "FL_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(42): used implicit default value for signal "FL_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(43): used implicit default value for signal "FL_RST_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(44): used implicit default value for signal "FL_OE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(45): used implicit default value for signal "FL_CE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(58): used implicit default value for signal "SD_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(61): used implicit default value for signal "I2C_SCLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(69): used implicit default value for signal "TDO" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(71): used implicit default value for signal "VGA_HS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(72): used implicit default value for signal "VGA_VS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(73): used implicit default value for signal "VGA_R" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(74): used implicit default value for signal "VGA_G" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(75): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(80): used implicit default value for signal "AUD_DACDAT" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(82): used implicit default value for signal "AUD_XCK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(26): used implicit default value for signal "UART_CTS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(30): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(31): used implicit default value for signal "DRAM_LDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(32): used implicit default value for signal "DRAM_UDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(33): used implicit default value for signal "DRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(34): used implicit default value for signal "DRAM_CAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(35): used implicit default value for signal "DRAM_RAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(36): used implicit default value for signal "DRAM_CS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(37): used implicit default value for signal "DRAM_BA_0" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(38): used implicit default value for signal "DRAM_BA_1" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(39): used implicit default value for signal "DRAM_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(40): used implicit default value for signal "DRAM_CKE" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(44): used implicit default value for signal "FL_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(45): used implicit default value for signal "FL_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(46): used implicit default value for signal "FL_RST_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(47): used implicit default value for signal "FL_OE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(48): used implicit default value for signal "FL_CE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(49): used implicit default value for signal "FL_WP_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(50): used implicit default value for signal "FL_BYTE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(54): used implicit default value for signal "LCD_BLON" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(55): used implicit default value for signal "LCD_RW" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(56): used implicit default value for signal "LCD_EN" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(57): used implicit default value for signal "LCD_RS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(62): used implicit default value for signal "SD_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(70): used implicit default value for signal "VGA_HS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(71): used implicit default value for signal "VGA_VS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(72): used implicit default value for signal "VGA_R" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(73): used implicit default value for signal "VGA_G" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(74): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(129): used implicit default value for signal "s_mapper_reg_w" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10492): VHDL Process Statement warning at MemoryMapper512K.vhd(187): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at MemoryMapper512K.vhd(188): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
 Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
 Info (12128): Elaborating entity "exp_slot" for hierarchy "exp_slot:exp"
+Info (10041): Inferred latch for "cpu_q[0]" at exp_slot.vhd(57)
+Info (10041): Inferred latch for "cpu_q[1]" at exp_slot.vhd(57)
+Info (10041): Inferred latch for "cpu_q[2]" at exp_slot.vhd(57)
+Info (10041): Inferred latch for "cpu_q[3]" at exp_slot.vhd(57)
+Info (10041): Inferred latch for "cpu_q[4]" at exp_slot.vhd(57)
+Info (10041): Inferred latch for "cpu_q[5]" at exp_slot.vhd(57)
+Info (10041): Inferred latch for "cpu_q[6]" at exp_slot.vhd(57)
+Info (10041): Inferred latch for "cpu_q[7]" at exp_slot.vhd(57)
 Warning (13039): The following bidir pins have no drivers
+    Warning (13040): Bidir "FL_DQ15_AM1" has no driver
+    Warning (13040): Bidir "LCD_DATA[0]" has no driver
+    Warning (13040): Bidir "LCD_DATA[1]" has no driver
+    Warning (13040): Bidir "LCD_DATA[2]" has no driver
+    Warning (13040): Bidir "LCD_DATA[3]" has no driver
+    Warning (13040): Bidir "LCD_DATA[4]" has no driver
+    Warning (13040): Bidir "LCD_DATA[5]" has no driver
+    Warning (13040): Bidir "LCD_DATA[6]" has no driver
+    Warning (13040): Bidir "LCD_DATA[7]" has no driver
     Warning (13040): Bidir "SD_DAT3" has no driver
     Warning (13040): Bidir "SD_CMD" has no driver
+    Warning (13040): Bidir "PS2_KBDAT" has no driver
+    Warning (13040): Bidir "PS2_KBCLK" has no driver
+    Warning (13040): Bidir "PS2_MSDAT" has no driver
+    Warning (13040): Bidir "PS2_MSCLK" has no driver
 Info (13000): Registers with preset signals will power-up high
 Info (13003): DEV_CLRn pin will set, and not reset, register with preset signal due to NOT Gate Push-Back
 Warning (13024): Output pins are stuck at VCC or GND
-    Warning (13410): Pin "LEDG[1]" is stuck at GND
-    Warning (13410): Pin "LEDG[2]" is stuck at GND
-    Warning (13410): Pin "LEDR[8]" is stuck at GND
-    Warning (13410): Pin "LEDR[9]" is stuck at GND
+    Warning (13410): Pin "HEX0_DP" is stuck at GND
+    Warning (13410): Pin "HEX1_DP" is stuck at GND
+    Warning (13410): Pin "HEX2_DP" is stuck at GND
+    Warning (13410): Pin "HEX3_DP" is stuck at GND
+    Warning (13410): Pin "LEDG[8]" is stuck at GND
     Warning (13410): Pin "UART_TXD" is stuck at GND
+    Warning (13410): Pin "UART_CTS" is stuck at GND
     Warning (13410): Pin "DRAM_ADDR[0]" is stuck at GND
     Warning (13410): Pin "DRAM_ADDR[1]" is stuck at GND
     Warning (13410): Pin "DRAM_ADDR[2]" is stuck at GND
@@ -335,6 +395,7 @@ Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "DRAM_ADDR[9]" is stuck at GND
     Warning (13410): Pin "DRAM_ADDR[10]" is stuck at GND
     Warning (13410): Pin "DRAM_ADDR[11]" is stuck at GND
+    Warning (13410): Pin "DRAM_ADDR[12]" is stuck at GND
     Warning (13410): Pin "DRAM_LDQM" is stuck at GND
     Warning (13410): Pin "DRAM_UDQM" is stuck at GND
     Warning (13410): Pin "DRAM_WE_N" is stuck at GND
@@ -371,10 +432,13 @@ Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "FL_RST_N" is stuck at GND
     Warning (13410): Pin "FL_OE_N" is stuck at GND
     Warning (13410): Pin "FL_CE_N" is stuck at GND
-    Warning (13410): Pin "SRAM_OE_N" is stuck at GND
+    Warning (13410): Pin "FL_WP_N" is stuck at GND
+    Warning (13410): Pin "FL_BYTE_N" is stuck at GND
+    Warning (13410): Pin "LCD_BLON" is stuck at GND
+    Warning (13410): Pin "LCD_RW" is stuck at GND
+    Warning (13410): Pin "LCD_EN" is stuck at GND
+    Warning (13410): Pin "LCD_RS" is stuck at GND
     Warning (13410): Pin "SD_CLK" is stuck at GND
-    Warning (13410): Pin "I2C_SCLK" is stuck at GND
-    Warning (13410): Pin "TDO" is stuck at GND
     Warning (13410): Pin "VGA_HS" is stuck at GND
     Warning (13410): Pin "VGA_VS" is stuck at GND
     Warning (13410): Pin "VGA_R[0]" is stuck at GND
@@ -389,20 +453,15 @@ Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "VGA_B[1]" is stuck at GND
     Warning (13410): Pin "VGA_B[2]" is stuck at GND
     Warning (13410): Pin "VGA_B[3]" is stuck at GND
-    Warning (13410): Pin "AUD_DACDAT" is stuck at GND
-    Warning (13410): Pin "AUD_XCK" is stuck at GND
+    Warning (13410): Pin "SRAM_OE_N" is stuck at GND
+Info (286030): Timing-Driven Synthesis is running
 Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
     Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
-Warning (21074): Design contains 27 input pin(s) that do not drive logic
-    Warning (15610): No output dependent on input pin "CLOCK_24[0]"
-    Warning (15610): No output dependent on input pin "CLOCK_24[1]"
-    Warning (15610): No output dependent on input pin "CLOCK_27[0]"
-    Warning (15610): No output dependent on input pin "CLOCK_27[1]"
+Warning (21074): Design contains 19 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "CLOCK_50"
-    Warning (15610): No output dependent on input pin "EXT_CLOCK"
+    Warning (15610): No output dependent on input pin "CLOCK_50_2"
     Warning (15610): No output dependent on input pin "KEY[1]"
     Warning (15610): No output dependent on input pin "KEY[2]"
-    Warning (15610): No output dependent on input pin "KEY[3]"
     Warning (15610): No output dependent on input pin "SW[0]"
     Warning (15610): No output dependent on input pin "SW[1]"
     Warning (15610): No output dependent on input pin "SW[2]"
@@ -413,23 +472,20 @@ Warning (21074): Design contains 27 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "SW[7]"
     Warning (15610): No output dependent on input pin "SW[8]"
     Warning (15610): No output dependent on input pin "UART_RXD"
-    Warning (15610): No output dependent on input pin "PS2_DAT"
-    Warning (15610): No output dependent on input pin "PS2_CLK"
-    Warning (15610): No output dependent on input pin "TDI"
-    Warning (15610): No output dependent on input pin "TCK"
-    Warning (15610): No output dependent on input pin "TCS"
-    Warning (15610): No output dependent on input pin "AUD_ADCDAT"
-    Warning (15610): No output dependent on input pin "CS2_n"
-    Warning (15610): No output dependent on input pin "MSX_CLK"
-Info (21057): Implemented 464 device resources after synthesis - the final resource count might be different
-    Info (21058): Implemented 51 input pins
+    Warning (15610): No output dependent on input pin "UART_RTS"
+    Warning (15610): No output dependent on input pin "FL_RY"
+    Warning (15610): No output dependent on input pin "SD_WP_N"
+    Warning (15610): No output dependent on input pin "CS_n"
+    Warning (15610): No output dependent on input pin "RESET_n"
+Info (21057): Implemented 418 device resources after synthesis - the final resource count might be different
+    Info (21058): Implemented 43 input pins
     Info (21059): Implemented 141 output pins
-    Info (21060): Implemented 91 bidirectional pins
-    Info (21061): Implemented 181 logic cells
-Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 135 warnings
-    Info: Peak virtual memory: 4650 megabytes
-    Info: Processing ended: Mon Feb 06 16:25:08 2023
+    Info (21060): Implemented 63 bidirectional pins
+    Info (21061): Implemented 171 logic cells
+Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 152 warnings
+    Info: Peak virtual memory: 4617 megabytes
+    Info: Processing ended: Fri Feb 17 00:05:38 2023
     Info: Elapsed time: 00:00:02
-    Info: Total CPU time (on all processors): 00:00:01
+    Info: Total CPU time (on all processors): 00:00:02
 
 
