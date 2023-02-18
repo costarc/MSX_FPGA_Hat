@@ -130,6 +130,7 @@ architecture behavioural of MemoryMapper512K_Top is
 	
 	signal s_SRAM_ADDR		: std_logic_vector(20 downto 0);	
 	signal s_reset				: std_logic := '0';
+	signal s_wait_n			: std_logic := '1';
 	signal s_segment			: std_logic_vector(20 downto 0);
 	signal s_ffff_slt			: std_logic;
 	signal slt_exp_n			: std_logic_vector(3 downto 0);
@@ -137,15 +138,24 @@ architecture behavioural of MemoryMapper512K_Top is
 	
 begin
 
-	s_reset		<= not (KEY(0) and RESET_n);
-	LEDG			<= s_reset & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
-	
-	-- Output signals to DE1
-	INT_n			<= 'Z';
-	WAIT_n		<= 'Z';
+	LEDG <= s_reset & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
 
+	-- Reset circuit
+	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
+    -- during a reset, which causes teh computer to freeze
+	s_reset 	<= not (KEY(0) and RESET_n);
+	WAIT_n 	<= s_wait_n;
+	INT_n  	<= '1'; -- when (not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg) = '1') else 'Z';
 	BUSDIR_n <= not s_iorq_r_reg;
-		
+	process(s_reset)
+	begin
+	if s_reset = '1' then
+		s_wait_n <= '1';
+	else
+		s_wait_n <= 'Z';
+	end if;
+	end process;
+
 	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
 	
     -- Auxiliary Generic control signals
@@ -202,10 +212,10 @@ begin
 	end process;
 	
 	-- Display the current Memory Address in the 7 segment display
-	HEXDIGIT0 <= s_SRAM_ADDR(7 downto 4);
-	HEXDIGIT1 <= s_SRAM_ADDR(11 downto 8);
-	HEXDIGIT2 <= s_SRAM_ADDR(15 downto 12);
-	HEXDIGIT3 <= s_SRAM_ADDR(19 downto 16);
+	HEXDIGIT0 <= s_fc(3 downto 0);
+	HEXDIGIT1 <= s_fd(3 downto 0);
+	HEXDIGIT2 <= s_fe(3 downto 0);
+	HEXDIGIT3 <= s_ff(3 downto 0);
 		
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,

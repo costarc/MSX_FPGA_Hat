@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MemoryMapper512K
-Mon Feb 06 16:25:08 2023
+Fri Feb 17 21:43:04 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -43,13 +43,13 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Mon Feb 06 16:25:08 2023           ;
+; Analysis & Synthesis Status        ; Successful - Fri Feb 17 21:43:04 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MemoryMapper512K                                ;
 ; Top-level Entity Name              ; MemoryMapper512K_Top                            ;
 ; Family                             ; Cyclone II                                      ;
-; Total logic elements               ; 181                                             ;
-;     Total combinational functions  ; 157                                             ;
+; Total logic elements               ; 182                                             ;
+;     Total combinational functions  ; 158                                             ;
 ;     Dedicated logic registers      ; 28                                              ;
 ; Total registers                    ; 28                                              ;
 ; Total pins                         ; 283                                             ;
@@ -167,34 +167,34 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------------+-----------------+-----------------+-------------------------------------------------------------------------------------------------------------------+---------+
 
 
-+------------------------------------------------------+
-; Analysis & Synthesis Resource Usage Summary          ;
-+---------------------------------------------+--------+
-; Resource                                    ; Usage  ;
-+---------------------------------------------+--------+
-; Estimated Total logic elements              ; 181    ;
-;                                             ;        ;
-; Total combinational functions               ; 157    ;
-; Logic element usage by number of LUT inputs ;        ;
-;     -- 4 input functions                    ; 92     ;
-;     -- 3 input functions                    ; 22     ;
-;     -- <=2 input functions                  ; 43     ;
-;                                             ;        ;
-; Logic elements by mode                      ;        ;
-;     -- normal mode                          ; 123    ;
-;     -- arithmetic mode                      ; 34     ;
-;                                             ;        ;
-; Total registers                             ; 28     ;
-;     -- Dedicated logic registers            ; 28     ;
-;     -- I/O registers                        ; 0      ;
-;                                             ;        ;
-; I/O pins                                    ; 283    ;
-; Embedded Multiplier 9-bit elements          ; 0      ;
-; Maximum fan-out node                        ; KEY[0] ;
-; Maximum fan-out                             ; 29     ;
-; Total fan-out                               ; 723    ;
-; Average fan-out                             ; 1.54   ;
-+---------------------------------------------+--------+
++---------------------------------------------------------+
+; Analysis & Synthesis Resource Usage Summary             ;
++---------------------------------------------+-----------+
+; Resource                                    ; Usage     ;
++---------------------------------------------+-----------+
+; Estimated Total logic elements              ; 182       ;
+;                                             ;           ;
+; Total combinational functions               ; 158       ;
+; Logic element usage by number of LUT inputs ;           ;
+;     -- 4 input functions                    ; 92        ;
+;     -- 3 input functions                    ; 22        ;
+;     -- <=2 input functions                  ; 44        ;
+;                                             ;           ;
+; Logic elements by mode                      ;           ;
+;     -- normal mode                          ; 124       ;
+;     -- arithmetic mode                      ; 34        ;
+;                                             ;           ;
+; Total registers                             ; 28        ;
+;     -- Dedicated logic registers            ; 28        ;
+;     -- I/O registers                        ; 0         ;
+;                                             ;           ;
+; I/O pins                                    ; 283       ;
+; Embedded Multiplier 9-bit elements          ; 0         ;
+; Maximum fan-out node                        ; s_reset~0 ;
+; Maximum fan-out                             ; 30        ;
+; Total fan-out                               ; 726       ;
+; Average fan-out                             ; 1.55      ;
++---------------------------------------------+-----------+
 
 
 +-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -202,7 +202,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+---------------------------------------------+--------------+
 ; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                         ; Library Name ;
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+---------------------------------------------+--------------+
-; |MemoryMapper512K_Top      ; 157 (112)         ; 28 (20)      ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MemoryMapper512K_Top                       ; work         ;
+; |MemoryMapper512K_Top      ; 158 (113)         ; 28 (20)      ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MemoryMapper512K_Top                       ; work         ;
 ;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX0 ; work         ;
 ;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX2 ; work         ;
@@ -268,7 +268,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Mon Feb 06 16:25:06 2023
+    Info: Processing started: Fri Feb 17 21:43:02 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MemoryMapper512K -c MemoryMapper512K
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Info (12021): Found 2 design units, including 1 entities, in source file exp_slot.vhd
@@ -309,7 +309,7 @@ Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(75): us
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(80): used implicit default value for signal "AUD_DACDAT" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(82): used implicit default value for signal "AUD_XCK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(129): used implicit default value for signal "s_mapper_reg_w" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10492): VHDL Process Statement warning at MemoryMapper512K.vhd(187): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at MemoryMapper512K.vhd(198): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
 Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
 Info (12128): Elaborating entity "exp_slot" for hierarchy "exp_slot:exp"
 Warning (13039): The following bidir pins have no drivers
@@ -393,7 +393,7 @@ Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "AUD_XCK" is stuck at GND
 Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
     Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
-Warning (21074): Design contains 27 input pin(s) that do not drive logic
+Warning (21074): Design contains 26 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "CLOCK_24[0]"
     Warning (15610): No output dependent on input pin "CLOCK_24[1]"
     Warning (15610): No output dependent on input pin "CLOCK_27[0]"
@@ -419,16 +419,15 @@ Warning (21074): Design contains 27 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "TCK"
     Warning (15610): No output dependent on input pin "TCS"
     Warning (15610): No output dependent on input pin "AUD_ADCDAT"
-    Warning (15610): No output dependent on input pin "CS2_n"
-    Warning (15610): No output dependent on input pin "MSX_CLK"
-Info (21057): Implemented 464 device resources after synthesis - the final resource count might be different
+    Warning (15610): No output dependent on input pin "CS_n"
+Info (21057): Implemented 465 device resources after synthesis - the final resource count might be different
     Info (21058): Implemented 51 input pins
     Info (21059): Implemented 141 output pins
     Info (21060): Implemented 91 bidirectional pins
-    Info (21061): Implemented 181 logic cells
-Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 135 warnings
+    Info (21061): Implemented 182 logic cells
+Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 134 warnings
     Info: Peak virtual memory: 4650 megabytes
-    Info: Processing ended: Mon Feb 06 16:25:08 2023
+    Info: Processing ended: Fri Feb 17 21:43:04 2023
     Info: Elapsed time: 00:00:02
     Info: Total CPU time (on all processors): 00:00:01
 

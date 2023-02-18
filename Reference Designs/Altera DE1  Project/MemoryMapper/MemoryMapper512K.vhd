@@ -92,11 +92,11 @@ port (
     IORQ_n:			in std_logic;
     SLTSL_n:			in std_logic;
     U1OE_n:			out std_logic;
-    CS2_n:			in std_logic;
+    CS_n:			in std_logic;
     BUSDIR_n:		out std_logic;
     M1_n:				in std_logic;
     INT_n:			out std_logic;
-    MSX_CLK:			in std_logic;
+    RESET_n:			in std_logic;
     WAIT_n:			out std_logic); 
 end MemoryMapper512K_Top;
 
@@ -130,22 +130,33 @@ architecture bevioural of MemoryMapper512K_Top is
 	
 	signal s_SRAM_ADDR:	std_logic_vector(20 downto 0);	
 	signal s_reset	: std_logic := '0';
+	signal s_wait_n: std_logic;
 	signal s_segment: std_logic_vector(20 downto 0);
 	signal ffff				: std_logic;
 	signal slt_exp_n		: std_logic_vector(3 downto 0);
 	
 begin
 
-	s_reset		<= not KEY(0);
+	-- Reset circuit
+	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
+    -- during a reset, which causes teh computer to freeze
+	s_reset <= not (KEY(0) and RESET_n);
+	WAIT_n <= s_wait_n;
+	process(s_reset)
+	begin
+	if s_reset = '1' then
+		s_wait_n <= '1';
+	else
+		s_wait_n <= 'Z';
+	end if;
+	end process;
+	
 	LEDR			<= '0' & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
 	LEDG			<= s_sltsl_en & slt_exp_n & "00" & s_reset;
 	
 	-- Output signals to DE1
 	INT_n			<= 'Z';
-	WAIT_n		<= 'Z';
-
 	BUSDIR_n <= not s_iorq_r_reg;
-		
 	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
 	
     -- Auxiliary Generic control signals

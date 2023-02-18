@@ -94,7 +94,7 @@ FL_BYTE_N                    : AA1       : output : 3.3-V LVTTL       :         
 FL_ADDR[16]                  : AA2       : output : 3.3-V LVTTL       :         : 2         : Y              
 RESERVED_INPUT_WITH_WEAK_PULLUP : AA3       :        :                   :         : 3         :                
 RESERVED_INPUT_WITH_WEAK_PULLUP : AA4       :        :                   :         : 3         :                
-RESERVED_INPUT_WITH_WEAK_PULLUP : AA5       :        :                   :         : 3         :                
+SRAM_ADDR[15]                : AA5       : output : 3.3-V LVTTL       :         : 3         : Y              
 VCCIO3                       : AA6       : power  :                   : 3.3V    : 3         :                
 A[13]                        : AA7       : input  : 3.3-V LVTTL       :         : 3         : Y              
 SRAM_DQ[2]                   : AA8       : bidir  : 3.3-V LVTTL       :         : 3         : Y              
@@ -172,7 +172,7 @@ HEX1[2]                      : C13       : output : 3.3-V LVTTL       :         
 GND                          : C14       : gnd    :                   :         :           :                
 RESERVED_INPUT_WITH_WEAK_PULLUP : C15       :        :                   :         : 7         :                
 GND                          : C16       : gnd    :                   :         :           :                
-SRAM_ADDR[8]                 : C17       : output : 3.3-V LVTTL       :         : 7         : N              
+RESERVED_INPUT_WITH_WEAK_PULLUP : C17       :        :                   :         : 7         :                
 GND                          : C18       : gnd    :                   :         :           :                
 HEX3[4]                      : C19       : output : 3.3-V LVTTL       :         : 7         : Y              
 LCD_DATA[7]                  : C20       : bidir  : 3.3-V LVTTL       :         : 6         : Y              
@@ -375,7 +375,7 @@ CONF_DONE                    : M18       :        :                   :         
 RESERVED_INPUT_WITH_WEAK_PULLUP : M19       :        :                   :         : 5         :                
 RESERVED_INPUT_WITH_WEAK_PULLUP : M20       :        :                   :         : 5         :                
 RESERVED_INPUT_WITH_WEAK_PULLUP : M21       :        :                   :         : 5         :                
-SRAM_ADDR[15]                : M22       : output : 3.3-V LVTTL       :         : 5         : N              
+RESERVED_INPUT_WITH_WEAK_PULLUP : M22       :        :                   :         : 5         :                
 FL_ADDR[10]                  : N1        : output : 3.3-V LVTTL       :         : 2         : Y              
 FL_ADDR[9]                   : N2        : output : 3.3-V LVTTL       :         : 2         : Y              
 GND                          : N3        : gnd    :                   :         :           :                
@@ -470,7 +470,7 @@ GND                          : U3        : gnd    :                   :         
 VCCIO2                       : U4        : power  :                   : 3.3V    : 2         :                
 GNDA1                        : U5        : gnd    :                   :         :           :                
 VCCD_PLL1                    : U6        : power  :                   : 1.2V    :           :                
-RESERVED_INPUT_WITH_WEAK_PULLUP : U7        :        :                   :         : 3         :                
+SRAM_ADDR[8]                 : U7        : output : 3.3-V LVTTL       :         : 3         : Y              
 D[6]                         : U8        : bidir  : 3.3-V LVTTL       :         : 3         : Y              
 A[3]                         : U9        : input  : 3.3-V LVTTL       :         : 3         : Y              
 A[2]                         : U10       : input  : 3.3-V LVTTL       :         : 3         : Y              

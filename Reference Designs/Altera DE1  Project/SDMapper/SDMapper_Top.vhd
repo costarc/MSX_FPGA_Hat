@@ -109,7 +109,6 @@ port (
     SD2_MOSI: 		out std_logic;							--	
     SD2_MISO: 		in std_logic;							--	
 	 
-    
     -- MSX Bus
     A:				in std_logic_vector(15 downto 0);
     D:				inout std_logic_vector(7 downto 0);
@@ -119,11 +118,10 @@ port (
     IORQ_n:			in std_logic;
     SLTSL_n:		in std_logic;
     U1OE_n:			out std_logic;
-    CS2_n:			in std_logic;
+    CS_n:			in std_logic;
     BUSDIR_n:		out std_logic;
     M1_n:			in std_logic;
     INT_n:			out std_logic;
-    --MSX_CLK:		in std_logic;
     WAIT_n:			out std_logic;
 	 RESET_n:		in std_logic); 
 end SDMapper_TOP;
@@ -142,6 +140,7 @@ architecture bevioural of SDMapper_TOP is
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
 	signal s_reset			: std_logic := '0';
+	signal s_wait_n: std_logic;
 	signal s_sltsl_en		: std_logic;	
 	
 	-- Flash ASCII16
@@ -166,7 +165,7 @@ architecture bevioural of SDMapper_TOP is
 	signal spi_ctrl_wr_s	: std_logic;
 	signal spi_ctrl_rd_s	: std_logic;
 	signal sd_sel_q		: std_logic_vector(1 downto 0);
-	signal wait_n_s		: std_logic;
+	signal s_spi_wait_n		: std_logic;
 
 	-- Timer
 	signal tmr_cnt_q		: std_logic_vector(15 downto 0);	-- clock 25MHz: decrement each 40ns
@@ -196,14 +195,34 @@ architecture bevioural of SDMapper_TOP is
 	signal s_ffff_slt			: std_logic;
 	signal slt_exp_n			: std_logic_vector(3 downto 0);
 	signal s_expn_q			: std_logic_vector(7 downto 0);
+	signal s_sdcard_q			: std_logic_vector(7 downto 0);
+	
+	
 	
 begin
 
+	-- Reset circuit
+	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
+    -- during a reset, which causes teh computer to freeze
+	s_reset <= not (KEY(0) and RESET_n);
+	WAIT_n <= s_wait_n; --'Z' when s_spi_wait_n = '1' else '0'; --s_wait_n;
+	process(s_reset, s_spi_wait_n)
+	begin
+	if s_reset = '1' then
+		s_wait_n <= '1';
+	else
+		if s_spi_wait_n = '1' then    -- WAIT is controlled by SPI process during SD CARD access
+			s_wait_n <= 'Z';
+		else
+			s_wait_n <= '0';
+		end if;
+	end if;
+	end process;
 	
-	-- Some cool lighs flashing while you play games with your Real MSX and DE1 as Disk Drives
+	-- Some cool ligths flashing while you play games with your Real MSX and DE1 as Disk Drives
 	-- Also used for debugging.
 	LEDG <= s_sltsl_en & slt_exp_n & s_ffff_slt & s_sltsl_ram_en & s_sltsl_rom_en;
-	LEDR <= '0' & spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & not sd_wp_i & not sd_pres_n_i;
+	LEDR <= s_reset & spi_cs_s & spi_ctrl_rd_s & regs_cs_s & sd_sel_q & not sd_wp_i & not sd_pres_n_i;
 	HEXDIGIT0 <= s_fc(3 downto 0);
 	HEXDIGIT1 <= s_fd(3 downto 0);
 	HEXDIGIT2 <= '0'&rom_bank1_q(2 downto 0);
@@ -213,9 +232,6 @@ begin
 	INT_n  <= 'Z';
 	BUSDIR_n <= not s_iorq_r_reg;
 	s_sltsl_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
-	s_reset <= not KEY(0);												-- Reset is set HIGH. KEY(0) in the DE0/DE1 will send a reset to the components.
-	-- /WAIT_n is needed for the SPI/SD Card operation. It's asserted inside the SPI component
-	WAIT_n <= 'Z' when wait_n_s = '1' else '0';
 	-- Enable output in U1 (74LVC245)
 	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg or spi_cs_s);
 
@@ -308,6 +324,7 @@ begin
 		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else												-- SRAM / Mapper
 		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else												-- SRAM / Mapper
 		  "111" & s_ff when s_iorq_r = '1' and s_io_addr = x"FF" else												-- SRAM / Mapper
+		  s_sdcard_q when spi_cs_s = '1' and s_mreq = '1' else														-- SDCARD data
 		 (others => 'Z'); 
 
 	-- Status flags
@@ -435,9 +452,10 @@ begin
 		-- CPU interface
 		cs_i				=> spi_cs_s,
 		data_bus_io		=> D,
+		sdcard_q			=> s_sdcard_q,
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
-		wait_n_o			=> wait_n_s,
+		wait_n_o			=> s_spi_wait_n,
 		-- SD card interface
 		spi_sclk_o		=> s_sd_clk,
 		spi_mosi_o		=> s_sd_mosi, --SD_CMD,

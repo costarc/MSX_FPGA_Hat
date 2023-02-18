@@ -1,0 +1,16 @@
+Fitter Status : Successful - Sat Feb 18 15:58:11 2023
+Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
+Revision Name : MegaRAM
+Top-level Entity Name : MegaRAM
+Family : Cyclone III
+Device : EP3C16F484C6
+Timing Models : Final
+Total logic elements : 133 / 15,408 ( < 1 % )
+    Total combinational functions : 129 / 15,408 ( < 1 % )
+    Dedicated logic registers : 25 / 15,408 ( < 1 % )
+Total registers : 25
+Total pins : 247 / 347 ( 71 % )
+Total virtual pins : 0
+Total memory bits : 0 / 516,096 ( 0 % )
+Embedded Multiplier 9-bit elements : 0 / 112 ( 0 % )
+Total PLLs : 0 / 4 ( 0 % )

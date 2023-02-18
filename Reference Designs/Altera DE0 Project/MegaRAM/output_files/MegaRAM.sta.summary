@@ -1,0 +1,113 @@
+------------------------------------------------------------
+TimeQuest Timing Analyzer Summary
+------------------------------------------------------------
+
+Type  : Slow 1200mV 85C Model Setup 'A[14]'
+Slack : -5.329
+TNS   : -29.252
+
+Type  : Slow 1200mV 85C Model Setup 'SLTSL_n'
+Slack : -0.513
+TNS   : -6.947
+
+Type  : Slow 1200mV 85C Model Hold 'A[14]'
+Slack : -0.765
+TNS   : -3.963
+
+Type  : Slow 1200mV 85C Model Hold 'SLTSL_n'
+Slack : -0.411
+TNS   : -8.112
+
+Type  : Slow 1200mV 85C Model Recovery 'A[0]'
+Slack : -0.087
+TNS   : -0.087
+
+Type  : Slow 1200mV 85C Model Removal 'A[0]'
+Slack : -0.134
+TNS   : -0.134
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'SLTSL_n'
+Slack : -3.000
+TNS   : -27.000
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'A[0]'
+Slack : -3.000
+TNS   : -4.035
+
+Type  : Slow 1200mV 85C Model Minimum Pulse Width 'A[14]'
+Slack : -3.000
+TNS   : -3.000
+
+Type  : Slow 1200mV 0C Model Setup 'A[14]'
+Slack : -4.731
+TNS   : -25.935
+
+Type  : Slow 1200mV 0C Model Setup 'SLTSL_n'
+Slack : -0.409
+TNS   : -4.934
+
+Type  : Slow 1200mV 0C Model Hold 'A[14]'
+Slack : -0.626
+TNS   : -3.286
+
+Type  : Slow 1200mV 0C Model Hold 'SLTSL_n'
+Slack : -0.483
+TNS   : -10.324
+
+Type  : Slow 1200mV 0C Model Recovery 'A[0]'
+Slack : -0.029
+TNS   : -0.029
+
+Type  : Slow 1200mV 0C Model Removal 'A[0]'
+Slack : -0.131
+TNS   : -0.131
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'SLTSL_n'
+Slack : -3.000
+TNS   : -27.000
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'A[0]'
+Slack : -3.000
+TNS   : -4.002
+
+Type  : Slow 1200mV 0C Model Minimum Pulse Width 'A[14]'
+Slack : -3.000
+TNS   : -3.000
+
+Type  : Fast 1200mV 0C Model Setup 'A[14]'
+Slack : -2.456
+TNS   : -13.461
+
+Type  : Fast 1200mV 0C Model Setup 'SLTSL_n'
+Slack : -0.446
+TNS   : -9.074
+
+Type  : Fast 1200mV 0C Model Hold 'A[14]'
+Slack : -0.606
+TNS   : -3.252
+
+Type  : Fast 1200mV 0C Model Hold 'SLTSL_n'
+Slack : -0.257
+TNS   : -4.654
+
+Type  : Fast 1200mV 0C Model Recovery 'A[0]'
+Slack : -0.282
+TNS   : -0.282
+
+Type  : Fast 1200mV 0C Model Removal 'A[0]'
+Slack : -0.064
+TNS   : -0.064
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'SLTSL_n'
+Slack : -3.000
+TNS   : -40.782
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'A[0]'
+Slack : -3.000
+TNS   : -5.195
+
+Type  : Fast 1200mV 0C Model Minimum Pulse Width 'A[14]'
+Slack : -3.000
+TNS   : -3.329
+
+------------------------------------------------------------

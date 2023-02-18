@@ -41,7 +41,7 @@ port (
     														
     FL_DQ:			inout std_logic_vector(14 downto 0);	--	FLASH Data bus 15 Bits
     FL_DQ15_AM1:	inout std_logic;						--	FLASH Data bus Bit 15 or Address A-1
-    FL_ADDR:		out std_logic_vector(21 downto 0);		--	FLASH Address bus 22 Bits
+    FL_ADDR:		out std_logic_vector(21 downto 0);	--	FLASH Address bus 22 Bits
     FL_WE_N:		out std_logic;							--	FLASH Write Enable
     FL_RST_N:		out std_logic;							--	FLASH Reset
     FL_OE_N:		out std_logic;							--	FLASH Output Enable
@@ -112,19 +112,19 @@ architecture behavioural of MSX_DE1_Top is
 	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
-	signal s_msx_a : std_logic_vector(15 downto 0);
-	signal s_msx_d : std_logic_vector(7 downto 0);
 	signal s_mreq: std_logic;
+	signal s_iorq_en			: std_logic;
 	signal s_iorq_r: std_logic;
 	signal s_iorq_w: std_logic;
 	signal s_iorq_r_reg: std_logic;
 	signal s_iorq_w_reg: std_logic;
 	signal s_reset: std_logic := '0';
-	signal s_d_bus_out	: std_logic;
+	signal s_wait_n: std_logic := '1';
+	signal s_int_n: std_logic := '1';
+	signal s_busdir_n: std_logic := '1';
+	signal s_sltsl_en	: std_logic;
 	
 	-- signals for cartridge emulation
-	signal s_rom_en : std_logic;
-	signal s_rom_d : std_logic_vector(7 downto 0);
 	signal s_rom_a : std_logic_vector(23 downto 0);
 	signal s_flashbase	: std_logic_vector(23 downto 0);
 	
@@ -133,58 +133,76 @@ architecture behavioural of MSX_DE1_Top is
 	
 begin
 
+	-- Reset circuit
+	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
+    -- during a reset, which causes teh computer to freeze
+	s_reset 	<= not (KEY(0) and RESET_n);
+	WAIT_n 	<= s_wait_n;
+	INT_n  	<= s_int_n;
+   BUSDIR_n <= not s_iorq_r_reg;
+	process(s_reset)
+	begin
+	if s_reset = '1' then
+		s_wait_n <= '1';
+		s_int_n <= '1';
+	else
+		s_wait_n <= 'Z';
+		s_int_n <= '1';
+	end if;
+	end process;
+	
 	-- Display the current Memory Address in the 7 segment display
 	HEXDIGIT0 <= s_reg56_d(3 downto 0);
 	HEXDIGIT1 <= s_reg56_d(7 downto 4);
-	HEXDIGIT2 <= s_msx_a(11 downto 8);
-	HEXDIGIT3 <= s_msx_a(15 downto 12);
+	HEXDIGIT2 <= A(11 downto 8);
+	HEXDIGIT3 <= A(15 downto 12);
 
-   LEDG <= s_reset & "0" & s_rom_en & SLTSL_n & s_d_bus_out & MREQ_n & IORQ_n & RD_n & WR_n & '0';
-	 
-	s_d_bus_out <= s_rom_en or s_iorq_r_reg or s_iorq_w_reg;
-	
-	U1OE_n <= not s_d_bus_out; --'0' when s_rom_en = '1' or s_iorq_r_reg = '1' or s_iorq_w_reg = '1' else '1';
-	
-	BUSDIR_n <= not s_iorq_r_reg;
-	
-	s_reset <= not KEY(0);
+	--HEXDIGIT0 <= A(3 DOWNTO 0) WHEN KEY(2) = '0' AND (A = x"0FFF" or A = X"F000");
+	--HEXDIGIT1 <= A(7 DOWNTO 4) WHEN KEY(2) = '0' AND (A = x"0FFF" or A = X"F000");
+	--HEXDIGIT2 <= A(11 DOWNTO 8) WHEN KEY(2) = '0' AND (A = x"0FFF" or A = X"F000");
+	--HEXDIGIT3 <= A(15 DOWNTO 12) WHEN KEY(2) = '0' AND (A = x"0FFF" or A = X"F000");
+
+   LEDG <= s_reset & SLTSL_n & s_sltsl_en & "000" & MREQ_n & IORQ_n & WR_n & RD_n;
+	SRAM_DQ(6 downto 0) <= s_iorq_r_reg & s_iorq_w_reg & IORQ_n & WR_n & RD_n & s_wait_n & s_reset;
+
+	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
 	
 	-- Cartridge Emulation
- 
+   -- DE0 ONLY --
+	FL_BYTE_N <= '0';    			-- Set flashram to Byte mode
+	FL_WP_N <= '0';				
+	FL_DQ15_AM1 <= s_rom_a(22);	-- input for the LSB (A-1) address function for the flash in Byte mode
+	--------------
 	FL_WE_N <= '1';
 	FL_RST_N <= '1';
-	FL_CE_N <= not s_rom_en;
+	FL_CE_N <= not s_sltsl_en;
 	FL_ADDR <= s_rom_a(21 downto 0);
 	FL_OE_N <= RD_n;
 	s_rom_a <= s_flashbase + ((A - x"4000") + (SW(5 downto 0) * x"2000"));
-	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 	s_flashbase <= x"1A0000";
+	
+    -- Auxiliary Generic control signals
+	s_iorq_en	<= '1' when IORQ_n = '0' and M1_n = '1' else '0';
+	s_iorq_r		<= '1' when RD_n = '0' and s_iorq_en = '1' else '0';
+	s_iorq_w		<= '1' when WR_n = '0' and s_iorq_en = '1'  else '0';
+	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
+	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';
 	
 	-- I/O Device Emulation - MSXPi port 0x56 is used to write/read a Register
 	s_iorq_r_reg <= '1' when A = x"56" and s_iorq_r = '1' else '0';
 	s_iorq_w_reg <= '1' when A = x"56" and s_iorq_w = '1' else '0';
 	
-	-- Auxiliary Generic control signals
-	s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
-	s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
-	s_mreq <= '1' when RD_n = '0' and  MREQ_n = '0' and M1_n = '1' else '0';
-	 
 	-- Output signals to DE1
 	INT_n  <= 'Z';
-	WAIT_n <= 'Z';
 
-	D <=	FL_DQ(7 downto 0) when s_rom_en = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
-	 		s_reg56_d when s_iorq_r_reg = '1' else         -- MSX read Register on port 0x56
+	D <=	FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
+	 		s_reg56_d when s_iorq_r_reg = '1' else								-- MSX read Register on port 0x56
 	 		(others => 'Z'); 
 	 	 
-	 process(s_iorq_w_reg, s_rom_en)
+	 process(s_iorq_w_reg)
 	 begin
 		if s_reset = '1' then
 			s_reg56_d <= x"00";
-			s_msx_a <= x"0000";
-		elsif s_rom_en = '1' then
-			s_msx_a <= A;
-			s_reg56_d <= A(7 downto 0);
 		elsif falling_edge(s_iorq_w_reg) then
 			s_reg56_d <= D;
 		end if;

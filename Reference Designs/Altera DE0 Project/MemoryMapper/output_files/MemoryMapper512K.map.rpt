@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MemoryMapper512K
-Fri Feb 17 00:05:38 2023
+Sat Feb 18 16:10:58 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -45,13 +45,13 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Fri Feb 17 00:05:38 2023           ;
+; Analysis & Synthesis Status        ; Successful - Sat Feb 18 16:10:58 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MemoryMapper512K                                ;
 ; Top-level Entity Name              ; MemoryMapper512K_Top                            ;
 ; Family                             ; Cyclone III                                     ;
-; Total logic elements               ; 171                                             ;
-;     Total combinational functions  ; 147                                             ;
+; Total logic elements               ; 162                                             ;
+;     Total combinational functions  ; 138                                             ;
 ;     Dedicated logic registers      ; 28                                              ;
 ; Total registers                    ; 28                                              ;
 ; Total pins                         ; 247                                             ;
@@ -171,34 +171,34 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------------+-----------------+-----------------+------------------------------------------------------------------------------------------------------------------+---------+
 
 
-+------------------------------------------------------------+
-; Analysis & Synthesis Resource Usage Summary                ;
-+---------------------------------------------+--------------+
-; Resource                                    ; Usage        ;
-+---------------------------------------------+--------------+
-; Estimated Total logic elements              ; 171          ;
-;                                             ;              ;
-; Total combinational functions               ; 147          ;
-; Logic element usage by number of LUT inputs ;              ;
-;     -- 4 input functions                    ; 81           ;
-;     -- 3 input functions                    ; 26           ;
-;     -- <=2 input functions                  ; 40           ;
-;                                             ;              ;
-; Logic elements by mode                      ;              ;
-;     -- normal mode                          ; 113          ;
-;     -- arithmetic mode                      ; 34           ;
-;                                             ;              ;
-; Total registers                             ; 28           ;
-;     -- Dedicated logic registers            ; 28           ;
-;     -- I/O registers                        ; 0            ;
-;                                             ;              ;
-; I/O pins                                    ; 247          ;
-; Embedded Multiplier 9-bit elements          ; 0            ;
-; Maximum fan-out node                        ; KEY[0]~input ;
-; Maximum fan-out                             ; 29           ;
-; Total fan-out                               ; 974          ;
-; Average fan-out                             ; 1.33         ;
-+---------------------------------------------+--------------+
++---------------------------------------------------------+
+; Analysis & Synthesis Resource Usage Summary             ;
++---------------------------------------------+-----------+
+; Resource                                    ; Usage     ;
++---------------------------------------------+-----------+
+; Estimated Total logic elements              ; 162       ;
+;                                             ;           ;
+; Total combinational functions               ; 138       ;
+; Logic element usage by number of LUT inputs ;           ;
+;     -- 4 input functions                    ; 80        ;
+;     -- 3 input functions                    ; 27        ;
+;     -- <=2 input functions                  ; 31        ;
+;                                             ;           ;
+; Logic elements by mode                      ;           ;
+;     -- normal mode                          ; 114       ;
+;     -- arithmetic mode                      ; 24        ;
+;                                             ;           ;
+; Total registers                             ; 28        ;
+;     -- Dedicated logic registers            ; 28        ;
+;     -- I/O registers                        ; 0         ;
+;                                             ;           ;
+; I/O pins                                    ; 247       ;
+; Embedded Multiplier 9-bit elements          ; 0         ;
+; Maximum fan-out node                        ; s_reset~0 ;
+; Maximum fan-out                             ; 30        ;
+; Total fan-out                               ; 961       ;
+; Average fan-out                             ; 1.33      ;
++---------------------------------------------+-----------+
 
 
 +-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -206,7 +206,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+---------------------------------------------+--------------+
 ; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                         ; Library Name ;
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+---------------------------------------------+--------------+
-; |MemoryMapper512K_Top      ; 147 (103)         ; 28 (20)      ; 0           ; 0            ; 0       ; 0         ; 247  ; 0            ; |MemoryMapper512K_Top                       ; work         ;
+; |MemoryMapper512K_Top      ; 138 (94)          ; 28 (20)      ; 0           ; 0            ; 0       ; 0         ; 247  ; 0            ; |MemoryMapper512K_Top                       ; work         ;
 ;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX0 ; work         ;
 ;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MemoryMapper512K_Top|decoder_7seg:DISPHEX2 ; work         ;
@@ -254,10 +254,10 @@ Note: All latches listed above may not be present at the end of synthesis due to
 +----------------------------------------+---------+
 ; Inverted Register                      ; Fan out ;
 +----------------------------------------+---------+
-; s_fe[0]                                ; 3       ;
-; s_fc[0]                                ; 3       ;
-; s_fd[1]                                ; 3       ;
-; s_fc[1]                                ; 3       ;
+; s_fc[0]                                ; 10      ;
+; s_fc[1]                                ; 10      ;
+; s_fd[1]                                ; 10      ;
+; s_fe[0]                                ; 10      ;
 ; Total number of inverted registers = 4 ;         ;
 +----------------------------------------+---------+
 
@@ -268,8 +268,8 @@ Note: All latches listed above may not be present at the end of synthesis due to
 ; Multiplexer Inputs ; Bus Width ; Baseline Area ; Area if Restructured ; Saving if Restructured ; Registered ; Example Multiplexer Output              ;
 +--------------------+-----------+---------------+----------------------+------------------------+------------+-----------------------------------------+
 ; 4:1                ; 2 bits    ; 4 LEs         ; 4 LEs                ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|exp_slot:exp|Mux1 ;
-; 3:1                ; 3 bits    ; 6 LEs         ; 6 LEs                ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|D[5]              ;
-; 4:1                ; 6 bits    ; 12 LEs        ; 12 LEs               ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|HEXDIGIT2[2]      ;
+; 3:1                ; 3 bits    ; 6 LEs         ; 6 LEs                ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|D[7]              ;
+; 4:1                ; 5 bits    ; 10 LEs        ; 10 LEs               ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|s_SRAM_ADDR       ;
 ; 6:1                ; 5 bits    ; 20 LEs        ; 20 LEs               ; 0 LEs                  ; No         ; |MemoryMapper512K_Top|D[4]              ;
 +--------------------+-----------+---------------+----------------------+------------------------+------------+-----------------------------------------+
 
@@ -298,7 +298,7 @@ Note: All latches listed above may not be present at the end of synthesis due to
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Fri Feb 17 00:05:36 2023
+    Info: Processing started: Sat Feb 18 16:10:55 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MemoryMapper512K -c MemoryMapper512K
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Info (12021): Found 2 design units, including 1 entities, in source file memorymapper512k.vhd
@@ -346,7 +346,7 @@ Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(72): us
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(73): used implicit default value for signal "VGA_G" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(74): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MemoryMapper512K.vhd(129): used implicit default value for signal "s_mapper_reg_w" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10492): VHDL Process Statement warning at MemoryMapper512K.vhd(188): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
+Warning (10492): VHDL Process Statement warning at MemoryMapper512K.vhd(198): signal "s_reset" is read inside the Process Statement but isn't in the Process Statement's sensitivity list
 Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
 Info (12128): Elaborating entity "exp_slot" for hierarchy "exp_slot:exp"
 Info (10041): Inferred latch for "cpu_q[0]" at exp_slot.vhd(57)
@@ -454,10 +454,11 @@ Warning (13024): Output pins are stuck at VCC or GND
     Warning (13410): Pin "VGA_B[2]" is stuck at GND
     Warning (13410): Pin "VGA_B[3]" is stuck at GND
     Warning (13410): Pin "SRAM_OE_N" is stuck at GND
+    Warning (13410): Pin "INT_n" is stuck at VCC
 Info (286030): Timing-Driven Synthesis is running
 Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
     Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
-Warning (21074): Design contains 19 input pin(s) that do not drive logic
+Warning (21074): Design contains 18 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "CLOCK_50"
     Warning (15610): No output dependent on input pin "CLOCK_50_2"
     Warning (15610): No output dependent on input pin "KEY[1]"
@@ -476,16 +477,15 @@ Warning (21074): Design contains 19 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "FL_RY"
     Warning (15610): No output dependent on input pin "SD_WP_N"
     Warning (15610): No output dependent on input pin "CS_n"
-    Warning (15610): No output dependent on input pin "RESET_n"
-Info (21057): Implemented 418 device resources after synthesis - the final resource count might be different
+Info (21057): Implemented 409 device resources after synthesis - the final resource count might be different
     Info (21058): Implemented 43 input pins
     Info (21059): Implemented 141 output pins
     Info (21060): Implemented 63 bidirectional pins
-    Info (21061): Implemented 171 logic cells
+    Info (21061): Implemented 162 logic cells
 Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 152 warnings
     Info: Peak virtual memory: 4617 megabytes
-    Info: Processing ended: Fri Feb 17 00:05:38 2023
-    Info: Elapsed time: 00:00:02
+    Info: Processing ended: Sat Feb 18 16:10:58 2023
+    Info: Elapsed time: 00:00:03
     Info: Total CPU time (on all processors): 00:00:02
 
 

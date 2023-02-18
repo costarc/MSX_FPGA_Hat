@@ -1,10 +1,10 @@
-Analysis & Synthesis Status : Successful - Fri Feb 17 00:05:38 2023
+Analysis & Synthesis Status : Successful - Sat Feb 18 16:10:58 2023
 Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
 Revision Name : MemoryMapper512K
 Top-level Entity Name : MemoryMapper512K_Top
 Family : Cyclone III
-Total logic elements : 171
-    Total combinational functions : 147
+Total logic elements : 162
+    Total combinational functions : 138
     Dedicated logic registers : 28
 Total registers : 28
 Total pins : 247

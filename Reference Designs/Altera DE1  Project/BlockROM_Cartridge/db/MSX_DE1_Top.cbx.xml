@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+<LOG_ROOT>
+	<PROJECT NAME="MSX_DE1_Top">
+		<CBX_INST_ENTRY INSTANCE_NAME="|MSX_DE1_Top|rom:galaga|altsyncram:Mux6_rtl_0" CBX_FILE_NAME="altsyncram_1b01.tdf"/>
+	</PROJECT>
+</LOG_ROOT>

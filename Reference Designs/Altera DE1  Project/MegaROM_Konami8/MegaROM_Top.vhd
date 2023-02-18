@@ -93,11 +93,11 @@ port (
     IORQ_n:			in std_logic;
     SLTSL_n:			in std_logic;
     U1OE_n:			out std_logic;
-    CS2_n:			in std_logic;
+    CS_n:			in std_logic;
     BUSDIR_n:		out std_logic;
     M1_n:				in std_logic;
     INT_n:			out std_logic;
-    MSX_CLK:			in std_logic;
+    RESET_n:			in std_logic;
     WAIT_n:			out std_logic); 
 end MegaROM_Top;
 
@@ -115,6 +115,7 @@ architecture bevioural of MegaROM_Top is
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
 	signal s_reset: std_logic := '0';
+	signal s_wait_n: std_logic;
 	
 	-- signals for cartridge emulation
 	signal s_rom_en : std_logic;
@@ -131,14 +132,27 @@ architecture bevioural of MegaROM_Top is
 begin
 
 	-- Output signals to DE1
-	INT_n  <= 'Z';
-	WAIT_n <= 'Z';
+	INT_n  	<= 'Z';
 	BUSDIR_n <= 'Z';
-	
+		
 	-- Enable output in U1 (74LVC245)
 	U1OE_n <= not s_rom_en;
 	
-	s_reset <= not KEY(0);
+	-- Reset circuit
+	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
+    -- during a reset, which causes teh computer to freeze
+	s_reset <= not (KEY(0) and RESET_n);
+	WAIT_n 	<= s_wait_n;
+	
+	process(s_reset)
+	begin
+	if s_reset = '1' then
+		s_wait_n <= '1';
+	else
+		s_wait_n <= 'Z';
+	end if;
+	end process;
+	
 	LEDG <= A(15 downto 8);
 	LEDR <= s_rom_en & rom_bank4_q(2 downto 0) & rom_bank3_q(2 downto 0) & rom_bank2_q(2 downto 0);
 
@@ -169,10 +183,6 @@ begin
 	
 	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
 	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
-
-	-- Output signals to DE1
-	INT_n  <= 'Z';
-	WAIT_n <= 'Z';
 	
 	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
 	 		(others => 'Z'); 

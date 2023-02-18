@@ -10,6 +10,7 @@ entity spi is
 		-- CPU interface
 		cs_i				: in    std_logic;
 		data_bus_io		: inout std_logic_vector(7 downto 0);
+		sdcard_q 		: inout std_logic_vector(7 downto 0);
 		wr_n_i			: in    std_logic;
 		rd_n_i			: in    std_logic;
 		wait_n_o			: out   std_logic;
@@ -53,9 +54,10 @@ begin
 	end process;
 
 	-- Data read
-	data_bus_io <= spi_data_q	when cs_i = '1' and rd_n_i = '0'	else
-						(others => 'Z');
-
+	--data_bus_io <= spi_data_q	when cs_i = '1' and rd_n_i = '0'	else
+	--					(others => 'Z');
+	sdcard_q <= spi_data_q;
+	
 	-- R/W port
 	process (reset_n_i, ff_clr_s, spi_cs_s)
 	begin

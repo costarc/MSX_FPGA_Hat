@@ -2,7 +2,7 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
-Entity MemoryMapper512K_Top is
+Entity MSX_DE1_Top is
 port (
     CLOCK_50:		in std_logic;		--	50 MHz
     CLOCK_50_2:		in std_logic;								--	50 MHz
@@ -41,7 +41,7 @@ port (
     														
     FL_DQ:			inout std_logic_vector(14 downto 0);	--	FLASH Data bus 15 Bits
     FL_DQ15_AM1:	inout std_logic;						--	FLASH Data bus Bit 15 or Address A-1
-    FL_ADDR:		out std_logic_vector(21 downto 0);		--	FLASH Address bus 22 Bits
+    FL_ADDR:		out std_logic_vector(21 downto 0);	--	FLASH Address bus 22 Bits
     FL_WE_N:		out std_logic;							--	FLASH Write Enable
     FL_RST_N:		out std_logic;							--	FLASH Reset
     FL_OE_N:		out std_logic;							--	FLASH Output Enable
@@ -97,115 +97,101 @@ port (
     INT_n:				out std_logic;
     RESET_n:			in std_logic;
     WAIT_n:				out std_logic); 
-end MemoryMapper512K_Top;
+end MSX_DE1_Top;
 
-architecture behavioural of MemoryMapper512K_Top is
+architecture behavioural of MSX_DE1_Top is
 	
 	component decoder_7seg
 	port (
 		NUMBER		: in   std_logic_vector(3 downto 0);
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
-
+	
 	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT1		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
-	-- signals for cartridge emulation
-	signal s_sltsl_en			: std_logic;
-	signal s_busd_en			: std_logic;
-	signal s_io_addr 			: std_logic_vector(7 downto 0);
-	signal s_fc					: std_logic_vector(4 downto 0) := "00011";
-	signal s_fd					: std_logic_vector(4 downto 0) := "00010";
-	signal s_fe					: std_logic_vector(4 downto 0) := "00001";
-	signal s_ff					: std_logic_vector(4 downto 0) := "00000";
-	signal s_mreq				: std_logic;
-	signal s_iorq_en			: std_logic;
-	signal s_iorq_r			: std_logic;
-	signal s_iorq_w			: std_logic;
-	signal s_iorq_r_reg		: std_logic;
-	signal s_iorq_w_reg		: std_logic;
-	signal s_mapper_reg_w	: std_logic;
+	signal s_msx_a : std_logic_vector(15 downto 0);
+	signal s_msx_d : std_logic_vector(7 downto 0);
+	signal s_mreq: std_logic;
+	signal s_iorq_r: std_logic;
+	signal s_iorq_w: std_logic;
+	signal s_iorq_r_reg: std_logic;
+	signal s_iorq_w_reg: std_logic;
+	signal s_reset: std_logic := '0';
+	signal s_d_bus_out	: std_logic;
 	
-	signal s_SRAM_ADDR		: std_logic_vector(20 downto 0);	
-	signal s_reset				: std_logic := '0';
-	signal s_segment			: std_logic_vector(20 downto 0);
-	signal s_ffff_slt			: std_logic;
-	signal slt_exp_n			: std_logic_vector(3 downto 0);
-	signal s_expn_q			: std_logic_vector(7 downto 0);
+	-- signals for cartridge emulation
+	signal s_rom_en : std_logic;
+	signal s_rom_d : std_logic_vector(7 downto 0);
+	signal s_rom_a : std_logic_vector(23 downto 0);
+	signal s_flashbase	: std_logic_vector(23 downto 0);
+	
+	-- signals for I/O Device Emulation
+	signal s_reg56_d: std_logic_vector(7 downto 0) := x"CD";
 	
 begin
 
-	s_reset		<= not (KEY(0) and RESET_n);
-	LEDG			<= s_reset & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
-	
-	-- Output signals to DE1
-	INT_n			<= 'Z';
-	WAIT_n		<= 'Z';
-
-	BUSDIR_n <= not s_iorq_r_reg;
-		
-	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
-	
-    -- Auxiliary Generic control signals
-    -- Auxiliary Generic control signals
-	s_iorq_en	<= '1' when IORQ_n = '0' and M1_n = '1' else '0';
-	s_iorq_r		<= '1' when RD_n = '0' and s_iorq_en = '1' else '0';
-	s_iorq_w		<= '1' when WR_n = '0' and s_iorq_en = '1'  else '0';
-	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
-	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';
-	
-	s_io_addr	<= A(7 downto 0);
-	s_iorq_r_reg <= '1' when s_iorq_r = '1' and (s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
-	s_iorq_w_reg <= '1' when s_iorq_w = '1' and (s_io_addr = x"FC" or s_io_addr = x"FD" or s_io_addr = x"FE" or s_io_addr = x"FF") else '0';
-	
-	-- Mapper implementation								
-	SRAM_CE_N <= slt_exp_n(0);								
-	SRAM_OE_N <= '0';	
-	SRAM_WE_N <= WR_n;
-	SRAM_ADDR <= s_SRAM_ADDR(17 downto 0);
-	SRAM_UB_N <= not s_SRAM_ADDR(18);						
-	SRAM_LB_N <= s_SRAM_ADDR(18);
-	
-	SRAM_DQ  <= D when slt_exp_n(0) = '0' and WR_n = '0' else (others => 'Z');
-					 
-	s_SRAM_ADDR <= (s_fc * x"4000") + A when A < x"4000" else
-						(s_fd * x"4000") + A - x"4000" when A < x"8000" else
-						(s_fe * x"4000") + A - x"8000" when A < x"c000" else
-						(s_ff * x"4000") + A - x"C000";
-		
-	D <= s_expn_q when SLTSL_n = '0' and s_ffff_slt = '1' and RD_n = '0' else -- Slot Select expansion
-	     SRAM_DQ when slt_exp_n(0) = '0' and s_mreq = '1' else
-		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else
-		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else
-		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else
-		  "111" & s_ff when s_iorq_r = '1' and s_io_addr = x"FF" else
-		  (others => 'Z');
-	
-	process(s_iorq_w_reg)
-	begin
-		if s_reset = '1' then
-			s_fc <= "00011";
-			s_fd <= "00010";
-			s_fe <= "00001";
-			s_ff <= "00000";
-		elsif falling_edge(s_iorq_w_reg) then
-			case s_io_addr is
-					when x"FC" => s_fc <= D(4 downto 0);
-					when x"FD" => s_fd <= D(4 downto 0);
-					when x"FE" => s_fe <= D(4 downto 0);
-					when x"FF" => s_ff <= D(4 downto 0);
-					when others => null;
-			end case ;
-		end if;
-	end process;
-	
 	-- Display the current Memory Address in the 7 segment display
-	HEXDIGIT0 <= s_SRAM_ADDR(7 downto 4);
-	HEXDIGIT1 <= s_SRAM_ADDR(11 downto 8);
-	HEXDIGIT2 <= s_SRAM_ADDR(15 downto 12);
-	HEXDIGIT3 <= s_SRAM_ADDR(19 downto 16);
+	HEXDIGIT0 <= s_reg56_d(3 downto 0);
+	HEXDIGIT1 <= s_reg56_d(7 downto 4);
+	HEXDIGIT2 <= s_msx_a(11 downto 8);
+	HEXDIGIT3 <= s_msx_a(15 downto 12);
+
+   LEDG <= s_reset & SLTSL_n & "0" & s_rom_en & s_d_bus_out & MREQ_n & IORQ_n & WR_n & '0' & RD_n;
+	 
+	s_d_bus_out <= s_rom_en or s_iorq_r_reg or s_iorq_w_reg;
+	
+	U1OE_n <= not s_d_bus_out; --'0' when s_rom_en = '1' or s_iorq_r_reg = '1' or s_iorq_w_reg = '1' else '1';
+	
+	BUSDIR_n <= not s_iorq_r_reg;
+	
+	s_reset		<= not (KEY(0) and RESET_n);
+	
+	-- Cartridge Emulation
+   -- DE0 ONLY --
+	FL_BYTE_N <= '0';    			-- Set flashram to Byte mode
+	FL_DQ15_AM1 <= s_rom_a(22);	-- input for the LSB (A-1) address function for the flash in Byte mode
+	--------------
+	FL_WE_N <= '1';
+	FL_RST_N <= '1';
+	FL_CE_N <= not s_rom_en;
+	FL_ADDR <= s_rom_a(21 downto 0);
+	FL_OE_N <= RD_n;
+	s_rom_a <= s_flashbase + ((A - x"4000") + (SW(5 downto 0) * x"2000"));
+	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
+	s_flashbase <= x"1A0000";
+	
+	-- I/O Device Emulation - MSXPi port 0x56 is used to write/read a Register
+	s_iorq_r_reg <= '1' when A = x"56" and s_iorq_r = '1' else '0';
+	s_iorq_w_reg <= '1' when A = x"56" and s_iorq_w = '1' else '0';
+	
+	-- Auxiliary Generic control signals
+	s_iorq_r <= '1' when RD_n = '0' and  IORQ_n = '0' else '0';
+	s_iorq_w <= '1' when WR_n = '0' and  IORQ_n = '0' else '0';
+	s_mreq <= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
+	 
+	-- Output signals to DE1
+	INT_n  <= 'Z';
+	WAIT_n <= 'Z';
+
+	D <=	FL_DQ(7 downto 0) when s_rom_en = '1' and s_mreq = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
+	 		s_reg56_d when s_iorq_r_reg = '1' else								-- MSX read Register on port 0x56
+	 		(others => 'Z'); 
+	 	 
+	 process(s_iorq_w_reg, s_rom_en)
+	 begin
+		if s_reset = '1' then
+			s_reg56_d <= x"00";
+			s_msx_a <= x"0000";
+		elsif s_rom_en = '1' then
+			s_msx_a <= A;
+			s_reg56_d <= A(7 downto 0);
+		elsif falling_edge(s_iorq_w_reg) then
+			s_reg56_d <= D;
+		end if;
+	 end process;
 		
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,
@@ -226,24 +212,11 @@ begin
 		NUMBER		=>	HEXDIGIT3,
 		HEX_DISP		=>	HEX3
 	);
-		
-		SD_DAT		<= 'Z';
-		DRAM_DQ		<= (others => 'Z');
-		FL_DQ		<= (others => 'Z');
-	
-	s_ffff_slt    <= '1' when A = x"FFFF" else '0';
-	-- Expansor de slot
-	exp: entity work.exp_slot
-	port map (
-		reset_n		=> not s_reset,
-		sltsl_n		=> not s_sltsl_en,
-		cpu_rd_n		=> RD_n,
-		cpu_wr_n		=> WR_n,
-		ffff			=> s_ffff_slt,
-		cpu_a			=> A(15 downto 14),
-		cpu_d			=> D,
-		cpu_q			=> s_expn_q,
-		exp_n			=> slt_exp_n
-	);
+    
+    		
+    SD_DAT		<= 'Z';
+    DRAM_DQ		<= (others => 'Z');
+    FL_DQ			<= (others => 'Z');
+    SRAM_DQ		<= (others => 'Z');
 	
 end behavioural;
