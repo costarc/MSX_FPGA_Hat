@@ -206,6 +206,7 @@ begin
     -- during a reset, which causes teh computer to freeze
 	s_reset <= not (KEY(0) and RESET_n);
 	WAIT_n <= s_wait_n; --'Z' when s_spi_wait_n = '1' else '0'; --s_wait_n;
+   INT_n  <= 'Z';
 	process(s_reset, s_spi_wait_n)
 	begin
 	if s_reset = '1' then
@@ -229,7 +230,6 @@ begin
 	HEXDIGIT3 <= rom_bank2_q(3 downto 0);
 	
 	-- Generic Outputs signals to DE1
-	INT_n  <= 'Z';
 	BUSDIR_n <= not s_iorq_r_reg;
 	s_sltsl_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 	-- Enable output in U1 (74LVC245)

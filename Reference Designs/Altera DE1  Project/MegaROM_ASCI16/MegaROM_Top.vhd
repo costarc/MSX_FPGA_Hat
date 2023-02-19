@@ -102,6 +102,7 @@ end MegaROM_Top;
 
 architecture bevioural of MegaROM_Top is
 	
+	
 	component decoder_7seg
 	port (
 		NUMBER		: in   std_logic_vector(3 downto 0);
@@ -113,20 +114,14 @@ architecture bevioural of MegaROM_Top is
 	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
-	signal s_mreq: std_logic;
-	signal s_busd_en: std_logic;
-	signal s_reset: std_logic := '0';
-	signal s_wait_n: std_logic;
+	signal s_reset			: std_logic := '0';
+	signal s_wait_n		: std_logic := '1';
+	signal s_int_n			: std_logic := '1';
 	
 	-- signals for cartridge emulation
-	signal s_rom_en : std_logic;
-	signal s_rom_d : std_logic_vector(7 downto 0);
-	signal s_rom_a : std_logic_vector(31 downto 0);
-	signal s_cart_en: std_logic;
-	
-	-- signals for MegaROM emulation
-	signal ffff				: std_logic;
-	signal slt_exp_n		: std_logic_vector(3 downto 0);
+	signal s_sltsl_en		: std_logic;
+	signal s_mreq			: std_logic;
+	signal s_rom_a			: std_logic_vector(23 downto 0);
 	
 	-- Flash ASCII16
 	signal rom_bank_wr_s	: std_logic;
@@ -136,53 +131,38 @@ architecture bevioural of MegaROM_Top is
 	signal s_flashbase	: std_logic_vector(23 downto 0);
 	
 begin
-
-	-- Output signals to DE1
-	INT_n  <= 'Z';
-	BUSDIR_n <= 'Z';
+  
+-- --------------------------------Common Signals & assertions ------------------------------------------
+	-- Cartridge Emulation using FlashRAM
+	
+	LEDG(7 downto 0) <= s_reset & s_sltsl_en & "000000";
 
 	-- Reset circuit
 	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
     -- during a reset, which causes teh computer to freeze
-	s_reset <= not (KEY(0) and RESET_n);
-	WAIT_n <= s_wait_n;
-	process(s_reset)
-	begin
-	if s_reset = '1' then
-		s_wait_n <= '1';
-	else
-		s_wait_n <= 'Z';
-	end if;
-	end process;
+	s_reset 	<= not (KEY(0) and RESET_n);
+	WAIT_n 	<= s_wait_n;
+	INT_n  	<= s_int_n;
+	BUSDIR_n <= 'Z';
 	
-	-- Enable output in U1 (74LVC245)
-	U1OE_n <= not s_rom_en;
-
-	LEDG <= A(15 downto 8);
-	LEDR <= s_rom_en & rom_bank2_q(3 downto 0) & rom_bank1_q(4 downto 0);
+	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';	-- 1 when this slot is selected
+	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
 	
-	-- Cartridge Emulation
-	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
-	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
-	
-	-- FlashRAM control
-	FL_RST_N <= '1';
-	FL_ADDR <= s_rom_a(21 downto 0);
+	U1OE_n 		<= not (s_sltsl_en); -- Enable BUS in U1 at the interface
+													
+	D <= FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
+		  (others => 'Z'); 
+		  
+	FL_WE_N <= '1';
+	FL_RST_N <= not s_reset;
+	FL_CE_N <= not s_sltsl_en;
 	FL_OE_N <= RD_n;
-   FL_CE_N <= not s_rom_en;
-	FL_WE_N	<=	'0' when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0'	else '1';
-   FL_DQ <= D when A(15 downto 14) = "10" and s_rom_en = '1' and WR_n = '0' and SW(8) = '1' else (others => 'Z'); -- Flash Write enable if SW(8) = 1
-	
-	-- Bank write - Detect writes in addresses 6000h - 7800h
-	-- rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and A(15 downto 13) = "011" and A(11) = '0' else  '0';
-
-	rom_bank_wr_s <= '1' when s_rom_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
 	
 	-- Checks address being access. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
-	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
-                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when s_rom_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
+	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when s_sltsl_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
+                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when s_sltsl_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
-						
+	
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
 	-- where the roms for this cores is written.
 	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
@@ -191,9 +171,11 @@ begin
 						x"0C0000" when SW(2) = '1' else
 						x"000000";
 
-	D <=	FL_DQ when s_rom_en = '1' and RD_n = '0' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
-	 		(others => 'Z'); 
+	D <= FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
+         (others => 'Z');
 
+	rom_bank_wr_s <= '1' when s_sltsl_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
+	
 	process (s_reset, rom_bank_wr_s)
 	begin
 		if s_reset = '1' then
@@ -211,40 +193,53 @@ begin
 		end if;
 	end process;
 	
-	-- Display the current Memory Address in the 7 segment display
-	HEXDIGIT0 <= s_rom_a(3 downto 0);
-	HEXDIGIT1 <= s_rom_a(7 downto 4);
-	HEXDIGIT2 <= s_rom_a(11 downto 8);
-	HEXDIGIT3 <= s_rom_a(15 downto 12);
-    		
+	HEXDIGIT0 <= s_rom_a(3 downto 0) when A >= x"4000" and A < x"C000";
+	HEXDIGIT1 <= s_rom_a(7 downto 4) when A >= x"4000" and A < x"C000";
+	HEXDIGIT2 <= s_rom_a(11 downto 8) when A >= x"4000" and A < x"C000";
+	HEXDIGIT3 <= s_rom_a(15 downto 12) when A >= x"4000" and A < x"C000";
+	
 	DISPHEX0 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT0,
-			HEX_DISP		=>	HEX0
-		);		
+		NUMBER		=>	HEXDIGIT0,
+		HEX_DISP		=>	HEX0
+	);		
 	
 	DISPHEX1 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT1,
-			HEX_DISP		=>	HEX1
-		);		
+		NUMBER		=>	HEXDIGIT1,
+		HEX_DISP		=>	HEX1
+	);		
 	
 	DISPHEX2 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT2,
-			HEX_DISP		=>	HEX2
-		);		
+		NUMBER		=>	HEXDIGIT2,
+		HEX_DISP		=>	HEX2
+	);		
 	
 	DISPHEX3 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT3,
-			HEX_DISP		=>	HEX3
-		);
-    
-    		
-    SD_DAT		<= 'Z';
-    I2C_SDAT		<= 'Z';
-    AUD_ADCLRCK	<= 'Z';
-    AUD_DACLRCK	<= 'Z';
-    AUD_BCLK		<= 'Z';
-    DRAM_DQ		<= (others => 'Z');
-    SRAM_DQ		<= (others => 'Z');
-    GPIO_0		<= (others => 'Z');
+		NUMBER		=>	HEXDIGIT3,
+		HEX_DISP		=>	HEX3
+	);
+	
+-- --------------------------------------- DE0 Only -----------------------------------------------------
+	--FL_DQ15_AM1 <= s_rom_a(0);			-- input for the LSB (A-1) address function for the flash in Byte mode
+	--FL_ADDR 	<= s_rom_a(22 downto 1);
+	--
+	--FL_BYTE_N 	<= '0';    				-- Set flashram to Byte mode
+	--FL_WP_N 	<= '0';	
+	--SD_DAT		<= 'Z';
+	--DRAM_DQ		<= (others => 'Z');
+	--SRAM_DQ		<= (others => 'Z');
+
+-- --------------------------------------- DE1 Only -----------------------------------------------------
+	FL_ADDR 	<= s_rom_a(21 downto 0);
+   SD_DAT		<= 'Z';
+   I2C_SDAT	<= 'Z';
+   AUD_ADCLRCK<= 'Z';
+   AUD_DACLRCK<= 'Z';
+   AUD_BCLK	<= 'Z';
+   DRAM_DQ		<= (others => 'Z');
+   FL_DQ		<= (others => 'Z');
+   SRAM_DQ		<= (others => 'Z');
+   GPIO_0		<= (others => 'Z');
+	 
+-- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
 end bevioural;

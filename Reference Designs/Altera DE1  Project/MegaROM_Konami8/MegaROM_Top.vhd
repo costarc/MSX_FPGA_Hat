@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
-Entity MegaROM_Top is
+Entity MSX_FPGA_Top is
 port (
     CLOCK_24:	  	in std_logic_vector(1 downto 0);		-- 24 MHz
     CLOCK_27:		in std_logic_vector(1 downto 0);		--	27 MHz
@@ -99,9 +99,9 @@ port (
     INT_n:			out std_logic;
     RESET_n:			in std_logic;
     WAIT_n:			out std_logic); 
-end MegaROM_Top;
+end MSX_FPGA_Top;
 
-architecture bevioural of MegaROM_Top is
+architecture behavioural of MSX_FPGA_Top is
 	
 	component decoder_7seg
 	port (
@@ -246,4 +246,4 @@ begin
     SRAM_DQ		<= (others => 'Z');
     GPIO_0		<= (others => 'Z');
 	
-end bevioural;
+end behavioural;
