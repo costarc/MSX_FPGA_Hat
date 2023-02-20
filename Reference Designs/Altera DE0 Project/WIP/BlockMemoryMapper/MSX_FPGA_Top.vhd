@@ -149,17 +149,7 @@ begin
 	s_reset 	<= not (KEY(0) and RESET_n);
 	WAIT_n 	<= 'Z';
 	INT_n  	<= 'Z'; -- when (not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg) = '1') else 'Z';
-	BUSDIR_n <= not (s_sltsl_en or s_iorq_r_reg);
-	--process(s_reset)
-	--begin
-	--if s_reset = '1' then
-	--	s_wait_n <= '1';
-	--	--s_int_n <= '1';
-	--else
-	--	s_wait_n <= 'Z';
-	--	--s_int_n <= '1';
-	--end if;
-	--end process;
+	BUSDIR_n <= not s_iorq_r_reg;
 	
 	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';	-- 1 when this slot is selected
 	s_mreq		<= '1' when RD_n = '0' and MREQ_n = '0' else '0';
@@ -181,7 +171,7 @@ begin
 						(s_fe * x"4000") + A - x"8000" when A < x"c000" else
 						(s_ff * x"4000") + A - x"C000";
 		
-	D <= s_SRAM_Q when s_sltsl_en = '1' and s_mreq = '1' else
+	D <= ram_q when s_sltsl_en = '1' and RD_n = '0' else
 		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else
 		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else
 		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else

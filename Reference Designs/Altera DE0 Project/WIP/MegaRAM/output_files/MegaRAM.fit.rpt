@@ -1,5 +1,5 @@
 Fitter report for MegaRAM
-Sat Feb 18 15:58:11 2023
+Mon Feb 20 01:24:12 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -70,14 +70,14 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Fitter Summary                                                                       ;
 +------------------------------------+-------------------------------------------------+
-; Fitter Status                      ; Successful - Sat Feb 18 15:58:11 2023           ;
+; Fitter Status                      ; Successful - Mon Feb 20 01:24:12 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MegaRAM                                         ;
 ; Top-level Entity Name              ; MegaRAM                                         ;
 ; Family                             ; Cyclone III                                     ;
 ; Device                             ; EP3C16F484C6                                    ;
 ; Timing Models                      ; Final                                           ;
-; Total logic elements               ; 133 / 15,408 ( < 1 % )                          ;
+; Total logic elements               ; 136 / 15,408 ( < 1 % )                          ;
 ;     Total combinational functions  ; 129 / 15,408 ( < 1 % )                          ;
 ;     Dedicated logic registers      ; 25 / 15,408 ( < 1 % )                           ;
 ; Total registers                    ; 25                                              ;
@@ -428,7 +428,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +--------------+
 ; Pin-Out File ;
 +--------------+
-The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MegaRAM/output_files/MegaRAM.pin.
+The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/WIP/MegaRAM/output_files/MegaRAM.pin.
 
 
 +----------------------------------------------------------------------+
@@ -436,16 +436,16 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Refer
 +---------------------------------------------+------------------------+
 ; Resource                                    ; Usage                  ;
 +---------------------------------------------+------------------------+
-; Total logic elements                        ; 133 / 15,408 ( < 1 % ) ;
-;     -- Combinational with no register       ; 108                    ;
-;     -- Register only                        ; 4                      ;
-;     -- Combinational with a register        ; 21                     ;
+; Total logic elements                        ; 136 / 15,408 ( < 1 % ) ;
+;     -- Combinational with no register       ; 111                    ;
+;     -- Register only                        ; 7                      ;
+;     -- Combinational with a register        ; 18                     ;
 ;                                             ;                        ;
 ; Logic element usage by number of LUT inputs ;                        ;
-;     -- 4 input functions                    ; 56                     ;
+;     -- 4 input functions                    ; 57                     ;
 ;     -- 3 input functions                    ; 33                     ;
-;     -- <=2 input functions                  ; 40                     ;
-;     -- Register only                        ; 4                      ;
+;     -- <=2 input functions                  ; 39                     ;
+;     -- Register only                        ; 7                      ;
 ;                                             ;                        ;
 ; Logic elements by mode                      ;                        ;
 ;     -- normal mode                          ; 95                     ;
@@ -476,7 +476,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Refer
 ; Peak interconnect usage (total/H/V)         ; 3% / 4% / 2%           ;
 ; Maximum fan-out                             ; 24                     ;
 ; Highest non-global fan-out                  ; 16                     ;
-; Total fan-out                               ; 898                    ;
+; Total fan-out                               ; 902                    ;
 ; Average fan-out                             ; 1.24                   ;
 +---------------------------------------------+------------------------+
 *  Register count does not include registers inside RAM blocks or DSP blocks.
@@ -490,16 +490,16 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Refer
 +---------------------------------------------+-----------------------+--------------------------------+
 ; Difficulty Clustering Region                ; Low                   ; Low                            ;
 ;                                             ;                       ;                                ;
-; Total logic elements                        ; 133 / 15408 ( < 1 % ) ; 0 / 15408 ( 0 % )              ;
-;     -- Combinational with no register       ; 108                   ; 0                              ;
-;     -- Register only                        ; 4                     ; 0                              ;
-;     -- Combinational with a register        ; 21                    ; 0                              ;
+; Total logic elements                        ; 136 / 15408 ( < 1 % ) ; 0 / 15408 ( 0 % )              ;
+;     -- Combinational with no register       ; 111                   ; 0                              ;
+;     -- Register only                        ; 7                     ; 0                              ;
+;     -- Combinational with a register        ; 18                    ; 0                              ;
 ;                                             ;                       ;                                ;
 ; Logic element usage by number of LUT inputs ;                       ;                                ;
-;     -- 4 input functions                    ; 56                    ; 0                              ;
+;     -- 4 input functions                    ; 57                    ; 0                              ;
 ;     -- 3 input functions                    ; 33                    ; 0                              ;
-;     -- <=2 input functions                  ; 40                    ; 0                              ;
-;     -- Register only                        ; 4                     ; 0                              ;
+;     -- <=2 input functions                  ; 39                    ; 0                              ;
+;     -- Register only                        ; 7                     ; 0                              ;
 ;                                             ;                       ;                                ;
 ; Logic elements by mode                      ;                       ;                                ;
 ;     -- normal mode                          ; 95                    ; 0                              ;
@@ -524,7 +524,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Refer
 ;     -- Registered Output Connections        ; 0                     ; 0                              ;
 ;                                             ;                       ;                                ;
 ; Internal Connections                        ;                       ;                                ;
-;     -- Total Connections                    ; 894                   ; 4                              ;
+;     -- Total Connections                    ; 898                   ; 4                              ;
 ;     -- Registered Connections               ; 138                   ; 0                              ;
 ;                                             ;                       ;                                ;
 ; External Connections                        ;                       ;                                ;
@@ -583,10 +583,10 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Refer
 ; KEY[2]     ; F1    ; 1        ; 0            ; 23           ; 0            ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; M1_n       ; AA20  ; 4        ; 37           ; 0            ; 21           ; 1                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; MREQ_n     ; AB19  ; 4        ; 35           ; 0            ; 14           ; 1                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
-; RD_n       ; AA18  ; 4        ; 35           ; 0            ; 28           ; 2                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
+; RD_n       ; AA18  ; 4        ; 35           ; 0            ; 28           ; 3                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; RESET_n    ; AB11  ; 3        ; 21           ; 0            ; 14           ; 2                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; SD_WP_N    ; W20   ; 5        ; 41           ; 3            ; 14           ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
-; SLTSL_n    ; AB20  ; 4        ; 37           ; 0            ; 14           ; 3                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
+; SLTSL_n    ; AB20  ; 4        ; 37           ; 0            ; 14           ; 4                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; SW[0]      ; J6    ; 1        ; 0            ; 24           ; 0            ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; SW[1]      ; H5    ; 1        ; 0            ; 27           ; 0            ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; SW[2]      ; H6    ; 1        ; 0            ; 25           ; 21           ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
@@ -596,7 +596,7 @@ The pin-out file can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Refer
 ; SW[6]      ; H7    ; 1        ; 0            ; 25           ; 14           ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; SW[7]      ; E3    ; 1        ; 0            ; 26           ; 7            ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; SW[8]      ; E4    ; 1        ; 0            ; 26           ; 0            ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
-; SW[9]      ; D2    ; 1        ; 0            ; 25           ; 0            ; 3                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
+; SW[9]      ; D2    ; 1        ; 0            ; 25           ; 0            ; 4                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; UART_RTS   ; V22   ; 5        ; 41           ; 7            ; 0            ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; UART_RXD   ; U22   ; 5        ; 41           ; 8            ; 7            ; 0                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
 ; WR_n       ; Y17   ; 4        ; 35           ; 0            ; 0            ; 5                     ; 0                  ; no     ; no             ; no            ; yes             ; no       ; Off          ; 3.3-V LVTTL  ; --                        ; User                 ;
@@ -1401,7 +1401,7 @@ Note: Pin directions (input, output or bidir) are based on device operating in u
 +----------------------------+-------------+---------------------------+---------------+-------------+------+--------------+---------+-----------+------+--------------+--------------+-------------------+------------------+--------------------------------+--------------+
 ; Compilation Hierarchy Node ; Logic Cells ; Dedicated Logic Registers ; I/O Registers ; Memory Bits ; M9Ks ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; LUT-Only LCs ; Register-Only LCs ; LUT/Register LCs ; Full Hierarchy Name            ; Library Name ;
 +----------------------------+-------------+---------------------------+---------------+-------------+------+--------------+---------+-----------+------+--------------+--------------+-------------------+------------------+--------------------------------+--------------+
-; |MegaRAM                   ; 133 (105)   ; 25 (25)                   ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 247  ; 0            ; 108 (80)     ; 4 (4)             ; 21 (21)          ; |MegaRAM                       ; work         ;
+; |MegaRAM                   ; 136 (108)   ; 25 (25)                   ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 247  ; 0            ; 111 (83)     ; 7 (7)             ; 18 (18)          ; |MegaRAM                       ; work         ;
 ;    |decoder_7seg:DISPHEX0| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 7 (7)        ; 0 (0)             ; 0 (0)            ; |MegaRAM|decoder_7seg:DISPHEX0 ; work         ;
 ;    |decoder_7seg:DISPHEX1| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 7 (7)        ; 0 (0)             ; 0 (0)            ; |MegaRAM|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)       ; 0 (0)                     ; 0 (0)         ; 0           ; 0    ; 0            ; 0       ; 0         ; 0    ; 0            ; 7 (7)        ; 0 (0)             ; 0 (0)            ; |MegaRAM|decoder_7seg:DISPHEX2 ; work         ;
@@ -1621,7 +1621,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; FL_DQ[13]     ; Bidir    ; --            ; --            ; --                    ; --  ; --   ;
 ; FL_DQ[14]     ; Bidir    ; --            ; --            ; --                    ; --  ; --   ;
 ; SD_DAT        ; Bidir    ; --            ; --            ; --                    ; --  ; --   ;
-; SRAM_DQ[0]    ; Bidir    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
+; SRAM_DQ[0]    ; Bidir    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; SRAM_DQ[1]    ; Bidir    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; SRAM_DQ[2]    ; Bidir    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
 ; SRAM_DQ[3]    ; Bidir    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
@@ -1638,29 +1638,29 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; D[6]          ; Bidir    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; D[7]          ; Bidir    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; SW[9]         ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
-; SLTSL_n       ; Input    ; (6) 1314 ps   ; (0) 0 ps      ; --                    ; --  ; --   ;
+; SLTSL_n       ; Input    ; (0) 0 ps      ; (6) 1314 ps   ; --                    ; --  ; --   ;
 ; M1_n          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
-; IORQ_n        ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
-; A[0]          ; Input    ; (4) 935 ps    ; (1) 365 ps    ; --                    ; --  ; --   ;
+; IORQ_n        ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
+; A[0]          ; Input    ; (4) 935 ps    ; (0) 0 ps      ; --                    ; --  ; --   ;
 ; A[4]          ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
-; A[5]          ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
+; A[5]          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; A[6]          ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
 ; A[1]          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; A[2]          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; A[3]          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
-; A[7]          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
-; WR_n          ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
+; A[7]          ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
+; WR_n          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; KEY[0]        ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
 ; RESET_n       ; Input    ; (0) 0 ps      ; --            ; --                    ; --  ; --   ;
+; RD_n          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; A[12]         ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; A[8]          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; A[9]          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
-; A[10]         ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
+; A[10]         ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
 ; A[11]         ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
-; A[14]         ; Input    ; (5) 1127 ps   ; (0) 0 ps      ; --                    ; --  ; --   ;
+; A[14]         ; Input    ; (4) 935 ps    ; (0) 0 ps      ; --                    ; --  ; --   ;
 ; A[13]         ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; A[15]         ; Input    ; --            ; (6) 1314 ps   ; --                    ; --  ; --   ;
-; RD_n          ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 ; MREQ_n        ; Input    ; (6) 1314 ps   ; --            ; --                    ; --  ; --   ;
 +---------------+----------+---------------+---------------+-----------------------+-----+------+
 
@@ -1736,7 +1736,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; FL_DQ[14]                 ;                   ;         ;
 ; SD_DAT                    ;                   ;         ;
 ; SRAM_DQ[0]                ;                   ;         ;
-;      - D[0]~output        ; 1                 ; 6       ;
+;      - D[0]~output        ; 0                 ; 6       ;
 ; SRAM_DQ[1]                ;                   ;         ;
 ;      - D[1]~output        ; 0                 ; 6       ;
 ; SRAM_DQ[2]                ;                   ;         ;
@@ -1767,14 +1767,14 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ;      - SRAM_DQ[2]~output  ; 0                 ; 6       ;
 ;      - s_mgram4[2]        ; 0                 ; 6       ;
 ;      - s_mgram6[2]        ; 0                 ; 6       ;
+;      - s_mgrama[2]        ; 0                 ; 6       ;
 ;      - s_mgram8[2]~feeder ; 0                 ; 6       ;
-;      - s_mgrama[2]~feeder ; 0                 ; 6       ;
 ; D[3]                      ;                   ;         ;
 ;      - SRAM_DQ[3]~output  ; 0                 ; 6       ;
-;      - s_mgram4[3]        ; 0                 ; 6       ;
 ;      - s_mgram6[3]        ; 0                 ; 6       ;
-;      - s_mgram8[3]        ; 0                 ; 6       ;
 ;      - s_mgrama[3]        ; 0                 ; 6       ;
+;      - s_mgram8[3]~feeder ; 0                 ; 6       ;
+;      - s_mgram4[3]~feeder ; 0                 ; 6       ;
 ; D[4]                      ;                   ;         ;
 ;      - SRAM_DQ[4]~output  ; 1                 ; 6       ;
 ;      - s_mgram4[4]        ; 1                 ; 6       ;
@@ -1794,27 +1794,29 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; SW[9]                     ;                   ;         ;
 ;      - s_sltsl_en~0       ; 0                 ; 6       ;
 ;      - s_mgram_reg_en     ; 0                 ; 6       ;
+;      - SRAM_DQ~16         ; 0                 ; 6       ;
 ;      - D~16               ; 0                 ; 6       ;
 ; SLTSL_n                   ;                   ;         ;
-;      - s_sltsl_en~0       ; 0                 ; 6       ;
-;      - s_mgram_reg_en     ; 1                 ; 0       ;
-;      - D~16               ; 0                 ; 6       ;
+;      - s_sltsl_en~0       ; 1                 ; 6       ;
+;      - s_mgram_reg_en     ; 0                 ; 0       ;
+;      - SRAM_DQ~16         ; 1                 ; 6       ;
+;      - D~16               ; 1                 ; 6       ;
 ; M1_n                      ;                   ;         ;
 ;      - s_iorq_r~2         ; 0                 ; 6       ;
 ; IORQ_n                    ;                   ;         ;
-;      - s_iorq_r~2         ; 0                 ; 6       ;
+;      - s_iorq_r~2         ; 1                 ; 6       ;
 ; A[0]                      ;                   ;         ;
-;      - s_iorq_r~2         ; 1                 ; 1       ;
-;      - Equal1~3           ; 1                 ; 1       ;
+;      - s_iorq_r~2         ; 1                 ; 0       ;
+;      - Equal1~3           ; 1                 ; 0       ;
 ;      - s_SRAM_ADDR[0]     ; 0                 ; 4       ;
 ; A[4]                      ;                   ;         ;
 ;      - s_iorq_r~1         ; 1                 ; 6       ;
 ;      - Equal1~3           ; 1                 ; 6       ;
 ;      - s_SRAM_ADDR[4]     ; 1                 ; 6       ;
 ; A[5]                      ;                   ;         ;
-;      - s_iorq_r~1         ; 1                 ; 6       ;
-;      - Equal1~2           ; 1                 ; 6       ;
-;      - s_SRAM_ADDR[5]     ; 1                 ; 6       ;
+;      - s_iorq_r~1         ; 0                 ; 6       ;
+;      - Equal1~2           ; 0                 ; 6       ;
+;      - s_SRAM_ADDR[5]     ; 0                 ; 6       ;
 ; A[6]                      ;                   ;         ;
 ;      - s_iorq_r~1         ; 1                 ; 6       ;
 ;      - Equal1~2           ; 1                 ; 6       ;
@@ -1832,19 +1834,23 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ;      - Equal1~1           ; 0                 ; 6       ;
 ;      - s_SRAM_ADDR[3]     ; 0                 ; 6       ;
 ; A[7]                      ;                   ;         ;
-;      - s_iorq_r~0         ; 0                 ; 6       ;
-;      - Equal1~1           ; 0                 ; 6       ;
-;      - s_SRAM_ADDR[7]     ; 0                 ; 6       ;
+;      - s_iorq_r~0         ; 1                 ; 6       ;
+;      - Equal1~1           ; 1                 ; 6       ;
+;      - s_SRAM_ADDR[7]     ; 1                 ; 6       ;
 ; WR_n                      ;                   ;         ;
-;      - LEDG~0             ; 1                 ; 6       ;
-;      - s_mgram_reg_en     ; 1                 ; 6       ;
-;      - SRAM_DQ~16         ; 1                 ; 6       ;
-;      - process_1~0        ; 1                 ; 6       ;
-;      - SRAM_WE_N~output   ; 1                 ; 6       ;
+;      - LEDG~0             ; 0                 ; 6       ;
+;      - s_mgram_reg_en     ; 0                 ; 6       ;
+;      - SRAM_DQ~16         ; 0                 ; 6       ;
+;      - process_1~0        ; 0                 ; 6       ;
+;      - SRAM_WE_N~output   ; 0                 ; 6       ;
 ; KEY[0]                    ;                   ;         ;
 ;      - s_reset~0          ; 1                 ; 6       ;
 ;      - process_1~0        ; 1                 ; 6       ;
 ; RESET_n                   ;                   ;         ;
+; RD_n                      ;                   ;         ;
+;      - s_iorq_r           ; 0                 ; 6       ;
+;      - D~16               ; 0                 ; 6       ;
+;      - SRAM_OE_N~output   ; 0                 ; 6       ;
 ; A[12]                     ;                   ;         ;
 ;      - Equal1~3           ; 0                 ; 6       ;
 ;      - s_SRAM_ADDR[12]    ; 0                 ; 6       ;
@@ -1855,8 +1861,8 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ;      - Equal1~0           ; 0                 ; 6       ;
 ;      - s_SRAM_ADDR[9]     ; 0                 ; 6       ;
 ; A[10]                     ;                   ;         ;
-;      - Equal1~0           ; 0                 ; 6       ;
-;      - s_SRAM_ADDR[10]    ; 0                 ; 6       ;
+;      - Equal1~0           ; 1                 ; 6       ;
+;      - s_SRAM_ADDR[10]    ; 1                 ; 6       ;
 ; A[11]                     ;                   ;         ;
 ;      - Equal1~0           ; 1                 ; 6       ;
 ;      - s_SRAM_ADDR[11]    ; 1                 ; 6       ;
@@ -1865,10 +1871,10 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ;      - Add6~2             ; 1                 ; 0       ;
 ;      - Add0~2             ; 1                 ; 0       ;
 ;      - Add4~2             ; 1                 ; 0       ;
-;      - Equal1~4           ; 0                 ; 5       ;
-;      - Equal2~0           ; 0                 ; 5       ;
-;      - Equal3~0           ; 0                 ; 5       ;
-;      - Equal4~0           ; 0                 ; 5       ;
+;      - Equal1~4           ; 0                 ; 4       ;
+;      - Equal2~0           ; 0                 ; 4       ;
+;      - Equal3~0           ; 0                 ; 4       ;
+;      - Equal4~0           ; 0                 ; 4       ;
 ;      - s_SRAM_ADDR[17]~0  ; 1                 ; 0       ;
 ;      - s_SRAM_ADDR[13]~1  ; 1                 ; 0       ;
 ; A[13]                     ;                   ;         ;
@@ -1898,9 +1904,6 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ;      - s_SRAM_ADDR[16]~8  ; 1                 ; 6       ;
 ;      - s_SRAM_ADDR[17]~10 ; 1                 ; 6       ;
 ;      - s_SRAM_ADDR[18]~12 ; 1                 ; 6       ;
-; RD_n                      ;                   ;         ;
-;      - s_iorq_r           ; 0                 ; 6       ;
-;      - D~16               ; 0                 ; 6       ;
 ; MREQ_n                    ;                   ;         ;
 ;      - D~16               ; 0                 ; 6       ;
 +---------------------------+-------------------+---------+
@@ -1911,18 +1914,18 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-------------------+-------------------+---------+---------------+--------+----------------------+------------------+---------------------------+
 ; Name              ; Location          ; Fan-Out ; Usage         ; Global ; Global Resource Used ; Global Line Name ; Enable Signal Source Name ;
 +-------------------+-------------------+---------+---------------+--------+----------------------+------------------+---------------------------+
-; D~16              ; LCCOMB_X27_Y1_N22 ; 8       ; Output enable ; no     ; --                   ; --               ; --                        ;
-; Equal1~4          ; LCCOMB_X29_Y1_N20 ; 6       ; Clock enable  ; no     ; --                   ; --               ; --                        ;
+; D~16              ; LCCOMB_X26_Y1_N24 ; 8       ; Output enable ; no     ; --                   ; --               ; --                        ;
+; Equal1~4          ; LCCOMB_X32_Y1_N10 ; 6       ; Clock enable  ; no     ; --                   ; --               ; --                        ;
 ; Equal2~0          ; LCCOMB_X31_Y1_N0  ; 6       ; Clock enable  ; no     ; --                   ; --               ; --                        ;
-; Equal3~0          ; LCCOMB_X29_Y1_N14 ; 6       ; Clock enable  ; no     ; --                   ; --               ; --                        ;
-; Equal4~0          ; LCCOMB_X33_Y1_N30 ; 6       ; Clock enable  ; no     ; --                   ; --               ; --                        ;
-; SRAM_DQ~16        ; LCCOMB_X27_Y1_N28 ; 8       ; Output enable ; no     ; --                   ; --               ; --                        ;
-; process_1~0       ; LCCOMB_X27_Y1_N16 ; 1       ; Async. clear  ; no     ; --                   ; --               ; --                        ;
-; s_SRAM_ADDR[17]~0 ; LCCOMB_X32_Y1_N0  ; 19      ; Latch enable  ; yes    ; Global Clock         ; GCLK18           ; --                        ;
-; s_iorq_r          ; LCCOMB_X27_Y1_N30 ; 4       ; Clock         ; no     ; --                   ; --               ; --                        ;
-; s_mgram_reg_en    ; LCCOMB_X27_Y1_N14 ; 24      ; Clock         ; yes    ; Global Clock         ; GCLK16           ; --                        ;
-; s_reset~0         ; LCCOMB_X27_Y1_N24 ; 4       ; Output enable ; no     ; --                   ; --               ; --                        ;
-; s_reset~0         ; LCCOMB_X27_Y1_N24 ; 24      ; Async. clear  ; yes    ; Global Clock         ; GCLK19           ; --                        ;
+; Equal3~0          ; LCCOMB_X28_Y1_N16 ; 6       ; Clock enable  ; no     ; --                   ; --               ; --                        ;
+; Equal4~0          ; LCCOMB_X29_Y1_N2  ; 6       ; Clock enable  ; no     ; --                   ; --               ; --                        ;
+; SRAM_DQ~16        ; LCCOMB_X26_Y1_N26 ; 8       ; Output enable ; no     ; --                   ; --               ; --                        ;
+; process_1~0       ; LCCOMB_X26_Y1_N6  ; 1       ; Async. clear  ; no     ; --                   ; --               ; --                        ;
+; s_SRAM_ADDR[17]~0 ; LCCOMB_X32_Y1_N28 ; 19      ; Latch enable  ; yes    ; Global Clock         ; GCLK18           ; --                        ;
+; s_iorq_r          ; LCCOMB_X26_Y1_N28 ; 4       ; Clock         ; no     ; --                   ; --               ; --                        ;
+; s_mgram_reg_en    ; LCCOMB_X26_Y1_N14 ; 24      ; Clock         ; yes    ; Global Clock         ; GCLK17           ; --                        ;
+; s_reset~0         ; LCCOMB_X26_Y1_N10 ; 4       ; Output enable ; no     ; --                   ; --               ; --                        ;
+; s_reset~0         ; LCCOMB_X26_Y1_N10 ; 24      ; Async. clear  ; yes    ; Global Clock         ; GCLK16           ; --                        ;
 +-------------------+-------------------+---------+---------------+--------+----------------------+------------------+---------------------------+
 
 
@@ -1931,9 +1934,9 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-------------------+-------------------+---------+--------------------------------------+----------------------+------------------+---------------------------+
 ; Name              ; Location          ; Fan-Out ; Fan-Out Using Intentional Clock Skew ; Global Resource Used ; Global Line Name ; Enable Signal Source Name ;
 +-------------------+-------------------+---------+--------------------------------------+----------------------+------------------+---------------------------+
-; s_SRAM_ADDR[17]~0 ; LCCOMB_X32_Y1_N0  ; 19      ; 0                                    ; Global Clock         ; GCLK18           ; --                        ;
-; s_mgram_reg_en    ; LCCOMB_X27_Y1_N14 ; 24      ; 0                                    ; Global Clock         ; GCLK16           ; --                        ;
-; s_reset~0         ; LCCOMB_X27_Y1_N24 ; 24      ; 0                                    ; Global Clock         ; GCLK19           ; --                        ;
+; s_SRAM_ADDR[17]~0 ; LCCOMB_X32_Y1_N28 ; 19      ; 0                                    ; Global Clock         ; GCLK18           ; --                        ;
+; s_mgram_reg_en    ; LCCOMB_X26_Y1_N14 ; 24      ; 0                                    ; Global Clock         ; GCLK17           ; --                        ;
+; s_reset~0         ; LCCOMB_X26_Y1_N10 ; 24      ; 0                                    ; Global Clock         ; GCLK16           ; --                        ;
 +-------------------+-------------------+---------+--------------------------------------+----------------------+------------------+---------------------------+
 
 
@@ -1975,9 +1978,12 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; D[2]~input                   ; 5       ;
 ; D[1]~input                   ; 5       ;
 ; D[0]~input                   ; 5       ;
+; SLTSL_n~input                ; 4       ;
+; SW[9]~input                  ; 4       ;
 ; s_iorq_r                     ; 4       ;
 ; Equal1~3                     ; 4       ;
 ; Add2~4                       ; 4       ;
+; RD_n~input                   ; 3       ;
 ; A[7]~input                   ; 3       ;
 ; A[3]~input                   ; 3       ;
 ; A[2]~input                   ; 3       ;
@@ -1986,14 +1992,11 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; A[5]~input                   ; 3       ;
 ; A[4]~input                   ; 3       ;
 ; A[0]~input                   ; 3       ;
-; SLTSL_n~input                ; 3       ;
-; SW[9]~input                  ; 3       ;
 ; s_SRAM_ADDR[18]              ; 3       ;
 ; s_reset~0                    ; 3       ;
 ; s_iorq_r~2                   ; 3       ;
 ; s_sltsl_en~0                 ; 3       ;
 ; Add2~6                       ; 3       ;
-; RD_n~input                   ; 2       ;
 ; A[11]~input                  ; 2       ;
 ; A[10]~input                  ; 2       ;
 ; A[9]~input                   ; 2       ;
@@ -2177,37 +2180,37 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-----------------------------+------------------------+
 ; Other Routing Resource Type ; Usage                  ;
 +-----------------------------+------------------------+
-; Block interconnects         ; 262 / 47,787 ( < 1 % ) ;
-; C16 interconnects           ; 40 / 1,804 ( 2 % )     ;
-; C4 interconnects            ; 262 / 31,272 ( < 1 % ) ;
-; Direct links                ; 26 / 47,787 ( < 1 % )  ;
+; Block interconnects         ; 250 / 47,787 ( < 1 % ) ;
+; C16 interconnects           ; 39 / 1,804 ( 2 % )     ;
+; C4 interconnects            ; 258 / 31,272 ( < 1 % ) ;
+; Direct links                ; 23 / 47,787 ( < 1 % )  ;
 ; Global clocks               ; 3 / 20 ( 15 % )        ;
-; Local interconnects         ; 58 / 15,408 ( < 1 % )  ;
-; R24 interconnects           ; 38 / 1,775 ( 2 % )     ;
-; R4 interconnects            ; 245 / 41,310 ( < 1 % ) ;
+; Local interconnects         ; 66 / 15,408 ( < 1 % )  ;
+; R24 interconnects           ; 37 / 1,775 ( 2 % )     ;
+; R4 interconnects            ; 233 / 41,310 ( < 1 % ) ;
 +-----------------------------+------------------------+
 
 
 +----------------------------------------------------------------------------+
 ; LAB Logic Elements                                                         ;
 +---------------------------------------------+------------------------------+
-; Number of Logic Elements  (Average = 11.08) ; Number of LABs  (Total = 12) ;
+; Number of Logic Elements  (Average = 11.33) ; Number of LABs  (Total = 12) ;
 +---------------------------------------------+------------------------------+
-; 1                                           ; 2                            ;
-; 2                                           ; 0                            ;
+; 1                                           ; 0                            ;
+; 2                                           ; 1                            ;
 ; 3                                           ; 0                            ;
 ; 4                                           ; 0                            ;
 ; 5                                           ; 0                            ;
 ; 6                                           ; 0                            ;
-; 7                                           ; 2                            ;
+; 7                                           ; 4                            ;
 ; 8                                           ; 0                            ;
 ; 9                                           ; 0                            ;
 ; 10                                          ; 0                            ;
 ; 11                                          ; 0                            ;
-; 12                                          ; 1                            ;
+; 12                                          ; 0                            ;
 ; 13                                          ; 1                            ;
-; 14                                          ; 2                            ;
-; 15                                          ; 0                            ;
+; 14                                          ; 1                            ;
+; 15                                          ; 1                            ;
 ; 16                                          ; 4                            ;
 +---------------------------------------------+------------------------------+
 
@@ -2215,33 +2218,84 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-------------------------------------------------------------------+
 ; LAB-wide Signals                                                  ;
 +------------------------------------+------------------------------+
-; LAB-wide Signals  (Average = 0.75) ; Number of LABs  (Total = 12) ;
+; LAB-wide Signals  (Average = 0.67) ; Number of LABs  (Total = 12) ;
 +------------------------------------+------------------------------+
 ; 1 Async. clear                     ; 4                            ;
 ; 1 Clock                            ; 4                            ;
-; 1 Clock enable                     ; 1                            ;
 +------------------------------------+------------------------------+
 
 
 +-----------------------------------------------------------------------------+
 ; LAB Signals Sourced                                                         ;
 +----------------------------------------------+------------------------------+
-; Number of Signals Sourced  (Average = 13.00) ; Number of LABs  (Total = 12) ;
+; Number of Signals Sourced  (Average = 13.08) ; Number of LABs  (Total = 12) ;
 +----------------------------------------------+------------------------------+
 ; 0                                            ; 0                            ;
-; 1                                            ; 2                            ;
-; 2                                            ; 0                            ;
+; 1                                            ; 0                            ;
+; 2                                            ; 1                            ;
 ; 3                                            ; 0                            ;
 ; 4                                            ; 0                            ;
 ; 5                                            ; 0                            ;
 ; 6                                            ; 0                            ;
-; 7                                            ; 2                            ;
+; 7                                            ; 4                            ;
 ; 8                                            ; 0                            ;
 ; 9                                            ; 0                            ;
 ; 10                                           ; 0                            ;
 ; 11                                           ; 0                            ;
 ; 12                                           ; 0                            ;
-; 13                                           ; 2                            ;
+; 13                                           ; 0                            ;
+; 14                                           ; 1                            ;
+; 15                                           ; 1                            ;
+; 16                                           ; 1                            ;
+; 17                                           ; 0                            ;
+; 18                                           ; 0                            ;
+; 19                                           ; 1                            ;
+; 20                                           ; 1                            ;
+; 21                                           ; 1                            ;
+; 22                                           ; 1                            ;
++----------------------------------------------+------------------------------+
+
+
++--------------------------------------------------------------------------------+
+; LAB Signals Sourced Out                                                        ;
++-------------------------------------------------+------------------------------+
+; Number of Signals Sourced Out  (Average = 8.17) ; Number of LABs  (Total = 12) ;
++-------------------------------------------------+------------------------------+
+; 0                                               ; 0                            ;
+; 1                                               ; 1                            ;
+; 2                                               ; 0                            ;
+; 3                                               ; 0                            ;
+; 4                                               ; 0                            ;
+; 5                                               ; 1                            ;
+; 6                                               ; 0                            ;
+; 7                                               ; 4                            ;
+; 8                                               ; 0                            ;
+; 9                                               ; 0                            ;
+; 10                                              ; 3                            ;
+; 11                                              ; 2                            ;
+; 12                                              ; 1                            ;
++-------------------------------------------------+------------------------------+
+
+
++-----------------------------------------------------------------------------+
+; LAB Distinct Inputs                                                         ;
++----------------------------------------------+------------------------------+
+; Number of Distinct Inputs  (Average = 10.08) ; Number of LABs  (Total = 12) ;
++----------------------------------------------+------------------------------+
+; 0                                            ; 0                            ;
+; 1                                            ; 0                            ;
+; 2                                            ; 0                            ;
+; 3                                            ; 0                            ;
+; 4                                            ; 4                            ;
+; 5                                            ; 1                            ;
+; 6                                            ; 0                            ;
+; 7                                            ; 0                            ;
+; 8                                            ; 0                            ;
+; 9                                            ; 0                            ;
+; 10                                           ; 0                            ;
+; 11                                           ; 0                            ;
+; 12                                           ; 3                            ;
+; 13                                           ; 1                            ;
 ; 14                                           ; 2                            ;
 ; 15                                           ; 0                            ;
 ; 16                                           ; 0                            ;
@@ -2249,60 +2303,9 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; 18                                           ; 0                            ;
 ; 19                                           ; 0                            ;
 ; 20                                           ; 0                            ;
-; 21                                           ; 2                            ;
-; 22                                           ; 2                            ;
-+----------------------------------------------+------------------------------+
-
-
-+--------------------------------------------------------------------------------+
-; LAB Signals Sourced Out                                                        ;
-+-------------------------------------------------+------------------------------+
-; Number of Signals Sourced Out  (Average = 8.25) ; Number of LABs  (Total = 12) ;
-+-------------------------------------------------+------------------------------+
-; 0                                               ; 0                            ;
-; 1                                               ; 2                            ;
-; 2                                               ; 0                            ;
-; 3                                               ; 0                            ;
-; 4                                               ; 0                            ;
-; 5                                               ; 1                            ;
-; 6                                               ; 0                            ;
-; 7                                               ; 2                            ;
-; 8                                               ; 0                            ;
-; 9                                               ; 1                            ;
-; 10                                              ; 2                            ;
-; 11                                              ; 2                            ;
-; 12                                              ; 0                            ;
-; 13                                              ; 1                            ;
-; 14                                              ; 1                            ;
-+-------------------------------------------------+------------------------------+
-
-
-+-----------------------------------------------------------------------------+
-; LAB Distinct Inputs                                                         ;
-+----------------------------------------------+------------------------------+
-; Number of Distinct Inputs  (Average = 10.42) ; Number of LABs  (Total = 12) ;
-+----------------------------------------------+------------------------------+
-; 0                                            ; 0                            ;
-; 1                                            ; 0                            ;
-; 2                                            ; 2                            ;
-; 3                                            ; 0                            ;
-; 4                                            ; 2                            ;
-; 5                                            ; 0                            ;
-; 6                                            ; 0                            ;
-; 7                                            ; 0                            ;
-; 8                                            ; 1                            ;
-; 9                                            ; 0                            ;
-; 10                                           ; 0                            ;
-; 11                                           ; 0                            ;
-; 12                                           ; 2                            ;
-; 13                                           ; 1                            ;
-; 14                                           ; 1                            ;
-; 15                                           ; 1                            ;
-; 16                                           ; 0                            ;
-; 17                                           ; 0                            ;
-; 18                                           ; 0                            ;
-; 19                                           ; 1                            ;
-; 20                                           ; 1                            ;
+; 21                                           ; 0                            ;
+; 22                                           ; 0                            ;
+; 23                                           ; 1                            ;
 +----------------------------------------------+------------------------------+
 
 
@@ -2603,6 +2606,7 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; WR_n               ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; KEY[0]             ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; RESET_n            ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
+; RD_n               ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; A[12]              ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; A[8]               ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; A[9]               ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
@@ -2611,7 +2615,6 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 ; A[14]              ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; A[13]              ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; A[15]              ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
-; RD_n               ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 ; MREQ_n             ; Pass      ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Pass      ; Pass      ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Pass         ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Inapplicable ; Pass      ; Inapplicable ; Inapplicable ;
 +--------------------+-----------+--------------+-----------+--------------+--------------+-----------+-----------+--------------+-----------+-----------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+--------------+-----------+--------------+--------------+
 
@@ -2658,8 +2661,8 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +-----------------+----------------------+-------------------+
 ; Source Clock(s) ; Destination Clock(s) ; Delay Added in ns ;
 +-----------------+----------------------+-------------------+
-; I/O             ; A[14]                ; 19.3              ;
-; I/O             ; SLTSL_n              ; 13.5              ;
+; I/O             ; A[14]                ; 18.9              ;
+; I/O             ; SLTSL_n              ; 12.8              ;
 ; SLTSL_n,I/O     ; A[14]                ; 12.8              ;
 +-----------------+----------------------+-------------------+
 Note: For more information on problematic transfers, consider running the Fitter again with the Optimize hold timing option (Settings Menu) turned off.
@@ -2671,46 +2674,46 @@ This will disable optimization of problematic paths and expose them for further 
 +-----------------+----------------------+-------------------+
 ; Source Register ; Destination Register ; Delay Added in ns ;
 +-----------------+----------------------+-------------------+
-; A[14]           ; s_SRAM_ADDR[15]      ; 2.361             ;
-; A[0]            ; s_SRAM_ADDR[0]       ; 1.891             ;
-; A[13]           ; s_SRAM_ADDR[15]      ; 1.734             ;
-; A[15]           ; s_SRAM_ADDR[15]      ; 1.734             ;
-; s_mgram8[1]     ; s_SRAM_ADDR[14]      ; 1.341             ;
-; s_mgram8[0]     ; s_SRAM_ADDR[14]      ; 1.341             ;
-; A[12]           ; s_mgram8[0]          ; 1.294             ;
-; A[4]            ; s_mgram8[0]          ; 1.294             ;
-; A[5]            ; s_mgram8[0]          ; 1.294             ;
-; A[6]            ; s_mgram8[0]          ; 1.294             ;
-; A[1]            ; s_mgram8[0]          ; 1.294             ;
-; A[2]            ; s_mgram8[0]          ; 1.294             ;
-; A[3]            ; s_mgram8[0]          ; 1.294             ;
-; A[7]            ; s_mgram8[0]          ; 1.294             ;
-; A[8]            ; s_mgram8[0]          ; 1.294             ;
-; A[9]            ; s_mgram8[0]          ; 1.294             ;
-; A[10]           ; s_mgram8[0]          ; 1.294             ;
-; A[11]           ; s_mgram8[0]          ; 1.294             ;
-; s_mgram4[1]     ; s_SRAM_ADDR[14]      ; 1.038             ;
-; s_mgram4[0]     ; s_SRAM_ADDR[14]      ; 1.038             ;
-; s_mgram8[2]     ; s_SRAM_ADDR[15]      ; 1.011             ;
-; s_mgram6[0]     ; s_SRAM_ADDR[13]      ; 0.877             ;
-; s_mgrama[0]     ; s_SRAM_ADDR[13]      ; 0.877             ;
-; s_mgram6[1]     ; s_SRAM_ADDR[14]      ; 0.845             ;
-; s_mgrama[5]     ; s_SRAM_ADDR[18]      ; 0.808             ;
-; s_mgrama[4]     ; s_SRAM_ADDR[18]      ; 0.808             ;
-; s_mgrama[3]     ; s_SRAM_ADDR[18]      ; 0.808             ;
-; s_mgrama[2]     ; s_SRAM_ADDR[18]      ; 0.808             ;
-; s_mgrama[1]     ; s_SRAM_ADDR[18]      ; 0.808             ;
-; s_mgram8[3]     ; s_SRAM_ADDR[16]      ; 0.767             ;
-; s_mgram6[5]     ; s_SRAM_ADDR[18]      ; 0.735             ;
-; s_mgram6[4]     ; s_SRAM_ADDR[18]      ; 0.735             ;
-; s_mgram6[3]     ; s_SRAM_ADDR[18]      ; 0.735             ;
-; s_mgram6[2]     ; s_SRAM_ADDR[18]      ; 0.735             ;
-; s_mgram8[4]     ; s_SRAM_ADDR[17]      ; 0.642             ;
-; s_mgram4[5]     ; s_SRAM_ADDR[18]      ; 0.545             ;
-; s_mgram4[4]     ; s_SRAM_ADDR[18]      ; 0.545             ;
-; s_mgram4[3]     ; s_SRAM_ADDR[18]      ; 0.545             ;
-; s_mgram4[2]     ; s_SRAM_ADDR[18]      ; 0.545             ;
-; s_mgram8[5]     ; s_SRAM_ADDR[18]      ; 0.439             ;
+; A[14]           ; s_SRAM_ADDR[15]      ; 2.378             ;
+; A[0]            ; s_SRAM_ADDR[0]       ; 2.119             ;
+; A[13]           ; s_SRAM_ADDR[15]      ; 1.639             ;
+; A[15]           ; s_SRAM_ADDR[15]      ; 1.639             ;
+; s_mgram8[1]     ; s_SRAM_ADDR[14]      ; 1.536             ;
+; s_mgram8[0]     ; s_SRAM_ADDR[14]      ; 1.536             ;
+; A[12]           ; s_mgram8[0]          ; 1.292             ;
+; A[4]            ; s_mgram8[0]          ; 1.292             ;
+; A[5]            ; s_mgram8[0]          ; 1.292             ;
+; A[6]            ; s_mgram8[0]          ; 1.292             ;
+; A[1]            ; s_mgram8[0]          ; 1.292             ;
+; A[2]            ; s_mgram8[0]          ; 1.292             ;
+; A[3]            ; s_mgram8[0]          ; 1.292             ;
+; A[7]            ; s_mgram8[0]          ; 1.292             ;
+; A[8]            ; s_mgram8[0]          ; 1.292             ;
+; A[9]            ; s_mgram8[0]          ; 1.292             ;
+; A[10]           ; s_mgram8[0]          ; 1.292             ;
+; A[11]           ; s_mgram8[0]          ; 1.292             ;
+; s_mgram8[2]     ; s_SRAM_ADDR[15]      ; 1.202             ;
+; s_mgram4[1]     ; s_SRAM_ADDR[14]      ; 0.880             ;
+; s_mgram4[0]     ; s_SRAM_ADDR[14]      ; 0.880             ;
+; s_mgram8[3]     ; s_SRAM_ADDR[17]      ; 0.838             ;
+; s_mgrama[1]     ; s_SRAM_ADDR[14]      ; 0.759             ;
+; s_mgrama[0]     ; s_SRAM_ADDR[14]      ; 0.759             ;
+; s_mgram6[1]     ; s_SRAM_ADDR[14]      ; 0.738             ;
+; s_mgram6[0]     ; s_SRAM_ADDR[14]      ; 0.738             ;
+; s_mgram4[5]     ; s_SRAM_ADDR[18]      ; 0.736             ;
+; s_mgram4[4]     ; s_SRAM_ADDR[18]      ; 0.736             ;
+; s_mgram4[3]     ; s_SRAM_ADDR[18]      ; 0.736             ;
+; s_mgram4[2]     ; s_SRAM_ADDR[18]      ; 0.736             ;
+; s_mgram8[5]     ; s_SRAM_ADDR[18]      ; 0.693             ;
+; s_mgram8[4]     ; s_SRAM_ADDR[18]      ; 0.693             ;
+; s_mgram6[5]     ; s_SRAM_ADDR[18]      ; 0.661             ;
+; s_mgrama[5]     ; s_SRAM_ADDR[18]      ; 0.661             ;
+; s_mgram6[4]     ; s_SRAM_ADDR[18]      ; 0.661             ;
+; s_mgrama[4]     ; s_SRAM_ADDR[18]      ; 0.661             ;
+; s_mgram6[3]     ; s_SRAM_ADDR[18]      ; 0.661             ;
+; s_mgrama[3]     ; s_SRAM_ADDR[18]      ; 0.661             ;
+; s_mgram6[2]     ; s_SRAM_ADDR[18]      ; 0.661             ;
+; s_mgrama[2]     ; s_SRAM_ADDR[18]      ; 0.661             ;
 +-----------------+----------------------+-------------------+
 Note: This table only shows the top 40 path(s) that have the largest delay added for hold.
 
@@ -2765,7 +2768,7 @@ Warning (15705): Ignored locations or region assignments to the following nodes
     Warning (15706): Node "GPIO0_P22" is assigned to location or region, but does not exist in design
     Warning (15706): Node "GPIO0_P24" is assigned to location or region, but does not exist in design
     Warning (15706): Node "GPIO0_P3" is assigned to location or region, but does not exist in design
-Info (171121): Fitter preparation operations ending: elapsed time is 00:00:02
+Info (171121): Fitter preparation operations ending: elapsed time is 00:00:01
 Info (170189): Fitter placement preparation operations beginning
 Info (170190): Fitter placement preparation operations ending: elapsed time is 00:00:00
 Info (170191): Fitter placement operations beginning
@@ -2777,7 +2780,7 @@ Info (170195): Router estimated average interconnect usage is 0% of the availabl
 Info (170194): Fitter routing operations ending: elapsed time is 00:00:01
 Info (170199): The Fitter performed an Auto Fit compilation.  Optimizations were skipped to reduce compilation time.
     Info (170201): Optimizations that may affect the design's routability were skipped
-Info (11888): Total time spent on timing analysis during the Fitter is 0.27 seconds.
+Info (11888): Total time spent on timing analysis during the Fitter is 0.30 seconds.
 Info (334003): Started post-fitting delay annotation
 Info (334004): Delay annotation completed successfully
 Info (334003): Started post-fitting delay annotation
@@ -2883,6 +2886,7 @@ Warning (169177): 108 pins must meet Altera requirements for 3.3-, 3.0-, and 2.5
     Info (169178): Pin WR_n uses I/O standard 3.3-V LVTTL at Y17
     Info (169178): Pin KEY[0] uses I/O standard 3.3-V LVTTL at H2
     Info (169178): Pin RESET_n uses I/O standard 3.3-V LVTTL at AB11
+    Info (169178): Pin RD_n uses I/O standard 3.3-V LVTTL at AA18
     Info (169178): Pin A[12] uses I/O standard 3.3-V LVTTL at AA9
     Info (169178): Pin A[8] uses I/O standard 3.3-V LVTTL at W17
     Info (169178): Pin A[9] uses I/O standard 3.3-V LVTTL at U15
@@ -2891,7 +2895,6 @@ Warning (169177): 108 pins must meet Altera requirements for 3.3-, 3.0-, and 2.5
     Info (169178): Pin A[14] uses I/O standard 3.3-V LVTTL at T14
     Info (169178): Pin A[13] uses I/O standard 3.3-V LVTTL at AA7
     Info (169178): Pin A[15] uses I/O standard 3.3-V LVTTL at AB17
-    Info (169178): Pin RD_n uses I/O standard 3.3-V LVTTL at AA18
     Info (169178): Pin MREQ_n uses I/O standard 3.3-V LVTTL at AB19
 Warning (169064): Following 47 pins have no output enable or a GND or VCC output enable - later changes to this connectivity may change fitting results
     Info (169065): Pin FL_DQ15_AM1 has a permanently disabled output enable
@@ -2941,10 +2944,10 @@ Warning (169064): Following 47 pins have no output enable or a GND or VCC output
     Info (169065): Pin FL_DQ[13] has a permanently disabled output enable
     Info (169065): Pin FL_DQ[14] has a permanently disabled output enable
     Info (169065): Pin SD_DAT has a permanently disabled output enable
-Info (144001): Generated suppressed messages file C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MegaRAM/output_files/MegaRAM.fit.smsg
+Info (144001): Generated suppressed messages file C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/WIP/MegaRAM/output_files/MegaRAM.fit.smsg
 Info: Quartus II 64-Bit Fitter was successful. 0 errors, 20 warnings
     Info: Peak virtual memory: 4915 megabytes
-    Info: Processing ended: Sat Feb 18 15:58:12 2023
+    Info: Processing ended: Mon Feb 20 01:24:12 2023
     Info: Elapsed time: 00:00:07
     Info: Total CPU time (on all processors): 00:00:07
 
@@ -2952,6 +2955,6 @@ Info: Quartus II 64-Bit Fitter was successful. 0 errors, 20 warnings
 +----------------------------+
 ; Fitter Suppressed Messages ;
 +----------------------------+
-The suppressed messages can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MegaRAM/output_files/MegaRAM.fit.smsg.
+The suppressed messages can be found in C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/WIP/MegaRAM/output_files/MegaRAM.fit.smsg.
 
 

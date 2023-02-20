@@ -26,6 +26,7 @@ entity exp_slot is
 		ffff		: in    std_logic;								-- 1 quando CPU_A = FFFF
 		cpu_a		: in    std_logic_vector(15 downto 14);	-- Barramento de endereco da CPU (bits 15 e 14)
 		cpu_d		: inout std_logic_vector(7 downto 0);		-- Barramento de dados da CPU
+		cpu_q		: inout std_logic_vector(7 downto 0);		-- Data back for CPU
 		exp_n		: out   std_logic_vector(3 downto 0)		-- Saida 4 bits do expansor (ativo em 0)
 	);
 end exp_slot;
@@ -47,14 +48,13 @@ begin
 	begin
 		if (reset_n = '0') then				-- Zerar registrador do expansor em um reset
 			exp_reg <= X"00";
-		elsif (rising_edge(exp_wr)) then	-- Escrita no endereco &HFFFF
+		elsif (falling_edge(exp_wr)) then	-- Escrita no endereco &HFFFF
 			exp_reg <= cpu_d;
 		end if;
  	end process;
 
 	-- Leitura dos registros
-	cpu_d <= (not exp_reg) when exp_rd = '1' else
-				(OTHERS => 'Z');
+	cpu_q <= (not exp_reg) when exp_rd = '1';
 
 	-- Seleciona qual subslot acionar de acordo com endereco do barramento e registros
 	with cpu_a(15 downto 14) select exp_sel <=

@@ -1,7 +1,7 @@
-Fitter Status : Successful - Fri Feb 17 21:26:04 2023
+Fitter Status : Successful - Sun Feb 19 22:31:29 2023
 Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
 Revision Name : MegaROM_Top
-Top-level Entity Name : MegaROM_Top
+Top-level Entity Name : MSX_FPGA_Top
 Family : Cyclone II
 Device : EP2C20F484C7
 Timing Models : Final

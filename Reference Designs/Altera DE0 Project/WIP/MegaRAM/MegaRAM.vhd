@@ -164,17 +164,17 @@ begin
 	s_iorq_r		<= '1' when A(7 downto 0) = x"8E" and RD_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
 	s_iorq_w		<= '1' when A(7 downto 0) = x"8E" and WR_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
 	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
-	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';
+	s_sltsl_en	<= (not SLTSL_n) when SLTSL_n = '0' and SW(9) ='1' else '0';
    
 	-- Mapper implementation								
 	SRAM_CE_N <= not s_sltsl_en;								
-	SRAM_OE_N <= '0';	
+	SRAM_OE_N <= RD_n;	
 	SRAM_WE_N <= WR_n;
 	SRAM_ADDR <= s_SRAM_ADDR(17 downto 0);
 	SRAM_UB_N <= not s_SRAM_ADDR(18);						
 	SRAM_LB_N <= s_SRAM_ADDR(18);
 	
-	SRAM_DQ <= D when WR_n = '0' and s_mgram_we = '1' else (others => 'Z');
+	SRAM_DQ <= D when WR_n = '0' and s_mgram_mem_en = '1' else (others => 'Z');
 					 
 	s_SRAM_ADDR <= (s_mgram4 * x"2000") + A - x"4000" when A < x"6000" else
 						(s_mgram6 * x"2000") + A - x"6000" when A < x"8000" else

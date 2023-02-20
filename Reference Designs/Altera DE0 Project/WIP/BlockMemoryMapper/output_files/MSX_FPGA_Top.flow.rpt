@@ -1,5 +1,5 @@
 Flow report for MSX_FPGA_Top
-Sun Feb 19 12:04:05 2023
+Mon Feb 20 00:24:24 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -40,20 +40,20 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Flow Summary                                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Flow Status                        ; Successful - Sun Feb 19 12:04:02 2023           ;
+; Flow Status                        ; Successful - Mon Feb 20 00:24:22 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_FPGA_Top                                    ;
 ; Top-level Entity Name              ; MSX_FPGA_Top                                    ;
 ; Family                             ; Cyclone III                                     ;
 ; Device                             ; EP3C16F484C6                                    ;
 ; Timing Models                      ; Final                                           ;
-; Total logic elements               ; 110 / 15,408 ( < 1 % )                          ;
-;     Total combinational functions  ; 110 / 15,408 ( < 1 % )                          ;
-;     Dedicated logic registers      ; 28 / 15,408 ( < 1 % )                           ;
-; Total registers                    ; 28                                              ;
+; Total logic elements               ; 142 / 15,408 ( < 1 % )                          ;
+;     Total combinational functions  ; 135 / 15,408 ( < 1 % )                          ;
+;     Dedicated logic registers      ; 24 / 15,408 ( < 1 % )                           ;
+; Total registers                    ; 24                                              ;
 ; Total pins                         ; 247 / 347 ( 71 % )                              ;
 ; Total virtual pins                 ; 0                                               ;
-; Total memory bits                  ; 0 / 516,096 ( 0 % )                             ;
+; Total memory bits                  ; 262,144 / 516,096 ( 51 % )                      ;
 ; Embedded Multiplier 9-bit elements ; 0 / 112 ( 0 % )                                 ;
 ; Total PLLs                         ; 0 / 4 ( 0 % )                                   ;
 +------------------------------------+-------------------------------------------------+
@@ -64,7 +64,7 @@ applicable agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 02/19/2023 12:03:52 ;
+; Start date & time ; 02/20/2023 00:24:10 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; MSX_FPGA_Top        ;
 +-------------------+---------------------+
@@ -75,7 +75,7 @@ applicable agreement for further details.
 +-------------------------------------+---------------------------------------+---------------+-------------+------------+
 ; Assignment Name                     ; Value                                 ; Default Value ; Entity Name ; Section Id ;
 +-------------------------------------+---------------------------------------+---------------+-------------+------------+
-; COMPILER_SIGNATURE_ID               ; 53447168746495.167680823208176        ; --            ; --          ; --         ;
+; COMPILER_SIGNATURE_ID               ; 53447168746495.167685265009672        ; --            ; --          ; --         ;
 ; MAX_CORE_JUNCTION_TEMP              ; 85                                    ; --            ; --          ; --         ;
 ; MIN_CORE_JUNCTION_TEMP              ; 0                                     ; --            ; --          ; --         ;
 ; OUTPUT_IO_TIMING_FAR_END_VMEAS      ; Half Signal Swing                     ; --            ; --          ; --         ;
@@ -97,10 +97,10 @@ applicable agreement for further details.
 ; Module Name               ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Analysis & Synthesis      ; 00:00:02     ; 1.0                     ; 4632 MB             ; 00:00:02                           ;
-; Fitter                    ; 00:00:06     ; 1.0                     ; 4882 MB             ; 00:00:06                           ;
-; Assembler                 ; 00:00:01     ; 1.0                     ; 4545 MB             ; 00:00:01                           ;
-; TimeQuest Timing Analyzer ; 00:00:02     ; 1.0                     ; 4589 MB             ; 00:00:02                           ;
-; Total                     ; 00:00:11     ; --                      ; --                  ; 00:00:11                           ;
+; Fitter                    ; 00:00:07     ; 1.0                     ; 4912 MB             ; 00:00:07                           ;
+; Assembler                 ; 00:00:01     ; 1.0                     ; 4541 MB             ; 00:00:01                           ;
+; TimeQuest Timing Analyzer ; 00:00:02     ; 1.0                     ; 4591 MB             ; 00:00:02                           ;
+; Total                     ; 00:00:12     ; --                      ; --                  ; 00:00:12                           ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 

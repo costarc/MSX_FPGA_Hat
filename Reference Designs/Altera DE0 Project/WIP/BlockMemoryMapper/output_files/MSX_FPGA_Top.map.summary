@@ -1,14 +1,14 @@
-Analysis & Synthesis Status : Successful - Sun Feb 19 12:03:54 2023
+Analysis & Synthesis Status : Successful - Mon Feb 20 00:24:12 2023
 Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
 Revision Name : MSX_FPGA_Top
 Top-level Entity Name : MSX_FPGA_Top
 Family : Cyclone III
-Total logic elements : 134
-    Total combinational functions : 110
-    Dedicated logic registers : 28
-Total registers : 28
+Total logic elements : 154
+    Total combinational functions : 135
+    Dedicated logic registers : 24
+Total registers : 24
 Total pins : 247
 Total virtual pins : 0
-Total memory bits : 0
+Total memory bits : 262,144
 Embedded Multiplier 9-bit elements : 0
 Total PLLs : 0

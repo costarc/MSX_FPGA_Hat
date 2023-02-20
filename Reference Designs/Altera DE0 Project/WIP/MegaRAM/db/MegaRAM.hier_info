@@ -209,7 +209,7 @@ SRAM_UB_N <= s_SRAM_ADDR[18].DB_MAX_OUTPUT_PORT_TYPE
 SRAM_LB_N <= s_SRAM_ADDR[18].DB_MAX_OUTPUT_PORT_TYPE
 SRAM_WE_N <= WR_n.DB_MAX_OUTPUT_PORT_TYPE
 SRAM_CE_N <= s_sltsl_en.DB_MAX_OUTPUT_PORT_TYPE
-SRAM_OE_N <= <GND>
+SRAM_OE_N <= RD_n.DB_MAX_OUTPUT_PORT_TYPE
 U1OE_n <= LEDG.DB_MAX_OUTPUT_PORT_TYPE
 A[0] => Equal0.IN15
 A[0] => LessThan0.IN32
@@ -380,6 +380,7 @@ D[4] <> D[4]
 D[5] <> D[5]
 D[6] <> D[6]
 D[7] <> D[7]
+RD_n => SRAM_OE_N.DATAIN
 RD_n => s_iorq_r.IN1
 RD_n => s_mreq.IN0
 WR_n => SRAM_WE_N.DATAIN
@@ -389,6 +390,7 @@ WR_n => s_mgram_reg_en.IN1
 MREQ_n => s_mreq.IN1
 IORQ_n => s_iorq_r.IN1
 IORQ_n => s_iorq_w.IN1
+SLTSL_n => s_sltsl_en.DATAB
 SLTSL_n => s_sltsl_en.IN1
 CS_n => ~NO_FANOUT~
 BUSDIR_n <= s_iorq_r.DB_MAX_OUTPUT_PORT_TYPE

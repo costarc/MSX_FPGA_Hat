@@ -1,5 +1,5 @@
 Flow report for MegaROM_Top
-Fri Feb 17 21:26:07 2023
+Sun Feb 19 22:31:32 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -40,10 +40,10 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Flow Summary                                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Flow Status                        ; Successful - Fri Feb 17 21:26:06 2023           ;
+; Flow Status                        ; Successful - Sun Feb 19 22:31:31 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MegaROM_Top                                     ;
-; Top-level Entity Name              ; MegaROM_Top                                     ;
+; Top-level Entity Name              ; MSX_FPGA_Top                                    ;
 ; Family                             ; Cyclone II                                      ;
 ; Device                             ; EP2C20F484C7                                    ;
 ; Timing Models                      ; Final                                           ;
@@ -64,27 +64,28 @@ applicable agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 02/17/2023 21:26:00 ;
+; Start date & time ; 02/19/2023 22:31:25 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; MegaROM_Top         ;
 +-------------------+---------------------+
 
 
-+------------------------------------------------------------------------------------------------------------------------+
-; Flow Non-Default Global Settings                                                                                       ;
-+-------------------------------------+---------------------------------------+---------------+-------------+------------+
-; Assignment Name                     ; Value                                 ; Default Value ; Entity Name ; Section Id ;
-+-------------------------------------+---------------------------------------+---------------+-------------+------------+
-; COMPILER_SIGNATURE_ID               ; 53447168746495.167666915914564        ; --            ; --          ; --         ;
-; MAX_CORE_JUNCTION_TEMP              ; 85                                    ; --            ; --          ; --         ;
-; MIN_CORE_JUNCTION_TEMP              ; 0                                     ; --            ; --          ; --         ;
-; PARTITION_COLOR                     ; 16764057                              ; --            ; --          ; Top        ;
-; PARTITION_FITTER_PRESERVATION_LEVEL ; PLACEMENT_AND_ROUTING                 ; --            ; --          ; Top        ;
-; PARTITION_NETLIST_TYPE              ; SOURCE                                ; --            ; --          ; Top        ;
-; POWER_BOARD_THERMAL_MODEL           ; None (CONSERVATIVE)                   ; --            ; --          ; --         ;
-; POWER_PRESET_COOLING_SOLUTION       ; 23 MM HEAT SINK WITH 200 LFPM AIRFLOW ; --            ; --          ; --         ;
-; PROJECT_OUTPUT_DIRECTORY            ; output_files                          ; --            ; --          ; --         ;
-+-------------------------------------+---------------------------------------+---------------+-------------+------------+
++-------------------------------------------------------------------------------------------------------------------------+
+; Flow Non-Default Global Settings                                                                                        ;
++-------------------------------------+---------------------------------------+---------------+--------------+------------+
+; Assignment Name                     ; Value                                 ; Default Value ; Entity Name  ; Section Id ;
++-------------------------------------+---------------------------------------+---------------+--------------+------------+
+; COMPILER_SIGNATURE_ID               ; 53447168746495.167684588406352        ; --            ; --           ; --         ;
+; MAX_CORE_JUNCTION_TEMP              ; 85                                    ; --            ; --           ; --         ;
+; MIN_CORE_JUNCTION_TEMP              ; 0                                     ; --            ; --           ; --         ;
+; PARTITION_COLOR                     ; 16764057                              ; --            ; MSX_FPGA_Top ; Top        ;
+; PARTITION_FITTER_PRESERVATION_LEVEL ; PLACEMENT_AND_ROUTING                 ; --            ; MSX_FPGA_Top ; Top        ;
+; PARTITION_NETLIST_TYPE              ; SOURCE                                ; --            ; MSX_FPGA_Top ; Top        ;
+; POWER_BOARD_THERMAL_MODEL           ; None (CONSERVATIVE)                   ; --            ; --           ; --         ;
+; POWER_PRESET_COOLING_SOLUTION       ; 23 MM HEAT SINK WITH 200 LFPM AIRFLOW ; --            ; --           ; --         ;
+; PROJECT_OUTPUT_DIRECTORY            ; output_files                          ; --            ; --           ; --         ;
+; TOP_LEVEL_ENTITY                    ; MSX_FPGA_Top                          ; MegaROM_Top   ; --           ; --         ;
++-------------------------------------+---------------------------------------+---------------+--------------+------------+
 
 
 +-------------------------------------------------------------------------------------------------------------------------------+
@@ -92,7 +93,7 @@ applicable agreement for further details.
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Module Name               ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis      ; 00:00:01     ; 1.0                     ; 4639 MB             ; 00:00:01                           ;
+; Analysis & Synthesis      ; 00:00:01     ; 1.0                     ; 4637 MB             ; 00:00:01                           ;
 ; Fitter                    ; 00:00:03     ; 1.0                     ; 4844 MB             ; 00:00:03                           ;
 ; Assembler                 ; 00:00:01     ; 1.0                     ; 4562 MB             ; 00:00:01                           ;
 ; TimeQuest Timing Analyzer ; 00:00:00     ; 1.0                     ; 4541 MB             ; 00:00:01                           ;

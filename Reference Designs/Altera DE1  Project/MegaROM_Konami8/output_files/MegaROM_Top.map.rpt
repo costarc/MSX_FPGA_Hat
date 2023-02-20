@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MegaROM_Top
-Fri Feb 17 21:26:00 2023
+Sun Feb 19 22:31:25 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -43,10 +43,10 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Fri Feb 17 21:26:00 2023           ;
+; Analysis & Synthesis Status        ; Successful - Sun Feb 19 22:31:25 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MegaROM_Top                                     ;
-; Top-level Entity Name              ; MegaROM_Top                                     ;
+; Top-level Entity Name              ; MSX_FPGA_Top                                    ;
 ; Family                             ; Cyclone II                                      ;
 ; Total logic elements               ; 60                                              ;
 ;     Total combinational functions  ; 49                                              ;
@@ -66,7 +66,7 @@ applicable agreement for further details.
 ; Option                                                                     ; Setting            ; Default Value      ;
 +----------------------------------------------------------------------------+--------------------+--------------------+
 ; Device                                                                     ; EP2C20F484C7       ;                    ;
-; Top-level entity name                                                      ; MegaROM_Top        ; MegaROM_Top        ;
+; Top-level entity name                                                      ; MSX_FPGA_Top       ; MegaROM_Top        ;
 ; Family name                                                                ; Cyclone II         ; Cyclone IV GX      ;
 ; Use smart compilation                                                      ; Off                ; Off                ;
 ; Enable parallel Assembler and TimeQuest Timing Analyzer during compilation ; On                 ; On                 ;
@@ -166,47 +166,47 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------------+-----------------+-----------------+------------------------------------------------------------------------------------------------------------------+---------+
 
 
-+-----------------------------------------------------+
-; Analysis & Synthesis Resource Usage Summary         ;
-+---------------------------------------------+-------+
-; Resource                                    ; Usage ;
-+---------------------------------------------+-------+
-; Estimated Total logic elements              ; 60    ;
-;                                             ;       ;
-; Total combinational functions               ; 49    ;
-; Logic element usage by number of LUT inputs ;       ;
-;     -- 4 input functions                    ; 38    ;
-;     -- 3 input functions                    ; 8     ;
-;     -- <=2 input functions                  ; 3     ;
-;                                             ;       ;
-; Logic elements by mode                      ;       ;
-;     -- normal mode                          ; 49    ;
-;     -- arithmetic mode                      ; 0     ;
-;                                             ;       ;
-; Total registers                             ; 12    ;
-;     -- Dedicated logic registers            ; 12    ;
-;     -- I/O registers                        ; 0     ;
-;                                             ;       ;
-; I/O pins                                    ; 283   ;
-; Embedded Multiplier 9-bit elements          ; 0     ;
-; Maximum fan-out node                        ; A[14] ;
-; Maximum fan-out                             ; 14    ;
-; Total fan-out                               ; 314   ;
-; Average fan-out                             ; 0.91  ;
-+---------------------------------------------+-------+
++---------------------------------------------------------+
+; Analysis & Synthesis Resource Usage Summary             ;
++---------------------------------------------+-----------+
+; Resource                                    ; Usage     ;
++---------------------------------------------+-----------+
+; Estimated Total logic elements              ; 60        ;
+;                                             ;           ;
+; Total combinational functions               ; 49        ;
+; Logic element usage by number of LUT inputs ;           ;
+;     -- 4 input functions                    ; 38        ;
+;     -- 3 input functions                    ; 8         ;
+;     -- <=2 input functions                  ; 3         ;
+;                                             ;           ;
+; Logic elements by mode                      ;           ;
+;     -- normal mode                          ; 49        ;
+;     -- arithmetic mode                      ; 0         ;
+;                                             ;           ;
+; Total registers                             ; 12        ;
+;     -- Dedicated logic registers            ; 12        ;
+;     -- I/O registers                        ; 0         ;
+;                                             ;           ;
+; I/O pins                                    ; 283       ;
+; Embedded Multiplier 9-bit elements          ; 0         ;
+; Maximum fan-out node                        ; s_reset~0 ;
+; Maximum fan-out                             ; 14        ;
+; Total fan-out                               ; 314       ;
+; Average fan-out                             ; 0.91      ;
++---------------------------------------------+-----------+
 
 
-+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Analysis & Synthesis Resource Utilization by Entity                                                                                                                                        ;
-+----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
-; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                ; Library Name ;
-+----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
-; |MegaROM_Top               ; 49 (21)           ; 12 (12)      ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MegaROM_Top                       ; work         ;
-;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MegaROM_Top|decoder_7seg:DISPHEX0 ; work         ;
-;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MegaROM_Top|decoder_7seg:DISPHEX1 ; work         ;
-;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MegaROM_Top|decoder_7seg:DISPHEX2 ; work         ;
-;    |decoder_7seg:DISPHEX3| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MegaROM_Top|decoder_7seg:DISPHEX3 ; work         ;
-+----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+------------------------------------+--------------+
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Analysis & Synthesis Resource Utilization by Entity                                                                                                                                         ;
++----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+-------------------------------------+--------------+
+; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                 ; Library Name ;
++----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+-------------------------------------+--------------+
+; |MSX_FPGA_Top              ; 49 (21)           ; 12 (12)      ; 0           ; 0            ; 0       ; 0         ; 283  ; 0            ; |MSX_FPGA_Top                       ; work         ;
+;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_FPGA_Top|decoder_7seg:DISPHEX0 ; work         ;
+;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_FPGA_Top|decoder_7seg:DISPHEX1 ; work         ;
+;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_FPGA_Top|decoder_7seg:DISPHEX2 ; work         ;
+;    |decoder_7seg:DISPHEX3| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_FPGA_Top|decoder_7seg:DISPHEX3 ; work         ;
++----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+-------------------------------------+--------------+
 Note: For table entries with two numbers listed, the numbers in parentheses indicate the number of resources of the given type used by the specific entity alone. The numbers listed outside of parentheses indicate the total resources of the given type used by the specific entity and all of its sub-entities in the hierarchy.
 
 
@@ -235,14 +235,14 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 +----------------------------------------+---------+
 
 
-+--------------------------------------------------------------------------------------------------------------------------------------------+
-; Multiplexer Restructuring Statistics (Restructuring Performed)                                                                             ;
-+--------------------+-----------+---------------+----------------------+------------------------+------------+------------------------------+
-; Multiplexer Inputs ; Bus Width ; Baseline Area ; Area if Restructured ; Saving if Restructured ; Registered ; Example Multiplexer Output   ;
-+--------------------+-----------+---------------+----------------------+------------------------+------------+------------------------------+
-; 3:1                ; 2 bits    ; 4 LEs         ; 4 LEs                ; 0 LEs                  ; No         ; |MegaROM_Top|s_flashbase[17] ;
-; 4:1                ; 4 bits    ; 8 LEs         ; 8 LEs                ; 0 LEs                  ; No         ; |MegaROM_Top|s_rom_a         ;
-+--------------------+-----------+---------------+----------------------+------------------------+------------+------------------------------+
++---------------------------------------------------------------------------------------------------------------------------------------------+
+; Multiplexer Restructuring Statistics (Restructuring Performed)                                                                              ;
++--------------------+-----------+---------------+----------------------+------------------------+------------+-------------------------------+
+; Multiplexer Inputs ; Bus Width ; Baseline Area ; Area if Restructured ; Saving if Restructured ; Registered ; Example Multiplexer Output    ;
++--------------------+-----------+---------------+----------------------+------------------------+------------+-------------------------------+
+; 3:1                ; 2 bits    ; 4 LEs         ; 4 LEs                ; 0 LEs                  ; No         ; |MSX_FPGA_Top|s_flashbase[17] ;
+; 4:1                ; 4 bits    ; 8 LEs         ; 8 LEs                ; 0 LEs                  ; No         ; |MSX_FPGA_Top|s_rom_a         ;
++--------------------+-----------+---------------+----------------------+------------------------+------------+-------------------------------+
 
 
 +-------------------------------+
@@ -260,17 +260,17 @@ Note: For table entries with two numbers listed, the numbers in parentheses indi
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Fri Feb 17 21:25:59 2023
+    Info: Processing started: Sun Feb 19 22:31:24 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MegaROM_Top -c MegaROM_Top
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Warning (12019): Can't analyze file -- file exp_slot.vhd is missing
 Info (12021): Found 2 design units, including 1 entities, in source file megarom_top.vhd
-    Info (12022): Found design unit 1: MegaROM_Top-bevioural
-    Info (12023): Found entity 1: MegaROM_Top
+    Info (12022): Found design unit 1: MSX_FPGA_Top-behavioural
+    Info (12023): Found entity 1: MSX_FPGA_Top
 Info (12021): Found 2 design units, including 1 entities, in source file decoder_7seg.vhd
     Info (12022): Found design unit 1: decoder_7seg-rtl
     Info (12023): Found entity 1: decoder_7seg
-Info (12127): Elaborating entity "MegaROM_Top" for the top level hierarchy
+Info (12127): Elaborating entity "MSX_FPGA_Top" for the top level hierarchy
 Warning (10541): VHDL Signal Declaration warning at MegaROM_Top.vhd(25): used implicit default value for signal "UART_TXD" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MegaROM_Top.vhd(29): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
 Warning (10541): VHDL Signal Declaration warning at MegaROM_Top.vhd(30): used implicit default value for signal "DRAM_LDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
@@ -411,8 +411,8 @@ Info (21057): Implemented 343 device resources after synthesis - the final resou
     Info (21060): Implemented 91 bidirectional pins
     Info (21061): Implemented 60 logic cells
 Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 131 warnings
-    Info: Peak virtual memory: 4649 megabytes
-    Info: Processing ended: Fri Feb 17 21:26:00 2023
+    Info: Peak virtual memory: 4647 megabytes
+    Info: Processing ended: Sun Feb 19 22:31:25 2023
     Info: Elapsed time: 00:00:01
     Info: Total CPU time (on all processors): 00:00:01
 

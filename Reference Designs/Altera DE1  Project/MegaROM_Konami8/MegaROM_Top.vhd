@@ -154,7 +154,7 @@ begin
 	end process;
 	
 	LEDG <= A(15 downto 8);
-	LEDR <= s_rom_en & rom_bank4_q(2 downto 0) & rom_bank3_q(2 downto 0) & rom_bank2_q(2 downto 0);
+	LEDR <= s_reset & rom_bank4_q(2 downto 0) & rom_bank3_q(2 downto 0) & rom_bank2_q(2 downto 0);
 
 	-- Cartridge Emulation
 	FL_WE_N <= '1';
