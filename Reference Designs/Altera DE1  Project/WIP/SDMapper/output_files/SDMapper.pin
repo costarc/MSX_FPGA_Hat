@@ -81,9 +81,9 @@ VGA_B[2]                     : A10       : output : 3.3-V LVTTL       :         
 VGA_HS                       : A11       : output : 3.3-V LVTTL       :         : 3         : Y              
 CLOCK_24[1]                  : A12       : input  : 3.3-V LVTTL       :         : 4         : Y              
 GND*                         : A13       :        :                   :         : 4         :                
-SD_CLK                       : A14       : output : 3.3-V LVTTL       :         : 4         : N              
-GND*                         : A15       :        :                   :         : 4         :                
-GND*                         : A16       :        :                   :         : 4         :                
+GND*                         : A14       :        :                   :         : 4         :                
+SD_CMD                       : A15       : bidir  : 3.3-V LVTTL       :         : 4         : N              
+SD_CLK                       : A16       : output : 3.3-V LVTTL       :         : 4         : N              
 GND*                         : A17       :        :                   :         : 4         :                
 GND*                         : A18       :        :                   :         : 4         :                
 GND*                         : A19       :        :                   :         : 4         :                
@@ -168,7 +168,7 @@ VGA_R[1]                     : C9        : output : 3.3-V LVTTL       :         
 VGA_G[1]                     : C10       : output : 3.3-V LVTTL       :         : 3         : Y              
 VCCIO3                       : C11       : power  :                   : 3.3V    : 3         :                
 VCCIO4                       : C12       : power  :                   : 3.3V    : 4         :                
-SD_CMD                       : C13       : bidir  : 3.3-V LVTTL       :         : 4         : N              
+GND*                         : C13       :        :                   :         : 4         :                
 WR_n                         : C14       : input  : 3.3-V LVTTL       :         : 4         : Y              
 GND                          : C15       : gnd    :                   :         :           :                
 GND*                         : C16       :        :                   :         : 4         :                
@@ -307,9 +307,9 @@ VCCIO5                       : J16       : power  :                   : 3.3V    
 GND*                         : J17       :        :                   :         : 5         :                
 GND*                         : J18       :        :                   :         : 5         :                
 GND*                         : J19       :        :                   :         : 5         :                
-GND*                         : J20       :        :                   :         : 5         :                
+SD_DAT3                      : J20       : bidir  : 3.3-V LVTTL       :         : 5         : N              
 GND*                         : J21       :        :                   :         : 5         :                
-GND*                         : J22       :        :                   :         : 5         :                
+SD_DAT                       : J22       : bidir  : 3.3-V LVTTL       :         : 5         : N              
 nCE                          : K1        :        :                   :         : 2         :                
 TCK                          : K2        : input  :                   :         : 2         :                
 GND                          : K3        : gnd    :                   :         :           :                
@@ -331,7 +331,7 @@ NC                           : K18       :        :                   :         
 GND                          : K19       : gnd    :                   :         :           :                
 GND*                         : K20       :        :                   :         : 5         :                
 GND*                         : K21       :        :                   :         : 5         :                
-SD_DAT                       : K22       : bidir  : 3.3-V LVTTL       :         : 5         : N              
+GND*                         : K22       :        :                   :         : 5         :                
 CLOCK_50                     : L1        : input  : 3.3-V LVTTL       :         : 2         : Y              
 SW[9]                        : L2        : input  : 3.3-V LVTTL       :         : 2         : Y              
 VCCIO2                       : L3        : power  :                   : 3.3V    : 2         :                
@@ -483,7 +483,7 @@ VCCA_PLL4                    : U16       : power  :                   : 1.2V    
 VCCD_PLL4                    : U17       : power  :                   : 1.2V    :           :                
 LEDR[7]                      : U18       : output : 3.3-V LVTTL       :         : 6         : Y              
 LEDR[2]                      : U19       : output : 3.3-V LVTTL       :         : 6         : Y              
-SD_DAT3                      : U20       : bidir  : 3.3-V LVTTL       :         : 6         : N              
+GND*                         : U20       :        :                   :         : 6         :                
 LEDG[1]                      : U21       : output : 3.3-V LVTTL       :         : 6         : Y              
 LEDG[0]                      : U22       : output : 3.3-V LVTTL       :         : 6         : Y              
 DRAM_DQ[2]                   : V1        : bidir  : 3.3-V LVTTL       :         : 1         : Y              

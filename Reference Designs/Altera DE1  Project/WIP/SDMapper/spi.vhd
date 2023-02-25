@@ -10,7 +10,7 @@ entity spi is
 		-- CPU interface
 		cs_i				: in    std_logic;
 		data_bus_io		: inout std_logic_vector(7 downto 0);
-		sdcard_q 		: inout std_logic_vector(7 downto 0);
+		sdcard_q 		: out std_logic_vector(7 downto 0);
 		wr_n_i			: in    std_logic;
 		rd_n_i			: in    std_logic;
 		wait_n_o			: out   std_logic;

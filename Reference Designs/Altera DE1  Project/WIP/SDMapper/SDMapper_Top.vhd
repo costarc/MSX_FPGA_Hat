@@ -308,9 +308,9 @@ begin
         tmr_cnt_q(15 downto 8) when tmr_rd_s = '1' else 																-- SD Card
 		  s_expn_q when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' else								-- Slot Select exapnsion
 		  FL_DQ when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else								-- FlasRAM / ROM
+		  s_sdcard_q when spi_cs_s = '1' and RD_n = '0' else														-- SDCARD data
 		  SRAM_DQ(7 downto 0) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '0' else	-- SRAM / Mapper
 	     SRAM_DQ(15 downto 8) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '1' else	-- SRAM / Mapper
-		  s_sdcard_q when spi_cs_s = '1' and RD_n = '0' else														-- SDCARD data
 		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else												-- SRAM / Mapper	
 		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else												-- SRAM / Mapper
 		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else												-- SRAM / Mapper
