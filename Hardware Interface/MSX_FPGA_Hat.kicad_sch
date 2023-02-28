@@ -4226,7 +4226,7 @@
     (uuid a665c02f-f334-4e4d-81d4-866e92328b25)
     (property "Reference" "CONN1" (id 0) (at 26.67 51.689 0))
     (property "Value" "MSX_BUS" (id 1) (at 26.924 53.721 0))
-    (property "Footprint" "Roni Footprints:MSX_CART_SW" (id 2) (at 98.298 146.177 0)
+    (property "Footprint" "Roni Footprints:MSX_CART_SW_Official" (id 2) (at 98.298 146.177 0)
       (effects (font (size 1 1)) hide)
     )
     (property "Datasheet" "" (id 3) (at 98.298 146.177 0)
@@ -4835,7 +4835,7 @@
       (reference "C8") (unit 1) (value "100uF") (footprint "Capacitor_THT:CP_Radial_D6.3mm_P2.50mm")
     )
     (path "/a665c02f-f334-4e4d-81d4-866e92328b25"
-      (reference "CONN1") (unit 1) (value "MSX_BUS") (footprint "Roni Footprints:MSX_CART_SW")
+      (reference "CONN1") (unit 1) (value "MSX_BUS") (footprint "Roni Footprints:MSX_CART_SW_Official")
     )
     (path "/79659c5e-ee34-4dee-880c-5f7faad77490"
       (reference "D1") (unit 1) (value "BAT43") (footprint "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal")
