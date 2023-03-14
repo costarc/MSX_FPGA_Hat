@@ -71,13 +71,6 @@ port (
     SRAM_WE_N:		out std_logic;								--	SRAM Write Enable
     SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
     SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
- 
-    -- SD Card Pins - Please review https://github.com/costarc/HowToCollection/blob/master/Terasic%20DE1%20SD%20Card%20Pins
-	 -- A change change in the device is requried to allow the use of SD_DAT pin.
-    SD_DAT:			inout std_logic;							--	SD Card Data
-    SD_DAT3:		inout std_logic;							--	SD Card Data 3
-    SD_CMD:			inout std_logic;							--	SD Card Command Signal
-    SD_CLK:			out std_logic;								--	SD Card Clock
     							
     I2C_SDAT:		inout std_logic;							--	I2C Data
     I2C_SCLK:		out std_logic;								--	I2C Clock
@@ -102,7 +95,12 @@ port (
     AUD_DACDAT:		out std_logic;								--	Audio CODEC DAC Data
     AUD_BCLK:		inout std_logic;							--	Audio CODEC Bit-Stream Clock
     AUD_XCK:			out std_logic;								--	Audio CODEC Chip Clock
-                    
+
+    SD1_CS:			out std_logic;							--	
+    SD1_SCK:		out std_logic;							--	
+    SD1_MOSI: 		out std_logic;							--	
+    SD1_MISO: 		in std_logic;							--	
+	 
     --GPIO_0:			inout std_logic_vector(35 downto 0);--	GPIO Connection 0
     SD2_CS:			out std_logic;							--	
     SD2_SCK:		out std_logic;							--	
@@ -450,17 +448,17 @@ begin
  	
 	-- Signals to drive the SD Cards
 	-- Device Drive 1 is the SD Card in the DE1
-	SD_DAT3	<= '0' when sd_sel_q(1) = '1' else '1';	
-	SD_CLK	<= s_sd_clk;
-	SD_CMD	<= s_sd_mosi;
-	s_sd_miso <= SD_DAT when sd_sel_q(1) = '1' else SD2_MISO when sd_sel_q(0) = '1';
+	SD1_CS	<= '0' when sd_sel_q(0) = '1' else '1';	
+	SD1_SCK	<= s_sd_clk;
+	SD1_MOSI	<= s_sd_mosi;
+	s_sd_miso <= SD1_MISO when sd_sel_q(0) = '1' else SD2_MISO when sd_sel_q(1) = '1';
 	
 	-- Device Drive 2 is aN Optional 2nd SD Card connected to GPIO_0:
 	-- GPIO_0[1] = SD2_CS
 	-- GPIO_0[3] = SD2_SCK
 	-- GPIO_0[5] = SD2_MOSI
 	-- GPIO_0[7] = SD2_MISO
-	SD2_CS	<= '0' when sd_sel_q(0) = '1' else '1';
+	SD2_CS	<= '0' when sd_sel_q(1) = '1' else '1';
 	SD2_SCK	<= s_sd_clk;
 	SD2_MOSI	<= s_sd_mosi;
 
