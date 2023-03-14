@@ -195,10 +195,7 @@ architecture bevioural of SDMapper_TOP is
 	signal s_ffff_slt			: std_logic;
 	signal slt_exp_n			: std_logic_vector(3 downto 0);
 	signal s_expn_q			: std_logic_vector(7 downto 0);
-	signal s_sdcard_q			: std_logic_vector(7 downto 0);
-	
-	
-	
+		
 begin
 
 	-- Reset circuit
@@ -307,8 +304,7 @@ begin
 	D <= status_s	when spi_ctrl_rd_s = '1' else																			-- SD Card
         tmr_cnt_q(15 downto 8) when tmr_rd_s = '1' else 																-- SD Card
 		  s_expn_q when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' else								-- Slot Select exapnsion
-		  FL_DQ when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else								-- FlasRAM / ROM
-		  s_sdcard_q when spi_cs_s = '1' and RD_n = '0' else														-- SDCARD data
+		  FL_DQ when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else								-- FlasRAM / ROM 
 		  SRAM_DQ(7 downto 0) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '0' else	-- SRAM / Mapper
 	     SRAM_DQ(15 downto 8) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '1' else	-- SRAM / Mapper
 		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else												-- SRAM / Mapper	
@@ -344,6 +340,7 @@ begin
 	
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
+
 	spi_cs_s	<= '1'  when s_sltsl_rom_en = '1' and rom_bank1_q = "111" and	A >= x"7B00" and A < x"7F00" else
 	            '0';	
 	tmr_wr_s <= '1' when s_sltsl_rom_en = '1' and WR_n = '0' and A = x"7FF1" else '0';
@@ -442,7 +439,6 @@ begin
 		-- CPU interface
 		cs_i				=> spi_cs_s,
 		data_bus_io		=> D,
-		sdcard_q			=> s_sdcard_q,
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
 		wait_n_o			=> s_spi_wait_n,
@@ -454,17 +450,17 @@ begin
  	
 	-- Signals to drive the SD Cards
 	-- Device Drive 1 is the SD Card in the DE1
-	SD_DAT3	<= '0' when sd_sel_q(0) = '1' else '1';	
+	SD_DAT3	<= '0' when sd_sel_q(1) = '1' else '1';	
 	SD_CLK	<= s_sd_clk;
 	SD_CMD	<= s_sd_mosi;
-	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO when sd_sel_q(1) = '1';
+	s_sd_miso <= SD_DAT when sd_sel_q(1) = '1' else SD2_MISO when sd_sel_q(0) = '1';
 	
 	-- Device Drive 2 is aN Optional 2nd SD Card connected to GPIO_0:
 	-- GPIO_0[1] = SD2_CS
 	-- GPIO_0[3] = SD2_SCK
 	-- GPIO_0[5] = SD2_MOSI
 	-- GPIO_0[7] = SD2_MISO
-	SD2_CS	<= '0' when sd_sel_q(1) = '1' else '1';
+	SD2_CS	<= '0' when sd_sel_q(0) = '1' else '1';
 	SD2_SCK	<= s_sd_clk;
 	SD2_MOSI	<= s_sd_mosi;
 

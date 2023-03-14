@@ -1,12 +1,12 @@
-Fitter Status : Successful - Sat Feb 25 16:22:25 2023
+Fitter Status : Successful - Tue Mar 14 18:56:31 2023
 Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
 Revision Name : SDMapper
 Top-level Entity Name : SDMapper_TOP
 Family : Cyclone II
 Device : EP2C20F484C7
 Timing Models : Final
-Total logic elements : 300 / 18,752 ( 2 % )
-    Total combinational functions : 287 / 18,752 ( 2 % )
+Total logic elements : 307 / 18,752 ( 2 % )
+    Total combinational functions : 296 / 18,752 ( 2 % )
     Dedicated logic registers : 98 / 18,752 ( < 1 % )
 Total registers : 98
 Total pins : 251 / 315 ( 80 % )

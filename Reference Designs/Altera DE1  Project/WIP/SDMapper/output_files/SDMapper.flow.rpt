@@ -1,5 +1,5 @@
 Flow report for SDMapper
-Sat Feb 25 16:22:29 2023
+Tue Mar 14 18:56:34 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -40,15 +40,15 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Flow Summary                                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Flow Status                        ; Successful - Sat Feb 25 16:22:27 2023           ;
+; Flow Status                        ; Successful - Tue Mar 14 18:56:33 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; SDMapper                                        ;
 ; Top-level Entity Name              ; SDMapper_TOP                                    ;
 ; Family                             ; Cyclone II                                      ;
 ; Device                             ; EP2C20F484C7                                    ;
 ; Timing Models                      ; Final                                           ;
-; Total logic elements               ; 300 / 18,752 ( 2 % )                            ;
-;     Total combinational functions  ; 287 / 18,752 ( 2 % )                            ;
+; Total logic elements               ; 307 / 18,752 ( 2 % )                            ;
+;     Total combinational functions  ; 296 / 18,752 ( 2 % )                            ;
 ;     Dedicated logic registers      ; 98 / 18,752 ( < 1 % )                           ;
 ; Total registers                    ; 98                                              ;
 ; Total pins                         ; 251 / 315 ( 80 % )                              ;
@@ -64,7 +64,7 @@ applicable agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 02/25/2023 16:22:16 ;
+; Start date & time ; 03/14/2023 18:56:24 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; SDMapper            ;
 +-------------------+---------------------+
@@ -75,7 +75,7 @@ applicable agreement for further details.
 +-------------------------------------+---------------------------------------+---------------+--------------+------------+
 ; Assignment Name                     ; Value                                 ; Default Value ; Entity Name  ; Section Id ;
 +-------------------------------------+---------------------------------------+---------------+--------------+------------+
-; COMPILER_SIGNATURE_ID               ; 53447168746495.167734213610600        ; --            ; --           ; --         ;
+; COMPILER_SIGNATURE_ID               ; 53447168746495.167882018412784        ; --            ; --           ; --         ;
 ; MAX_CORE_JUNCTION_TEMP              ; 85                                    ; --            ; --           ; --         ;
 ; MIN_CORE_JUNCTION_TEMP              ; 0                                     ; --            ; --           ; --         ;
 ; PARTITION_COLOR                     ; 16764057                              ; --            ; SDMapper_TOP ; Top        ;
@@ -93,11 +93,11 @@ applicable agreement for further details.
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Module Name               ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis      ; 00:00:03     ; 1.0                     ; 4629 MB             ; 00:00:03                           ;
-; Fitter                    ; 00:00:06     ; 1.0                     ; 4842 MB             ; 00:00:05                           ;
-; Assembler                 ; 00:00:01     ; 1.0                     ; 4548 MB             ; 00:00:01                           ;
+; Analysis & Synthesis      ; 00:00:01     ; 1.0                     ; 4629 MB             ; 00:00:02                           ;
+; Fitter                    ; 00:00:05     ; 1.0                     ; 4836 MB             ; 00:00:05                           ;
+; Assembler                 ; 00:00:01     ; 1.0                     ; 4552 MB             ; 00:00:01                           ;
 ; TimeQuest Timing Analyzer ; 00:00:01     ; 1.0                     ; 4551 MB             ; 00:00:01                           ;
-; Total                     ; 00:00:11     ; --                      ; --                  ; 00:00:10                           ;
+; Total                     ; 00:00:08     ; --                      ; --                  ; 00:00:09                           ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 

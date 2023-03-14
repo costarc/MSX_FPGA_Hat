@@ -1,3 +1,14 @@
 *.DS_Store
 *.backups
+*.flock
+*.rpt
+*.done
+*.smsg
+*.summary
+*.jdi
+*.pin
+*_description
+*.map
+incremental_db/*
+db/*
 

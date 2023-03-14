@@ -307,9 +307,9 @@ VCCIO5                       : J16       : power  :                   : 3.3V    
 GND*                         : J17       :        :                   :         : 5         :                
 GND*                         : J18       :        :                   :         : 5         :                
 GND*                         : J19       :        :                   :         : 5         :                
-SD_DAT3                      : J20       : bidir  : 3.3-V LVTTL       :         : 5         : N              
+GND*                         : J20       :        :                   :         : 5         :                
 GND*                         : J21       :        :                   :         : 5         :                
-SD_DAT                       : J22       : bidir  : 3.3-V LVTTL       :         : 5         : N              
+GND*                         : J22       :        :                   :         : 5         :                
 nCE                          : K1        :        :                   :         : 2         :                
 TCK                          : K2        : input  :                   :         : 2         :                
 GND                          : K3        : gnd    :                   :         :           :                
@@ -435,7 +435,7 @@ FL_ADDR[10]                  : R12       : output : 3.3-V LVTTL       :         
 FL_ADDR[21]                  : R13       : output : 3.3-V LVTTL       :         : 7         : Y              
 FL_ADDR[8]                   : R14       : output : 3.3-V LVTTL       :         : 7         : Y              
 FL_ADDR[3]                   : R15       : output : 3.3-V LVTTL       :         : 7         : Y              
-GND*                         : R16       :        :                   :         : 7         :                
+SD_DAT                       : R16       : bidir  : 3.3-V LVTTL       :         : 7         : N              
 LEDR[9]                      : R17       : output : 3.3-V LVTTL       :         : 6         : Y              
 LEDR[8]                      : R18       : output : 3.3-V LVTTL       :         : 6         : Y              
 LEDR[1]                      : R19       : output : 3.3-V LVTTL       :         : 6         : Y              
@@ -527,7 +527,7 @@ GND*                         : W16       :        :                   :         
 VCCIO7                       : W17       : power  :                   : 3.3V    : 7         :                
 NC                           : W18       :        :                   :         :           :                
 GND                          : W19       : gnd    :                   :         :           :                
-GND*                         : W20       :        :                   :         : 6         :                
+SD_DAT3                      : W20       : bidir  : 3.3-V LVTTL       :         : 6         : N              
 LEDG[5]                      : W21       : output : 3.3-V LVTTL       :         : 6         : Y              
 LEDG[4]                      : W22       : output : 3.3-V LVTTL       :         : 6         : Y              
 DRAM_DQ[6]                   : Y1        : bidir  : 3.3-V LVTTL       :         : 1         : Y              
