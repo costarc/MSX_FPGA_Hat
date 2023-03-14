@@ -11,4 +11,6 @@
 *.map
 incremental_db/*
 db/*
-
+output_files/*
+!output_files/DE1_TOP.jic
+!output_files/DE1_TOP.sof
