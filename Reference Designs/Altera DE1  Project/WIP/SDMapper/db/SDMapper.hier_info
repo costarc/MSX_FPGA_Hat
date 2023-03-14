@@ -194,9 +194,6 @@ SRAM_LB_N <= s_SRAM_ADDR.DB_MAX_OUTPUT_PORT_TYPE
 SRAM_WE_N <= WR_n.DB_MAX_OUTPUT_PORT_TYPE
 SRAM_CE_N <= s_sltsl_ram_en.DB_MAX_OUTPUT_PORT_TYPE
 SRAM_OE_N <= <GND>
-SD_DAT3 <> SD_DAT3
-SD_CMD <> SD_CMD
-SD_CLK <= spi:portaspi.spi_sclk_o
 I2C_SDAT <> I2C_SDAT
 I2C_SCLK <= I2C_SCLK.DB_MAX_OUTPUT_PORT_TYPE
 PS2_DAT => ~NO_FANOUT~
@@ -225,7 +222,11 @@ AUD_DACLRCK <> AUD_DACLRCK
 AUD_DACDAT <= AUD_DACDAT.DB_MAX_OUTPUT_PORT_TYPE
 AUD_BCLK <> AUD_BCLK
 AUD_XCK <= comb.DB_MAX_OUTPUT_PORT_TYPE
-SD2_CS <= sd_sel_q[0].DB_MAX_OUTPUT_PORT_TYPE
+SD1_CS <= sd_sel_q[0].DB_MAX_OUTPUT_PORT_TYPE
+SD1_SCK <= spi:portaspi.spi_sclk_o
+SD1_MOSI <= spi:portaspi.spi_mosi_o
+SD1_MISO => s_sd_miso.DATAB
+SD2_CS <= sd_sel_q[1].DB_MAX_OUTPUT_PORT_TYPE
 SD2_SCK <= spi:portaspi.spi_sclk_o
 SD2_MOSI <= spi:portaspi.spi_mosi_o
 SD2_MISO => s_sd_miso.DATAA
