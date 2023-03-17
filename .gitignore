@@ -11,6 +11,7 @@
 *.map
 *.db_info
 incremental_db/
+compiled_partitions/
 db/
 output_files/
 !DE1_TOP.jic
