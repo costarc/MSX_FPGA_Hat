@@ -1,5 +1,5 @@
 Analysis & Synthesis report for SDMapper
-Fri Mar 17 19:20:47 2023
+Fri Mar 17 19:26:44 2023
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -46,7 +46,7 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Fri Mar 17 19:20:46 2023           ;
+; Analysis & Synthesis Status        ; Successful - Fri Mar 17 19:26:44 2023           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; SDMapper                                        ;
 ; Top-level Entity Name              ; SDMapper_TOP                                    ;
@@ -328,7 +328,7 @@ Note: All latches listed above may not be present at the end of synthesis due to
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Fri Mar 17 19:20:44 2023
+    Info: Processing started: Fri Mar 17 19:26:42 2023
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off SDMapper_Top -c SDMapper
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Info (12021): Found 2 design units, including 1 entities, in source file exp_slot.vhd
@@ -496,8 +496,8 @@ Info (21057): Implemented 593 device resources after synthesis - the final resou
     Info (21061): Implemented 342 logic cells
 Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 130 warnings
     Info: Peak virtual memory: 4628 megabytes
-    Info: Processing ended: Fri Mar 17 19:20:47 2023
-    Info: Elapsed time: 00:00:03
+    Info: Processing ended: Fri Mar 17 19:26:44 2023
+    Info: Elapsed time: 00:00:02
     Info: Total CPU time (on all processors): 00:00:02
 
 
