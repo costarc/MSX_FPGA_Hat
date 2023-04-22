@@ -492,10 +492,25 @@ set_location_assignment PIN_W7 -to SRAM_UB_N
 set_location_assignment PIN_AA10 -to SRAM_WE_N
 set_location_assignment PIN_AB15 -to FL_CE_N
 # --
+set_location_assignment PIN_U20 -to SD1_CS
+set_location_assignment PIN_V20 -to SD1_SCK
+set_location_assignment PIN_Y20 -to SD1_MOSI
+set_location_assignment PIN_W20 -to SD1_MISO
+#-
 set_location_assignment PIN_B13 -to SD2_CS
 set_location_assignment PIN_B14 -to SD2_SCK
 set_location_assignment PIN_B15 -to SD2_MOSI
 set_location_assignment PIN_B16 -to SD2_MISO
+# --
+set_instance_assignment -name IO_STANDARD LVTTL -to SD1_CS
+set_instance_assignment -name IO_STANDARD LVTTL -to SD1_SCK
+set_instance_assignment -name IO_STANDARD LVTTL -to SD1_MOSI
+set_instance_assignment -name IO_STANDARD LVTTL -to SD1_MISO
+#-
+set_instance_assignment -name IO_STANDARD LVTTL -to SD2_CS
+set_instance_assignment -name IO_STANDARD LVTTL -to SD2_SCK
+set_instance_assignment -name IO_STANDARD LVTTL -to SD2_MOSI
+set_instance_assignment -name IO_STANDARD LVTTL -to SD2_MISO
 # --
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"

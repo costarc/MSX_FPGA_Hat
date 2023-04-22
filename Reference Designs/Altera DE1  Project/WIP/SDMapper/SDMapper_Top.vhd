@@ -71,13 +71,6 @@ port (
     SRAM_WE_N:		out std_logic;								--	SRAM Write Enable
     SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
     SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
- 
-    -- SD Card Pins - Please review https://github.com/costarc/HowToCollection/blob/master/Terasic%20DE1%20SD%20Card%20Pins
-	 -- A change change in the device is requried to allow the use of SD_DAT pin.
-    SD_DAT:			inout std_logic;							--	SD Card Data
-    SD_DAT3:		inout std_logic;							--	SD Card Data 3
-    SD_CMD:			inout std_logic;							--	SD Card Command Signal
-    SD_CLK:			out std_logic;								--	SD Card Clock
     							
     I2C_SDAT:		inout std_logic;							--	I2C Data
     I2C_SCLK:		out std_logic;								--	I2C Clock
@@ -102,7 +95,12 @@ port (
     AUD_DACDAT:		out std_logic;								--	Audio CODEC DAC Data
     AUD_BCLK:		inout std_logic;							--	Audio CODEC Bit-Stream Clock
     AUD_XCK:			out std_logic;								--	Audio CODEC Chip Clock
-                    
+
+    SD1_CS:			out std_logic;							--	
+    SD1_SCK:		out std_logic;							--	
+    SD1_MOSI: 		out std_logic;							--	
+    SD1_MISO: 		in std_logic;							--	
+	 
     --GPIO_0:			inout std_logic_vector(35 downto 0);--	GPIO Connection 0
     SD2_CS:			out std_logic;							--	
     SD2_SCK:		out std_logic;							--	
@@ -195,10 +193,7 @@ architecture bevioural of SDMapper_TOP is
 	signal s_ffff_slt			: std_logic;
 	signal slt_exp_n			: std_logic_vector(3 downto 0);
 	signal s_expn_q			: std_logic_vector(7 downto 0);
-	signal s_sdcard_q			: std_logic_vector(7 downto 0);
-	
-	
-	
+		
 begin
 
 	-- Reset circuit
@@ -307,10 +302,9 @@ begin
 	D <= status_s	when spi_ctrl_rd_s = '1' else																			-- SD Card
         tmr_cnt_q(15 downto 8) when tmr_rd_s = '1' else 																-- SD Card
 		  s_expn_q when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' else								-- Slot Select exapnsion
-		  FL_DQ when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else								-- FlasRAM / ROM
+		  FL_DQ when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else								-- FlasRAM / ROM 
 		  SRAM_DQ(7 downto 0) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '0' else	-- SRAM / Mapper
 	     SRAM_DQ(15 downto 8) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '1' else	-- SRAM / Mapper
-		  s_sdcard_q when spi_cs_s = '1' and RD_n = '0' else														-- SDCARD data
 		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else												-- SRAM / Mapper	
 		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else												-- SRAM / Mapper
 		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else												-- SRAM / Mapper
@@ -344,6 +338,7 @@ begin
 	
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
+
 	spi_cs_s	<= '1'  when s_sltsl_rom_en = '1' and rom_bank1_q = "111" and	A >= x"7B00" and A < x"7F00" else
 	            '0';	
 	tmr_wr_s <= '1' when s_sltsl_rom_en = '1' and WR_n = '0' and A = x"7FF1" else '0';
@@ -442,7 +437,6 @@ begin
 		-- CPU interface
 		cs_i				=> spi_cs_s,
 		data_bus_io		=> D,
-		sdcard_q			=> s_sdcard_q,
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
 		wait_n_o			=> s_spi_wait_n,
@@ -454,10 +448,10 @@ begin
  	
 	-- Signals to drive the SD Cards
 	-- Device Drive 1 is the SD Card in the DE1
-	SD_DAT3	<= '0' when sd_sel_q(0) = '1' else '1';	
-	SD_CLK	<= s_sd_clk;
-	SD_CMD	<= s_sd_mosi;
-	s_sd_miso <= SD_DAT when sd_sel_q(0) = '1' else SD2_MISO when sd_sel_q(1) = '1';
+	SD1_CS	<= '0' when sd_sel_q(0) = '1' else '1';	
+	SD1_SCK	<= s_sd_clk;
+	SD1_MOSI	<= s_sd_mosi;
+	s_sd_miso <= SD1_MISO when sd_sel_q(0) = '1' else SD2_MISO when sd_sel_q(1) = '1';
 	
 	-- Device Drive 2 is aN Optional 2nd SD Card connected to GPIO_0:
 	-- GPIO_0[1] = SD2_CS
