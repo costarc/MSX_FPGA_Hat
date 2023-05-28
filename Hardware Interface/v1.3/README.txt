@@ -1,6 +1,3 @@
-v1.4
-- Added pull-up to all bus lines input to FPGA (4 x resistor network)
-- Added RESET button (reset the MSX)
 v1.3
 - Updated edge connector (footprint) again, as per MSX standard for edge connector measures
 - Moved RFSH & SOUNDIN to Jumper J1 (& removed previous jumpers J3/J4)
