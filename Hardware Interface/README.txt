@@ -1,3 +1,7 @@
+v1.5
+- Added pull-up to MSX Data bus lines
+- Added missing ground to LM1117
+- Fixed bug (changed to 5V) in pull up on wait/int/busdir signals 
 v1.4
 - Added pull-up to all bus lines input to FPGA (4 x resistor network)
 - Added RESET button (reset the MSX)
