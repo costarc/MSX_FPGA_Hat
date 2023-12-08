@@ -132,6 +132,13 @@ architecture bevioural of SDMapper_TOP is
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
 
+    component clock_25mhz
+    PORT (
+        areset              : IN STD_LOGIC  := '0';
+        inclk0              : IN STD_LOGIC  := '0';
+        c0                  : OUT STD_LOGIC);
+    end component;
+	 
 	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT1		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
@@ -214,12 +221,17 @@ begin
 	
 	-- Generic Outputs signals to DE1
 	BUSDIR_n <= not s_iorq_r_reg;
-	s_sltsl_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
-	s_sltsl_rom_en <= not slt_exp_n(0) when SW(9) ='1' else '0';
-	s_sltsl_ram_en <= not slt_exp_n(1) when SW(8) ='1' else '0';
+	s_sltsl_en <= (not SLTSL_n) when SW(9) = '1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
+	s_sltsl_rom_en <= not slt_exp_n(0) when SW(9) = '1' else '0';
+	s_sltsl_ram_en <= not slt_exp_n(1) when SW(8) = '1' else '0';
 	
 	-- Enable output in U1 (74LVC245)
-	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg or spi_cs_s);
+	--U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg or spi_cs_s));
+	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
+	--U1OE_n <=	'0' when s_sltsl_en = '1' else
+	--				'0' when spi_cs_s = '1' else
+	--				'0' when s_iorq_r_reg = '1' else
+	--				'0' when s_iorq_w_reg = '1' else '1';
 
 	-- Detect access to slots - to be used with the slot expansor
 	s_ffff_slt    <= '1' when A = x"FFFF" else '0';
@@ -279,7 +291,8 @@ begin
 	-- The FLASHRAM is shared with other cores. This register allows to define
 	-- a specific address in the flash where the roms for this cores is written.
 	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
-	s_flashbase <= x"180000";		-- FlashRAM Address for Nextor Operating System
+	--s_flashbase <= x"180000";		-- FlashRAM Address for Nextor Operating System
+	s_flashbase <= x"000000";		-- FlashRAM Address for Nextor Operating System
 	
 	-- Checks address being access. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
 	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(2 downto 0) & A(13 downto 0)) when s_sltsl_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
@@ -422,12 +435,12 @@ begin
 	end process;
 
 	-- Generate the 25MHz clock_i for the SPI component
-	i_clock_i: process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			clock_i <= not clock_i;
-		end if;
-	end process;
+    -- 25MHz clock_i for the SPI component
+    clock_25mhz_inst : clock_25mhz PORT MAP (
+        areset   => not s_reset,
+        inclk0   => CLOCK_50,
+        c0       => clock_i
+    );
 
 	-- SPI Interface to the SD Cards
 	portaspi: entity work.spi
