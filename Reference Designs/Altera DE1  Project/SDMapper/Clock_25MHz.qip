@@ -1,5 +1,7 @@
 set_global_assignment -name IP_TOOL_NAME "ALTPLL"
 set_global_assignment -name IP_TOOL_VERSION "13.0"
-set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) "Clock_25MHz.vhd"]
-set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "Clock_25MHz_inst.vhd"]
-set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "Clock_25MHz.ppf"]
+set_global_assignment -name VHDL_FILE [file join $::quartus(qip_path) "clock_25mhz.vhd"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "clock_25mhz.bsf"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "clock_25mhz_inst.vhd"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "clock_25mhz.cmp"]
+set_global_assignment -name MISC_FILE [file join $::quartus(qip_path) "clock_25mhz.ppf"]
