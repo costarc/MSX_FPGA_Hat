@@ -1,3 +1,15 @@
+-- REFERENCE DESIGN - KONAMI8 ROM MAPPER EMULATION
+--
+-- SW9: Select ROMS from FLASH
+-- Use the following combination of SW to select the game in the FLASH
+--
+-- 1000000010: PENGUIN
+-- 1000000100: USAS (MSX2)
+-- 1000001000: METAL GEAR (MSX2)
+-- 1XXXXXXXXX: NEMESIS
+
+-- -------------------------------------------------------------------------
+
 library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
@@ -175,11 +187,11 @@ begin
 	-- SW(2..0) selects the ROM - See DE1ROMs_Guide.txt
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
 	-- where the roms for this cores is written.
-	-- ROMs for this core starts at postion 0x100000 and each ROM has 128KB
-	s_flashbase <= x"120000" when SW(0) = '1' else
-	               x"140000" when SW(1) = '1' else
-						x"160000" when SW(2) = '1' else
-						x"100000";
+	-- ROMs for this core starts at postion 0x130000 and each ROM has 128KB
+	s_flashbase <= x"150000" when SW(1) = '1' else
+	               x"170000" when SW(2) = '1' else
+						x"190000" when SW(3) = '1' else
+						x"130000";
 	
 	-- MegaROM Emulation - Only enabled if SW(9) is UP/ON/1
 	s_rom_en <= (not SLTSL_n) when SW(9) ='1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'

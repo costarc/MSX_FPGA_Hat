@@ -1,25 +1,29 @@
 Create a big ROM file:
 
-ASCII16 (256KB ROMs) - 000000h in the Flash:
----------------------------------------------
+#SD Mapper ROM(MSX-DOS/Nextor 128KB ROM):
+#----------------------------------------
+cat SDMAPPER.ROM > DE1ROMs.bin
+
+#MSX-DOS 2.2v3 (64KB ROM):
+#-------------------------
+cat MDOS22V3.ROM >> DE1ROMs.bin
+
+#ASCII16 (256KB ROMs) - 000000h in the Flash:
+#---------------------------------------------
 cat XEVIOUS.ROM >> DE1ROMs.bin
 cat FANZONE2.ROM >> DE1ROMs.bin
 cat ISHTAR.ROM >> DE1ROMs.bin
 cat ANDROGYN.ROM >> DE1ROMs.bin
 
-Konami8 (128KB ROMs) - 100000h in the Flash:
----------------------------------------------
-cat GRADIUS.ROM >> DE1ROMs.bin
+#Konami8 (128KB ROMs) - 100000h in the Flash:
+#---------------------------------------------
+cat NEMESIS.ROM >> DE1ROMs.bin
 cat PENGUIN.ROM >> DE1ROMs.bin
 cat USAS.ROM >> DE1ROMs.bin
-cat MGEAR1.ROM >> DE1ROMs.bin
+cat MGEAR.ROM >> DE1ROMs.bin
 
-SD Mapper ROM(MSX-DOS/Nextor 128KB ROM):
-----------------------------------------
-SDMAPPER.ROM >> DE1ROMs.bin
-
-32KB ROM Games
----------------
+#32KB ROM Games
+#---------------
 cat CASTLE.ROM >> DE1ROMs.bin
 cat ELEVATOR.ROM >> DE1ROMs.bin
 cat GALAGA.ROM >> DE1ROMs.bin
@@ -34,9 +38,7 @@ cat AVALANCH.ROM >> DE1ROMs.bin
 cat FROGGER.ROM >> DE1ROMs.bin
 
 
-MSX-DOS 2.2v3 (64KB ROM):
--------------------------
-cat MDOS22V3.ROM >> DE1ROMs.bin
+
 
 ----
 Write to DE1 FLASH using DE1 Control Panel

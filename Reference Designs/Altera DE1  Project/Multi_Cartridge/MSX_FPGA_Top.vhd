@@ -1,3 +1,23 @@
+-- REFERENCE DESIGN - ROMPACK EMULATION
+--
+-- SW9: Select ROMS from FLASH
+-- SW8: Select the builtin Galaga ROM
+-- Use the following combination of SW to select the game in the FLASH
+--
+-- 1000000000: Castle Excelent
+-- 1000000100: Elevator Action
+-- 1000001000: Galaga
+-- 0100000000: Galaga
+-- 1000001100: The Goonies
+-- 1000010000: Gulkave
+-- 1000010100: Gyrodine
+-- 1000011000: Lode Runner
+-- 1000011100: Zanac
+-- 1000100000: Road Fighter
+-- 1000100010: Hyper Rally
+-- 1000100100: Avalanche
+-- 1000100110: Frogger
+-- -------------------------------------------------------------------------
 library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
@@ -117,8 +137,8 @@ architecture rtl of MSX_FPGA_Top is
 	signal s_wait_n: std_logic := '1';
 	signal s_int_n: std_logic := '1';
 	signal s_busdir_n: std_logic := '1';
-	signal s_sltsl_en	: std_logic;
 	signal s_sltsl_en2	: std_logic;
+	signal s_sltsl_en	: std_logic;
 	signal s_mreq: std_logic;
 	signal s_rom_q: std_logic_vector(7 downto 0);
 	signal s_flashbase	: std_logic_vector(23 downto 0);	
@@ -133,7 +153,7 @@ begin
 	HEXDIGIT1 <= s_rom_a(7 downto 4) when A >= x"4000" and A < x"C000";
 	HEXDIGIT2 <= s_rom_a(11 downto 8) when A >= x"4000" and A < x"C000";
 	HEXDIGIT3 <= s_rom_a(15 downto 12) when A >= x"4000" and A < x"C000";
-	LEDG(7 downto 0) <= s_reset & SLTSL_n & s_sltsl_en & s_sltsl_en2 & s_wait_n & "000";
+	LEDG(7 downto 0) <= s_reset & SLTSL_n & s_sltsl_en2 & s_sltsl_en & s_wait_n & "000";
 
 	-- Reset circuit
 	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
@@ -142,26 +162,26 @@ begin
 	WAIT_n 	<= s_wait_n;
 	INT_n  	<= s_int_n;
 	BUSDIR_n <= 'Z';
-	
-	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(8) ='1' else '0';	-- 1 when this slot is selected
-	s_sltsl_en2	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';	-- 1 when this slot is selected
+
+	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';	-- 1 when this slot is selected	
+	s_sltsl_en2	<= '1' when SLTSL_n = '0' and SW(8) ='1' else '0';	-- 1 when this slot is selected
 	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
 	
-	U1OE_n 		<= not (s_sltsl_en or s_sltsl_en2); -- Enable BUS in U1 at the interface
+	U1OE_n 		<= not (s_sltsl_en2 or s_sltsl_en); -- Enable BUS in U1 at the interface
 													
-	D <= s_rom_q when s_sltsl_en = '1' and s_mreq = '1' else
-	     FL_DQ(7 downto 0) when s_sltsl_en2 = '1' and s_mreq = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
-		  (others => 'Z'); 
+	D <=	FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
+			s_rom_q when s_sltsl_en2 = '1' and s_mreq = '1' else
+			(others => 'Z'); 
 		  
 	FL_WE_N <= '1';
 	FL_RST_N <= not s_reset;
-	FL_CE_N <= not s_sltsl_en2;
+	FL_CE_N <= not s_sltsl_en;
 	FL_OE_N <= RD_n;
 	s_rom_a <= s_flashbase + (A - x"4000");
 
 	galaga: entity work.rom 
 	port map (
-		cs		=> s_sltsl_en,
+		cs		=> s_sltsl_en2,
 		A		=> A - x"4000",
 		D		=> s_rom_q
 	);
@@ -198,7 +218,7 @@ begin
    --SRAM_DQ		<= (others => 'Z');
 
 -- --------------------------------------- DE1 Only -----------------------------------------------------
-	 s_flashbase <= x"1A0000" + (SW(5 downto 0) * x"2000"); -- Unbanked ROMS start at 0x1A0000. SW used to switch ROMs
+	 s_flashbase <= x"1B0000" + (SW(5 downto 0) * x"2000"); -- Unbanked ROMS start at 0x1A0000. SW used to switch ROMs
 	 
 	 FL_ADDR 	<= s_rom_a(21 downto 0);
     SD_DAT		<= 'Z';

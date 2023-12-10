@@ -166,10 +166,10 @@ begin
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
 	-- where the roms for this cores is written.
 	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
-	s_flashbase <= x"040000" when SW(0) = '1' else
-	               x"080000" when SW(1) = '1' else
-						x"0C0000" when SW(2) = '1' else
-						x"000000";
+	s_flashbase <= x"070000" when SW(0) = '1' else
+	               x"0B0000" when SW(1) = '1' else
+						x"0F0000" when SW(2) = '1' else
+						x"030000";
 
 	D <= FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
          (others => 'Z');
