@@ -1,11 +1,11 @@
-Fitter Status : Successful - Sun Dec 10 21:55:26 2023
+Fitter Status : Successful - Mon Dec 11 10:09:25 2023
 Quartus II 64-Bit Version : 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition
 Revision Name : MSX_FPGA_Top
 Top-level Entity Name : MSX_FPGA_Top
 Family : Cyclone II
 Device : EP2C20F484C7
 Timing Models : Final
-Total logic elements : 164 / 18,752 ( < 1 % )
+Total logic elements : 173 / 18,752 ( < 1 % )
     Total combinational functions : 157 / 18,752 ( < 1 % )
     Dedicated logic registers : 28 / 18,752 ( < 1 % )
 Total registers : 28

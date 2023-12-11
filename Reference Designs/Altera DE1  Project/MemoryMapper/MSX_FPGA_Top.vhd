@@ -130,7 +130,7 @@ architecture behavioural of MSX_FPGA_Top is
 	
 	signal s_SRAM_ADDR		: std_logic_vector(20 downto 0);	
 	signal s_reset				: std_logic := '0';
-	signal s_wait_n			: std_logic;
+	signal s_wait_n			: std_logic := '1';
 	signal s_segment			: std_logic_vector(20 downto 0);
 	signal s_ffff_slt			: std_logic;
 	signal slt_exp_n			: std_logic_vector(3 downto 0);
@@ -145,14 +145,14 @@ begin
     -- during a reset, which causes teh computer to freeze
 	s_reset <= not (KEY(0) and RESET_n);
 	WAIT_n <= s_wait_n;
-	process(s_reset)
-	begin
-	if s_reset = '1' then
-		s_wait_n <= '1';
-	else
-		s_wait_n <= 'Z';
-	end if;
-	end process;
+	--process(s_reset)
+	--begin
+	--if s_reset = '1' then
+	--	s_wait_n <= '1';
+	--else
+	--	s_wait_n <= 'Z';
+	--end if;
+	--end process;
 	
 	LEDR			<= '0' & s_mapper_reg_w & s_fc(1 downto 0) & s_fd(1 downto 0) & s_fe(1 downto 0) & s_ff(1 downto 0);
 	LEDG			<=  s_reset & s_sltsl_en & s_sltsl_ram & slt_exp_n & "0";

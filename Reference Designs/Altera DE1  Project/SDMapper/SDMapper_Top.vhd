@@ -207,8 +207,21 @@ begin
 	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
     -- during a reset, which causes teh computer to freeze
 	s_reset <= not (KEY(0) and RESET_n);
-	WAIT_n <= 'Z' when s_spi_wait_n = '1'	else '0';
-   INT_n  <= 'Z';
+	INT_n  <= 'Z';
+	
+	--WAIT_n <= '1' when s_spi_wait_n = '1'	else '0';
+	--WAIT_n <= '1' when s_spi_wait_n = '1'	else s_wait_n;
+	--WAIT_n <= not s_iorq_r_reg;
+	--WAIT_n <= s_spi_wait_n;
+   
+	--process(s_reset)
+	--begin
+	--if s_reset = '1' then
+	--	s_wait_n <= '1';
+	--else
+	--	s_wait_n <= 'Z';
+	--end if;
+	--end process;
 	
 	-- Some cool ligths flashing while you play games with your Real MSX and DE1 as Disk Drives
 	-- Also used for debugging.
@@ -452,7 +465,7 @@ begin
 		data_bus_io		=> D,
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
-		wait_n_o			=> s_spi_wait_n,
+		wait_n_o			=> WAIT_n, -- s_spi_wait_n,
 		-- SD card interface
 		spi_sclk_o		=> s_sd_clk,
 		spi_mosi_o		=> s_sd_mosi, --SD_CMD,

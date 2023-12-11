@@ -1,3 +1,7 @@
+v1.6
+- Removed /CS1, CS2, CS12, RFSH, SOUND
+- Moded U1 DIR control to jumper (allow enable by /RD or FPGA pin)
+- Changed /WAIT & /INT to open collector using transistor
 v1.5
 - Added pull-up to MSX Data bus lines
 - Added missing ground to LM1117
