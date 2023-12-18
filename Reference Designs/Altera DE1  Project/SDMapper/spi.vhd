@@ -16,7 +16,10 @@ entity spi is
 		-- SPI interface
 		spi_sclk_o		: out   std_logic;
 		spi_mosi_o		: out   std_logic;
-		spi_miso_i		: in    std_logic
+		spi_miso_i		: in    std_logic;
+		--
+		spi_dout			: out		std_logic_vector(7 downto 0);
+		spi_rd_en		: out 	std_logic
 	);
 
 end entity;
@@ -53,8 +56,10 @@ begin
 	end process;
 
 	-- Data read
-	data_bus_io <= spi_data_q	when cs_i = '1' and rd_n_i = '0'	else
-						(others => 'Z');
+	data_bus_io <= spi_data_q	when cs_i = '1' and rd_n_i = '0'	else (others => 'Z');
+	--spi_dout <= spi_data_q	when cs_i = '1' and rd_n_i = '0';
+	spi_rd_en <= '1' when cs_i = '1' and rd_n_i = '0' else '0';
+	
 	
 	-- R/W port
 	process (reset_n_i, ff_clr_s, spi_cs_s)

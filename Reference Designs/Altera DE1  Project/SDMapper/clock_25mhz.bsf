@@ -31,13 +31,6 @@ applicable agreement for further details.
 		(line (pt 0 72)(pt 56 72))
 	)
 	(port
-		(pt 0 96)
-		(input)
-		(text "areset" (rect 0 0 36 14)(font "Arial" (font_size 8)))
-		(text "areset" (rect 4 78 47 95)(font "Arial" (font_size 8)))
-		(line (pt 0 96)(pt 56 96))
-	)
-	(port
 		(pt 320 72)
 		(output)
 		(text "c0" (rect 0 0 14 14)(font "Arial" (font_size 8)))
@@ -45,7 +38,7 @@ applicable agreement for further details.
 	)
 	(drawing
 		(text "Cyclone II" (rect 237 154 533 323)(font "Arial" ))
-		(text "inclk0 frequency: 50.000 MHz" (rect 66 65 316 145)(font "Arial" ))
+		(text "inclk0 frequency: 24.000 MHz" (rect 66 65 316 145)(font "Arial" ))
 		(text "Operation Mode: Normal" (rect 66 82 284 179)(font "Arial" ))
 		(text "Clk " (rect 67 109 154 233)(font "Arial" ))
 		(text "Ratio" (rect 95 109 221 233)(font "Arial" ))

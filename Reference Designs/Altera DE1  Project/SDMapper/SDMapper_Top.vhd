@@ -134,7 +134,6 @@ architecture bevioural of SDMapper_TOP is
 
     component clock_25mhz
     PORT (
-        areset              : IN STD_LOGIC  := '0';
         inclk0              : IN STD_LOGIC  := '0';
         c0                  : OUT STD_LOGIC);
     end component;
@@ -146,7 +145,10 @@ architecture bevioural of SDMapper_TOP is
 	
 	signal s_reset			: std_logic := '0';
 	signal s_wait_n: std_logic;
-	signal s_sltsl_en		: std_logic;	
+	signal s_sltsl_en		: std_logic;
+	signal spi_data		: std_logic_vector(7 downto 0);
+	signal spi_read		: std_logic;
+	signal FL_READ_EN		: std_logic;
 	
 	-- Flash ASCII16
 	signal rom_bank_wr_s	: std_logic;
@@ -158,6 +160,7 @@ architecture bevioural of SDMapper_TOP is
 	
 	-- MSX-DOS & Nextor & SDCard
 	signal clock_i			: std_logic := '0';
+	signal clock_i_w		: std_logic;
 	signal sd_wp_i			: std_logic_vector(1 downto 0);
 	signal sd_pres_n_i	: std_logic_vector(1 downto 0);
 	signal regs_cs_s		: std_logic;
@@ -207,21 +210,24 @@ begin
 	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
     -- during a reset, which causes teh computer to freeze
 	s_reset <= not (KEY(0) and RESET_n);
-	INT_n  <= 'Z';
+	INT_n  <= '1';
 	
-	--WAIT_n <= '1' when s_spi_wait_n = '1'	else '0';
-	--WAIT_n <= '1' when s_spi_wait_n = '1'	else s_wait_n;
-	--WAIT_n <= not s_iorq_r_reg;
+	--WAIT_n <= '0' when s_spi_wait_n = '0'	else 'Z';
+	--WAIT_n <= '0' when s_spi_wait_n = '0'	else s_wait_n;
+	--WAIT_n <= '1';
+	--WAIT_n <= 'Z';
+	--WAIT_n <= s_wait_n;
+	--WAIT_n <= NOT s_spi_wait_n;
 	--WAIT_n <= s_spi_wait_n;
-   
-	--process(s_reset)
-	--begin
-	--if s_reset = '1' then
-	--	s_wait_n <= '1';
-	--else
-	--	s_wait_n <= 'Z';
-	--end if;
-	--end process;
+	
+	process(s_reset)
+	begin
+	if s_reset = '1' then
+		s_wait_n <= '1';
+	else
+		s_wait_n <= 'Z';
+	end if;
+	end process;
 	
 	-- Some cool ligths flashing while you play games with your Real MSX and DE1 as Disk Drives
 	-- Also used for debugging.
@@ -233,18 +239,19 @@ begin
 	HEXDIGIT3 <= rom_bank2_q(3 downto 0);
 	
 	-- Generic Outputs signals to DE1
-	BUSDIR_n <= not s_iorq_r_reg;
+	BUSDIR_n <= '0' when s_iorq_r_reg = '1' else
+	            '0' when s_sltsl_rom_en = '1' and RD_n = '0' else
+					'0' when s_sltsl_ram_en = '1' and RD_n = '0' else
+					'1';
+					
 	s_sltsl_en <= (not SLTSL_n) when SW(9) = '1' else '0';		-- Will only enable Cart emulation if SW(9) is '1'
 	s_sltsl_rom_en <= not slt_exp_n(0) when SW(9) = '1' else '0';
 	s_sltsl_ram_en <= not slt_exp_n(1) when SW(8) = '1' else '0';
 	
 	-- Enable output in U1 (74LVC245)
-	--U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg or spi_cs_s));
+	--U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg or spi_cs_s);
 	U1OE_n <= not (s_sltsl_en or s_iorq_r_reg or s_iorq_w_reg);
-	--U1OE_n <=	'0' when s_sltsl_en = '1' else
-	--				'0' when spi_cs_s = '1' else
-	--				'0' when s_iorq_r_reg = '1' else
-	--				'0' when s_iorq_w_reg = '1' else '1';
+	--U1OE_n <=	not (s_sltsl_ram_en or s_sltsl_ram_en or s_iorq_r_reg or s_iorq_w_reg);
 
 	-- Detect access to slots - to be used with the slot expansor
 	s_ffff_slt    <= '1' when A = x"FFFF" else '0';
@@ -311,12 +318,13 @@ begin
 	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(2 downto 0) & A(13 downto 0)) when s_sltsl_rom_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
                            s_flashbase + (rom_bank2_q(3 downto 0) & A(13 downto 0)) when s_sltsl_rom_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
-	
-   FL_CE_N <= -- Excludes SPI range and regs range
-		'0'	when A(15 downto 14) = "01" and s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' and regs_cs_s = '0'	else
-		'0'	when A(15 downto 14) = "10" and s_sltsl_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
-		'1';
+	FL_READ_EN <= -- Excludes SPI range and regs range
+		'1'	when A(15 downto 14) = "01" and s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' and regs_cs_s = '0'	else
+		'1'	when A(15 downto 14) = "10" and s_sltsl_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
+		'0';	
 		
+	FL_CE_N <= not FL_READ_EN;
+	
 	-- Writting to the FLASHRAM is not going to be enabled! The FLASH is shared with other cores in this project, and I don't want to mess with that.
    -- FL_WE_N	<=	'0'	when A(15 downto 14) = "10" and s_sltsl_en = '1' and WR_n = '0'	else 	'1';
    regs_cs_s <= '1' when s_sltsl_rom_en = '1' and A >= x"7FF0" else '0';
@@ -325,17 +333,18 @@ begin
 
 	-- Load the MSX BUS with data from the devices in the core.
 	-- Note that data from/to SD Card is loaded inside the SPI component, not here.
-	D <= status_s	when spi_ctrl_rd_s = '1' else																			-- SD Card
+	D <= --spi_data when spi_read = '1' else
+	     status_s when spi_ctrl_rd_s = '1' else																			-- SD Card
         tmr_cnt_q(15 downto 8) when tmr_rd_s = '1' else 																-- SD Card
-		  s_expn_q when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' else								-- Slot Select exapnsion
-		  FL_DQ when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else								-- FlasRAM / ROM 
+		  s_expn_q when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' else		-- Slot Select exapnsion
+		  FL_DQ when FL_READ_EN = '1' else								-- FlasRAM / ROM 
 		  SRAM_DQ(7 downto 0) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '0' else	-- SRAM / Mapper
 	     SRAM_DQ(15 downto 8) when s_sltsl_ram_en = '1' and RD_n = '0' and s_SRAM_ADDR(18) = '1' else	-- SRAM / Mapper
 		  "111" & s_fc when s_iorq_r = '1' and s_io_addr = x"FC" else												-- SRAM / Mapper	
 		  "111" & s_fd when s_iorq_r = '1' and s_io_addr = x"FD" else												-- SRAM / Mapper
 		  "111" & s_fe when s_iorq_r = '1' and s_io_addr = x"FE" else												-- SRAM / Mapper
 		  "111" & s_ff when s_iorq_r = '1' and s_io_addr = x"FF" else												-- SRAM / Mapper
-		 (others => 'Z'); 
+		  (others => 'Z'); 
 
 	-- Status flags
 	-- If no SD card is selected:
@@ -365,8 +374,7 @@ begin
 	-- 7B00 = 0111 1011
 	-- 7F00 = 0111 1111
 
-	spi_cs_s	<= '1'  when s_sltsl_rom_en = '1' and rom_bank1_q = "111" and	A >= x"7B00" and A < x"7F00" else
-	            '0';	
+	spi_cs_s	<= '1'  when s_sltsl_rom_en = '1' and rom_bank1_q = "111" and	A >= x"7B00" and A < x"7F00" else '0';	
 	tmr_wr_s <= '1' when s_sltsl_rom_en = '1' and WR_n = '0' and A = x"7FF1" else '0';
 	tmr_rd_s <= '1' when s_sltsl_rom_en = '1' and RD_n = '0' and A = x"7FF1" else '0';
 
@@ -448,28 +456,39 @@ begin
 	end process;
 
 	-- Generate the 25MHz clock_i for the SPI component
-    -- 25MHz clock_i for the SPI component
+   -- 25MHz clock_i for the SPI component
     clock_25mhz_inst : clock_25mhz PORT MAP (
-        areset   => not s_reset,
         inclk0   => CLOCK_50,
         c0       => clock_i
     );
 
+	half_clock:process(clock_i)
+	begin
+		if s_reset = '1' then
+			clock_i_w <= '0';
+		elsif falling_edge(clock_i) then
+			clock_i_w <= not clock_i_w;
+		end if;
+	end process;
+
 	-- SPI Interface to the SD Cards
 	portaspi: entity work.spi
 	port map (
-		clock_i			=> clock_i,
+		clock_i			=> clock_i_w,
 		reset_n_i		=> not s_reset,
 		-- CPU interface
 		cs_i				=> spi_cs_s,
 		data_bus_io		=> D,
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
-		wait_n_o			=> WAIT_n, -- s_spi_wait_n,
+		wait_n_o			=> WAIT_n, --s_spi_wait_n,
 		-- SD card interface
 		spi_sclk_o		=> s_sd_clk,
 		spi_mosi_o		=> s_sd_mosi, --SD_CMD,
-		spi_miso_i		=> s_sd_miso  --SD_DAT 
+		spi_miso_i		=> s_sd_miso,  --SD_DAT 
+		-- extra signals added for MSX_FPGA_Interface
+		spi_dout			=>	spi_data,
+		spi_rd_en		=> spi_read
 	);
  	
 	-- Signals to drive the SD Cards

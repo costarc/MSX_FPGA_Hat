@@ -206,11 +206,11 @@ HEX2[4]                      : E3        : output : 3.3-V LVTTL       :         
 HEX2[5]                      : E4        : output : 3.3-V LVTTL       :         : 2         : Y              
 VCCD_PLL3                    : E5        : power  :                   : 1.2V    :           :                
 VCCA_PLL3                    : E6        : power  :                   : 1.2V    :           :                
-SD_CMD                       : E7        : bidir  : 3.3-V LVTTL       :         : 3         : N              
+GND*                         : E7        :        :                   :         : 3         :                
 TDI                          : E8        : input  : 3.3-V LVTTL       :         : 3         : Y              
 GND*                         : E9        :        :                   :         : 3         :                
 VCCIO3                       : E10       : power  :                   : 3.3V    : 3         :                
-GND*                         : E11       :        :                   :         : 3         :                
+SD_CMD                       : E11       : bidir  : 3.3-V LVTTL       :         : 3         : N              
 CLOCK_27[1]                  : E12       : input  : 3.3-V LVTTL       :         : 3         : Y              
 VCCIO4                       : E13       : power  :                   : 3.3V    : 4         :                
 BUSDIR_n                     : E14       : output : 3.3-V LVTTL       :         : 4         : Y              
@@ -231,7 +231,7 @@ GND_PLL3                     : F6        : gnd    :                   :         
 GNDA_PLL3                    : F7        : gnd    :                   :         :           :                
 GND*                         : F8        :        :                   :         : 3         :                
 GND*                         : F9        :        :                   :         : 3         :                
-SD_CLK                       : F10       : output : 3.3-V LVTTL       :         : 3         : N              
+GND*                         : F10       :        :                   :         : 3         :                
 GND*                         : F11       :        :                   :         : 3         :                
 IORQ_n                       : F12       : input  : 3.3-V LVTTL       :         : 4         : Y              
 A[15]                        : F13       : input  : 3.3-V LVTTL       :         : 4         : Y              
@@ -250,7 +250,7 @@ HEX1[4]                      : G3        : output : 3.3-V LVTTL       :         
 GND                          : G4        : gnd    :                   :         :           :                
 HEX2[0]                      : G5        : output : 3.3-V LVTTL       :         : 2         : Y              
 HEX2[1]                      : G6        : output : 3.3-V LVTTL       :         : 2         : Y              
-GND*                         : G7        :        :                   :         : 3         :                
+SD_DAT                       : G7        : bidir  : 3.3-V LVTTL       :         : 3         : N              
 GND*                         : G8        :        :                   :         : 3         :                
 VCCIO3                       : G9        : power  :                   : 3.3V    : 3         :                
 GND                          : G10       : gnd    :                   :         :           :                
@@ -274,9 +274,9 @@ HEX1[2]                      : H5        : output : 3.3-V LVTTL       :         
 HEX1[1]                      : H6        : output : 3.3-V LVTTL       :         : 2         : Y              
 GND*                         : H7        :        :                   :         : 3         :                
 GND*                         : H8        :        :                   :         : 3         :                
-SD_DAT                       : H9        : bidir  : 3.3-V LVTTL       :         : 3         : N              
+GND*                         : H9        :        :                   :         : 3         :                
 GND*                         : H10       :        :                   :         : 3         :                
-GND*                         : H11       :        :                   :         : 3         :                
+SD_CLK                       : H11       : output : 3.3-V LVTTL       :         : 3         : N              
 RESET_n                      : H12       : input  : 3.3-V LVTTL       :         : 4         : Y              
 M1_n                         : H13       : input  : 3.3-V LVTTL       :         : 4         : Y              
 CS_n                         : H14       : input  : 3.3-V LVTTL       :         : 4         : Y              
@@ -405,7 +405,7 @@ NC                           : P4        :        :                   :         
 DRAM_ADDR[7]                 : P5        : output : 3.3-V LVTTL       :         : 1         : Y              
 DRAM_ADDR[6]                 : P6        : output : 3.3-V LVTTL       :         : 1         : Y              
 VCCIO1                       : P7        : power  :                   : 3.3V    : 1         :                
-GND*                         : P8        :        :                   :         : 8         :                
+SD_DAT3                      : P8        : bidir  : 3.3-V LVTTL       :         : 8         : N              
 GND*                         : P9        :        :                   :         : 8         :                
 VCCINT                       : P10       : power  :                   : 1.2V    :           :                
 VCCINT                       : P11       : power  :                   : 1.2V    :           :                
@@ -523,7 +523,7 @@ SW[4]                        : W12       : input  : 3.3-V LVTTL       :         
 GND                          : W13       : gnd    :                   :         :           :                
 FL_RST_N                     : W14       : output : 3.3-V LVTTL       :         : 7         : Y              
 FL_ADDR[7]                   : W15       : output : 3.3-V LVTTL       :         : 7         : Y              
-SD_DAT3                      : W16       : bidir  : 3.3-V LVTTL       :         : 7         : N              
+GND*                         : W16       :        :                   :         : 7         :                
 VCCIO7                       : W17       : power  :                   : 3.3V    : 7         :                
 NC                           : W18       :        :                   :         :           :                
 GND                          : W19       : gnd    :                   :         :           :                

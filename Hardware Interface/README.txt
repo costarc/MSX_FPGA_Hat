@@ -1,4 +1,9 @@
-v1.6
+v2.0 (With a few changes taken from Wondertang!)
+- Added multiplex for MSX signals (shared GPIOS) to allow most MSX signals into the DPGA
+- Added Audio circuitry from Wondertang (Luis Antoniosi project)
+- Changed the open collector outputs to use transistor (/WAIt & /INT)
+- Completely changed the PIN assigments - no compatible with previous boards
+v1.6 (never sent for fabrication)
 - Removed /CS1, CS2, CS12, RFSH, SOUND
 - Moded U1 DIR control to jumper (allow enable by /RD or FPGA pin)
 - Changed /WAIT & /INT to open collector using transistor

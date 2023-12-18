@@ -42,7 +42,6 @@ USE altera_mf.all;
 ENTITY clock_25mhz IS
 	PORT
 	(
-		areset		: IN STD_LOGIC  := '0';
 		inclk0		: IN STD_LOGIC  := '0';
 		c0		: OUT STD_LOGIC 
 	);
@@ -115,7 +114,6 @@ ARCHITECTURE SYN OF clock_25mhz IS
 		port_extclk3		: STRING
 	);
 	PORT (
-			areset	: IN STD_LOGIC ;
 			clk	: OUT STD_LOGIC_VECTOR (5 DOWNTO 0);
 			inclk	: IN STD_LOGIC_VECTOR (1 DOWNTO 0)
 	);
@@ -136,13 +134,13 @@ BEGIN
 		clk0_multiply_by => 1,
 		clk0_phase_shift => "0",
 		compensate_clock => "CLK0",
-		inclk0_input_frequency => 20000,
+		inclk0_input_frequency => 41666,
 		intended_device_family => "Cyclone II",
 		lpm_hint => "CBX_MODULE_PREFIX=clock_25mhz",
 		lpm_type => "altpll",
 		operation_mode => "NORMAL",
 		port_activeclock => "PORT_UNUSED",
-		port_areset => "PORT_USED",
+		port_areset => "PORT_UNUSED",
 		port_clkbad0 => "PORT_UNUSED",
 		port_clkbad1 => "PORT_UNUSED",
 		port_clkloss => "PORT_UNUSED",
@@ -184,7 +182,6 @@ BEGIN
 		port_extclk3 => "PORT_UNUSED"
 	)
 	PORT MAP (
-		areset => areset,
 		inclk => sub_wire3,
 		clk => sub_wire0
 	);
@@ -213,9 +210,9 @@ END SYN;
 -- Retrieval info: PRIVATE: CUR_DEDICATED_CLK STRING "c0"
 -- Retrieval info: PRIVATE: CUR_FBIN_CLK STRING "c0"
 -- Retrieval info: PRIVATE: DEVICE_SPEED_GRADE STRING "7"
--- Retrieval info: PRIVATE: DIV_FACTOR0 NUMERIC "2"
+-- Retrieval info: PRIVATE: DIV_FACTOR0 NUMERIC "4"
 -- Retrieval info: PRIVATE: DUTY_CYCLE0 STRING "50.00000000"
--- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE0 STRING "25.000000"
+-- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE0 STRING "12.000000"
 -- Retrieval info: PRIVATE: EXPLICIT_SWITCHOVER_COUNTER STRING "0"
 -- Retrieval info: PRIVATE: EXT_FEEDBACK_RADIO STRING "0"
 -- Retrieval info: PRIVATE: GLOCKED_COUNTER_EDIT_CHANGED STRING "1"
@@ -223,7 +220,7 @@ END SYN;
 -- Retrieval info: PRIVATE: GLOCKED_MODE_CHECK STRING "0"
 -- Retrieval info: PRIVATE: GLOCK_COUNTER_EDIT NUMERIC "1048575"
 -- Retrieval info: PRIVATE: HAS_MANUAL_SWITCHOVER STRING "1"
--- Retrieval info: PRIVATE: INCLK0_FREQ_EDIT STRING "50.000"
+-- Retrieval info: PRIVATE: INCLK0_FREQ_EDIT STRING "24.000"
 -- Retrieval info: PRIVATE: INCLK0_FREQ_UNIT_COMBO STRING "MHz"
 -- Retrieval info: PRIVATE: INCLK1_FREQ_EDIT STRING "100.000"
 -- Retrieval info: PRIVATE: INCLK1_FREQ_EDIT_CHANGED STRING "1"
@@ -238,9 +235,9 @@ END SYN;
 -- Retrieval info: PRIVATE: LVDS_PHASE_SHIFT_UNIT0 STRING "deg"
 -- Retrieval info: PRIVATE: MIG_DEVICE_SPEED_GRADE STRING "Any"
 -- Retrieval info: PRIVATE: MIRROR_CLK0 STRING "0"
--- Retrieval info: PRIVATE: MULT_FACTOR0 NUMERIC "1"
+-- Retrieval info: PRIVATE: MULT_FACTOR0 NUMERIC "2"
 -- Retrieval info: PRIVATE: NORMAL_MODE_RADIO STRING "1"
--- Retrieval info: PRIVATE: OUTPUT_FREQ0 STRING "100.00000000"
+-- Retrieval info: PRIVATE: OUTPUT_FREQ0 STRING "4.00000000"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ_MODE0 STRING "0"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ_UNIT0 STRING "MHz"
 -- Retrieval info: PRIVATE: PHASE_RECONFIG_FEATURE_ENABLED STRING "0"
@@ -249,7 +246,7 @@ END SYN;
 -- Retrieval info: PRIVATE: PHASE_SHIFT_STEP_ENABLED_CHECK STRING "0"
 -- Retrieval info: PRIVATE: PHASE_SHIFT_UNIT0 STRING "deg"
 -- Retrieval info: PRIVATE: PLL_ADVANCED_PARAM_CHECK STRING "0"
--- Retrieval info: PRIVATE: PLL_ARESET_CHECK STRING "1"
+-- Retrieval info: PRIVATE: PLL_ARESET_CHECK STRING "0"
 -- Retrieval info: PRIVATE: PLL_AUTOPLL_CHECK NUMERIC "1"
 -- Retrieval info: PRIVATE: PLL_ENA_CHECK STRING "0"
 -- Retrieval info: PRIVATE: PLL_ENHPLL_CHECK NUMERIC "0"
@@ -284,12 +281,12 @@ END SYN;
 -- Retrieval info: CONSTANT: CLK0_MULTIPLY_BY NUMERIC "1"
 -- Retrieval info: CONSTANT: CLK0_PHASE_SHIFT STRING "0"
 -- Retrieval info: CONSTANT: COMPENSATE_CLOCK STRING "CLK0"
--- Retrieval info: CONSTANT: INCLK0_INPUT_FREQUENCY NUMERIC "20000"
+-- Retrieval info: CONSTANT: INCLK0_INPUT_FREQUENCY NUMERIC "41666"
 -- Retrieval info: CONSTANT: INTENDED_DEVICE_FAMILY STRING "Cyclone II"
 -- Retrieval info: CONSTANT: LPM_TYPE STRING "altpll"
 -- Retrieval info: CONSTANT: OPERATION_MODE STRING "NORMAL"
 -- Retrieval info: CONSTANT: PORT_ACTIVECLOCK STRING "PORT_UNUSED"
--- Retrieval info: CONSTANT: PORT_ARESET STRING "PORT_USED"
+-- Retrieval info: CONSTANT: PORT_ARESET STRING "PORT_UNUSED"
 -- Retrieval info: CONSTANT: PORT_CLKBAD0 STRING "PORT_UNUSED"
 -- Retrieval info: CONSTANT: PORT_CLKBAD1 STRING "PORT_UNUSED"
 -- Retrieval info: CONSTANT: PORT_CLKLOSS STRING "PORT_UNUSED"
@@ -332,10 +329,8 @@ END SYN;
 -- Retrieval info: USED_PORT: @clk 0 0 6 0 OUTPUT_CLK_EXT VCC "@clk[5..0]"
 -- Retrieval info: USED_PORT: @extclk 0 0 4 0 OUTPUT_CLK_EXT VCC "@extclk[3..0]"
 -- Retrieval info: USED_PORT: @inclk 0 0 2 0 INPUT_CLK_EXT VCC "@inclk[1..0]"
--- Retrieval info: USED_PORT: areset 0 0 0 0 INPUT GND "areset"
 -- Retrieval info: USED_PORT: c0 0 0 0 0 OUTPUT_CLK_EXT VCC "c0"
 -- Retrieval info: USED_PORT: inclk0 0 0 0 0 INPUT_CLK_EXT GND "inclk0"
--- Retrieval info: CONNECT: @areset 0 0 0 0 areset 0 0 0 0
 -- Retrieval info: CONNECT: @inclk 0 0 1 1 GND 0 0 0 0
 -- Retrieval info: CONNECT: @inclk 0 0 1 0 inclk0 0 0 0 0
 -- Retrieval info: CONNECT: c0 0 0 0 0 @clk 0 0 1 0
