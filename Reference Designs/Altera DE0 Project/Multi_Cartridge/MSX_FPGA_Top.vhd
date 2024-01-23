@@ -2,6 +2,46 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
+-- Updated on 23/01/2024
+-- Structure of the FLASH for this core to work:
+-- --------------------------------------------------
+-- #SD Mapper ROM(MSX-DOS/Nextor 128KB ROM): 0x00000
+-- #------------------------------------------------
+-- cat SDMAPPER.ROM > DE1ROMs.bin
+-- 
+-- #MSX-DOS 2.2v3 (64KB ROM):0x20000
+-- #--------------------------------
+-- cat MDOS22V3.ROM >> DE1ROMs.bin
+-- 
+-- #ASCII16 (256KB ROMs): 0x30000
+-- #-----------------------------
+-- cat XEVIOUS.ROM >> DE1ROMs.bin
+-- cat FANZONE2.ROM >> DE1ROMs.bin
+-- cat ISHTAR.ROM >> DE1ROMs.bin
+-- cat ANDROGYN.ROM >> DE1ROMs.bin
+-- 
+-- #Konami8 (128KB ROMs) - 0x130000
+-- #-------------------------------
+-- cat NEMESIS.ROM >> DE1ROMs.bin
+-- cat PENGUIN.ROM >> DE1ROMs.bin
+-- cat USAS.ROM >> DE1ROMs.bin
+-- cat MGEAR.ROM >> DE1ROMs.bin
+-- 
+-- #32KB ROM Games: 0x1b0000
+-- #------------------------
+-- cat CASTLE.ROM >> DE1ROMs.bin
+-- cat ELEVATOR.ROM >> DE1ROMs.bin
+-- cat GALAGA.ROM >> DE1ROMs.bin
+-- cat GOONIES.ROM >>DE1ROMs.bin
+-- cat GULKAVE.ROM >> DE1ROMs.bin
+-- cat GYRODINE.ROM >> DE1ROMs.bin
+-- cat LODERUN.ROM >> DE1ROMs.bin
+-- cat ZANAC.ROM >> DE1ROMs.bin
+-- cat ROAD.ROM >> DE1ROMs.bin
+-- cat HRALLY.ROM >> DE1ROMs.bin
+-- cat AVALANCH.ROM >> DE1ROMs.bin
+-- cat FROGGER.ROM >> DE1ROMs.bin
+
 Entity MSX_FPGA_Top is
 port (
     CLOCK_50:		in std_logic;		--	50 MHz
@@ -134,11 +174,13 @@ begin
 -- --------------------------------Common Signals & assertions ------------------------------------------
 	-- Cartridge Emulation using FlashRAM
 	
-	HEXDIGIT0 <= s_rom_a(3 downto 0) when A >= x"4000" and A < x"C000";
-	HEXDIGIT1 <= s_rom_a(7 downto 4) when A >= x"4000" and A < x"C000";
-	HEXDIGIT2 <= s_rom_a(11 downto 8) when A >= x"4000" and A < x"C000";
-	HEXDIGIT3 <= s_rom_a(15 downto 12) when A >= x"4000" and A < x"C000";
-	LEDG(7 downto 0) <= s_reset & SLTSL_n & s_sltsl_en & s_sltsl_en2 & s_wait_n & "000";
+	HEXDIGIT0 <= SW(3 DOWNTO 0);
+	HEXDIGIT1 <= "000" & SW(4);
+	HEXDIGIT2 <= "0000";
+	HEXDIGIT3 <= "0000";
+	LEDG(9) <= SW(9);
+	LEDG(4 downto 0) <= SW(4 downto 0); 
+	LEDG(8 downto 5) <= "0" & s_reset & SLTSL_n & s_sltsl_en2;
 
 	-- Reset circuit
 	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
@@ -154,7 +196,7 @@ begin
 	
 	U1OE_n 		<= not (s_sltsl_en or s_sltsl_en2); -- Enable BUS in U1 at the interface
 													
-	D <= s_rom_q when s_sltsl_en = '1' and s_mreq = '1' else
+	D <= -- s_rom_q when s_sltsl_en = '1' and s_mreq = '1' else
 	     FL_DQ(7 downto 0) when s_sltsl_en2 = '1' and s_mreq = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
 		  (others => 'Z'); 
 		  
@@ -192,7 +234,21 @@ begin
 	);
 	
 -- --------------------------------------- DE0 Only -----------------------------------------------------
-	s_flashbase <= x"1A0000" + (SW(5 downto 0) * x"2000"); -- Unbanked ROMS start at 0x1A0000. SW used to switch ROMs
+s_flashbase <= x"1b0000" when SW(4 downto 0) = "00000" else    -- CASTLE.ROM  
+               x"1b8000" when SW(4 downto 0) = "00001" else    -- ELEVATOR.ROM
+               x"1c0000" when SW(4 downto 0) = "00010" else    -- GALAGA.ROM  
+               x"1c8000" when SW(4 downto 0) = "00011" else    -- GOONIES.ROM 
+               x"1d0000" when SW(4 downto 0) = "00100" else    -- GULKAVE.ROM 
+               x"1d8000" when SW(4 downto 0) = "00101" else    -- GYRODINE.ROM
+               x"1e0000" when SW(4 downto 0) = "00110" else    -- LODERUN.ROM 
+               x"1e8000" when SW(4 downto 0) = "00111" else    -- ZANAC.ROM   
+               x"1f0000" when SW(4 downto 0) = "01000" else    -- ROAD.ROM    
+               x"1f4000" when SW(4 downto 0) = "01001" else    -- HRALLY.ROM  
+               x"1f8000" when SW(4 downto 0) = "01010" else    -- AVALANCH.ROM
+               x"1fc000" when SW(4 downto 0) = "01011" else    -- FROGGER.ROM 
+               x"1c0000";                                      -- GALAGA.ROM (default game)
+					
+	
 	FL_DQ15_AM1 <= s_rom_a(0);			-- input for the LSB (A-1) address function for the flash in Byte mode
 	FL_ADDR 	<= s_rom_a(22 downto 1);
 	

@@ -1,29 +1,29 @@
 Create a big ROM file:
 
-#SD Mapper ROM(MSX-DOS/Nextor 128KB ROM):
-#----------------------------------------
+#SD Mapper ROM(MSX-DOS/Nextor 128KB ROM): 0x00000
+#------------------------------------------------
 cat SDMAPPER.ROM > DE1ROMs.bin
 
-#MSX-DOS 2.2v3 (64KB ROM):
-#-------------------------
+#MSX-DOS 2.2v3 (64KB ROM):0x20000
+#--------------------------------
 cat MDOS22V3.ROM >> DE1ROMs.bin
 
-#ASCII16 (256KB ROMs) - 000000h in the Flash:
-#---------------------------------------------
+#ASCII16 (256KB ROMs): 0x30000
+#-----------------------------
 cat XEVIOUS.ROM >> DE1ROMs.bin
 cat FANZONE2.ROM >> DE1ROMs.bin
 cat ISHTAR.ROM >> DE1ROMs.bin
 cat ANDROGYN.ROM >> DE1ROMs.bin
 
-#Konami8 (128KB ROMs) - 100000h in the Flash:
-#---------------------------------------------
+#Konami8 (128KB ROMs) - 0x130000
+#-------------------------------
 cat NEMESIS.ROM >> DE1ROMs.bin
 cat PENGUIN.ROM >> DE1ROMs.bin
 cat USAS.ROM >> DE1ROMs.bin
 cat MGEAR.ROM >> DE1ROMs.bin
 
-#32KB ROM Games
-#---------------
+#32KB ROM Games: 0x1b0000
+#------------------------
 cat CASTLE.ROM >> DE1ROMs.bin
 cat ELEVATOR.ROM >> DE1ROMs.bin
 cat GALAGA.ROM >> DE1ROMs.bin

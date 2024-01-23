@@ -1,5 +1,5 @@
 Analysis & Synthesis report for MSX_FPGA_Top
-Sat Feb 18 22:21:20 2023
+Tue Jan 23 18:40:25 2024
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -43,13 +43,13 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Analysis & Synthesis Summary                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Analysis & Synthesis Status        ; Successful - Sat Feb 18 22:21:20 2023           ;
+; Analysis & Synthesis Status        ; Successful - Tue Jan 23 18:40:25 2024           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_FPGA_Top                                    ;
 ; Top-level Entity Name              ; MSX_FPGA_Top                                    ;
 ; Family                             ; Cyclone III                                     ;
-; Total logic elements               ; 81                                              ;
-;     Total combinational functions  ; 65                                              ;
+; Total logic elements               ; 83                                              ;
+;     Total combinational functions  ; 67                                              ;
 ;     Dedicated logic registers      ; 16                                              ;
 ; Total registers                    ; 16                                              ;
 ; Total pins                         ; 252                                             ;
@@ -153,19 +153,19 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+--------+
 ; Processors                 ; Number ;
 +----------------------------+--------+
-; Number detected on machine ; 16     ;
+; Number detected on machine ; 20     ;
 ; Maximum allowed            ; 1      ;
 +----------------------------+--------+
 
 
-+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-; Analysis & Synthesis Source Files Read                                                                                                                                                           ;
-+----------------------------------+-----------------+-----------------+-----------------------------------------------------------------------------------------------------------------+---------+
-; File Name with User-Entered Path ; Used in Netlist ; File Type       ; File Name with Absolute Path                                                                                    ; Library ;
-+----------------------------------+-----------------+-----------------+-----------------------------------------------------------------------------------------------------------------+---------+
-; MSX_FPGA_Top.vhd                 ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MegaROM_ASCII16/MSX_FPGA_Top.vhd ;         ;
-; decoder_7seg.vhd                 ; yes             ; User VHDL File  ; C:/Users/alpha/Documents/Dev/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MegaROM_ASCII16/decoder_7seg.vhd ;         ;
-+----------------------------------+-----------------+-----------------+-----------------------------------------------------------------------------------------------------------------+---------+
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Analysis & Synthesis Source Files Read                                                                                                                                                        ;
++----------------------------------+-----------------+-----------------+--------------------------------------------------------------------------------------------------------------+---------+
+; File Name with User-Entered Path ; Used in Netlist ; File Type       ; File Name with Absolute Path                                                                                 ; Library ;
++----------------------------------+-----------------+-----------------+--------------------------------------------------------------------------------------------------------------+---------+
+; MSX_FPGA_Top.vhd                 ; yes             ; User VHDL File  ; C:/Users/roniv/Dev/github/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MegaROM_ASCII16/MSX_FPGA_Top.vhd ;         ;
+; decoder_7seg.vhd                 ; yes             ; User VHDL File  ; C:/Users/roniv/Dev/github/MSX_FPGA_Hat/Reference Designs/Altera DE0 Project/MegaROM_ASCII16/decoder_7seg.vhd ;         ;
++----------------------------------+-----------------+-----------------+--------------------------------------------------------------------------------------------------------------+---------+
 
 
 +---------------------------------------------------------+
@@ -173,17 +173,17 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +---------------------------------------------+-----------+
 ; Resource                                    ; Usage     ;
 +---------------------------------------------+-----------+
-; Estimated Total logic elements              ; 81        ;
+; Estimated Total logic elements              ; 83        ;
 ;                                             ;           ;
-; Total combinational functions               ; 65        ;
+; Total combinational functions               ; 67        ;
 ; Logic element usage by number of LUT inputs ;           ;
-;     -- 4 input functions                    ; 39        ;
-;     -- 3 input functions                    ; 20        ;
-;     -- <=2 input functions                  ; 6         ;
+;     -- 4 input functions                    ; 41        ;
+;     -- 3 input functions                    ; 18        ;
+;     -- <=2 input functions                  ; 8         ;
 ;                                             ;           ;
 ; Logic elements by mode                      ;           ;
 ;     -- normal mode                          ; 61        ;
-;     -- arithmetic mode                      ; 4         ;
+;     -- arithmetic mode                      ; 6         ;
 ;                                             ;           ;
 ; Total registers                             ; 16        ;
 ;     -- Dedicated logic registers            ; 16        ;
@@ -193,7 +193,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 ; Embedded Multiplier 9-bit elements          ; 0         ;
 ; Maximum fan-out node                        ; s_reset~0 ;
 ; Maximum fan-out                             ; 18        ;
-; Total fan-out                               ; 680       ;
+; Total fan-out                               ; 686       ;
 ; Average fan-out                             ; 1.05      ;
 +---------------------------------------------+-----------+
 
@@ -203,7 +203,7 @@ Parallel compilation was disabled, but you have multiple processors available. E
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+-------------------------------------+--------------+
 ; Compilation Hierarchy Node ; LC Combinationals ; LC Registers ; Memory Bits ; DSP Elements ; DSP 9x9 ; DSP 18x18 ; Pins ; Virtual Pins ; Full Hierarchy Name                 ; Library Name ;
 +----------------------------+-------------------+--------------+-------------+--------------+---------+-----------+------+--------------+-------------------------------------+--------------+
-; |MSX_FPGA_Top              ; 65 (37)           ; 16 (16)      ; 0           ; 0            ; 0       ; 0         ; 252  ; 0            ; |MSX_FPGA_Top                       ; work         ;
+; |MSX_FPGA_Top              ; 67 (39)           ; 16 (16)      ; 0           ; 0            ; 0       ; 0         ; 252  ; 0            ; |MSX_FPGA_Top                       ; work         ;
 ;    |decoder_7seg:DISPHEX0| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_FPGA_Top|decoder_7seg:DISPHEX0 ; work         ;
 ;    |decoder_7seg:DISPHEX1| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_FPGA_Top|decoder_7seg:DISPHEX1 ; work         ;
 ;    |decoder_7seg:DISPHEX2| ; 7 (7)             ; 0 (0)        ; 0           ; 0            ; 0       ; 0         ; 0    ; 0            ; |MSX_FPGA_Top|decoder_7seg:DISPHEX2 ; work         ;
@@ -258,7 +258,7 @@ Note: All latches listed above may not be present at the end of synthesis due to
 +--------------------+-----------+---------------+----------------------+------------------------+------------+-------------------------------+
 ; Multiplexer Inputs ; Bus Width ; Baseline Area ; Area if Restructured ; Saving if Restructured ; Registered ; Example Multiplexer Output    ;
 +--------------------+-----------+---------------+----------------------+------------------------+------------+-------------------------------+
-; 3:1                ; 2 bits    ; 4 LEs         ; 4 LEs                ; 0 LEs                  ; No         ; |MSX_FPGA_Top|s_flashbase[18] ;
+; 4:1                ; 2 bits    ; 4 LEs         ; 4 LEs                ; 0 LEs                  ; No         ; |MSX_FPGA_Top|s_flashbase[18] ;
 +--------------------+-----------+---------------+----------------------+------------------------+------------+-------------------------------+
 
 
@@ -277,7 +277,7 @@ Note: All latches listed above may not be present at the end of synthesis due to
 Info: *******************************************************************
 Info: Running Quartus II 64-Bit Analysis & Synthesis
     Info: Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-    Info: Processing started: Sat Feb 18 22:21:18 2023
+    Info: Processing started: Tue Jan 23 18:40:22 2024
 Info: Command: quartus_map --read_settings_files=on --write_settings_files=off MSX_FPGA_Top -c MSX_FPGA_Top
 Warning (20028): Parallel compilation is not licensed and has been disabled
 Info (12021): Found 2 design units, including 1 entities, in source file msx_fpga_top.vhd
@@ -287,59 +287,59 @@ Info (12021): Found 2 design units, including 1 entities, in source file decoder
     Info (12022): Found design unit 1: decoder_7seg-rtl
     Info (12023): Found entity 1: decoder_7seg
 Info (12127): Elaborating entity "MSX_FPGA_Top" for the top level hierarchy
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(17): used implicit default value for signal "HEX0_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(18): used implicit default value for signal "HEX1_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(19): used implicit default value for signal "HEX2_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(20): used implicit default value for signal "HEX3_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(24): used implicit default value for signal "UART_TXD" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(26): used implicit default value for signal "UART_CTS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(30): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(31): used implicit default value for signal "DRAM_LDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(32): used implicit default value for signal "DRAM_UDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(33): used implicit default value for signal "DRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(34): used implicit default value for signal "DRAM_CAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(35): used implicit default value for signal "DRAM_RAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(36): used implicit default value for signal "DRAM_CS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(37): used implicit default value for signal "DRAM_BA_0" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(38): used implicit default value for signal "DRAM_BA_1" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(39): used implicit default value for signal "DRAM_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(40): used implicit default value for signal "DRAM_CKE" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(54): used implicit default value for signal "LCD_BLON" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(55): used implicit default value for signal "LCD_RW" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(56): used implicit default value for signal "LCD_EN" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(57): used implicit default value for signal "LCD_RS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(62): used implicit default value for signal "SD_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(70): used implicit default value for signal "VGA_HS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(71): used implicit default value for signal "VGA_VS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(72): used implicit default value for signal "VGA_R" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(73): used implicit default value for signal "VGA_G" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(74): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(78): used implicit default value for signal "SRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(79): used implicit default value for signal "SRAM_UB_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(80): used implicit default value for signal "SRAM_LB_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(81): used implicit default value for signal "SRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(82): used implicit default value for signal "SRAM_CE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(83): used implicit default value for signal "SRAM_OE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(87): used implicit default value for signal "GPIO0_P21" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
-Warning (10540): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(122): used explicit default value for signal "s_wait_n" because signal was never assigned a value
-Warning (10540): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(123): used explicit default value for signal "s_int_n" because signal was never assigned a value
-Warning (10873): Using initial value X (don't care) for net "LEDG[9..8]" at MSX_FPGA_Top.vhd(22)
-Info (10041): Inferred latch for "HEXDIGIT3[0]" at MSX_FPGA_Top.vhd(203)
-Info (10041): Inferred latch for "HEXDIGIT3[1]" at MSX_FPGA_Top.vhd(203)
-Info (10041): Inferred latch for "HEXDIGIT3[2]" at MSX_FPGA_Top.vhd(203)
-Info (10041): Inferred latch for "HEXDIGIT3[3]" at MSX_FPGA_Top.vhd(203)
-Info (10041): Inferred latch for "HEXDIGIT2[0]" at MSX_FPGA_Top.vhd(202)
-Info (10041): Inferred latch for "HEXDIGIT2[1]" at MSX_FPGA_Top.vhd(202)
-Info (10041): Inferred latch for "HEXDIGIT2[2]" at MSX_FPGA_Top.vhd(202)
-Info (10041): Inferred latch for "HEXDIGIT2[3]" at MSX_FPGA_Top.vhd(202)
-Info (10041): Inferred latch for "HEXDIGIT1[0]" at MSX_FPGA_Top.vhd(201)
-Info (10041): Inferred latch for "HEXDIGIT1[1]" at MSX_FPGA_Top.vhd(201)
-Info (10041): Inferred latch for "HEXDIGIT1[2]" at MSX_FPGA_Top.vhd(201)
-Info (10041): Inferred latch for "HEXDIGIT1[3]" at MSX_FPGA_Top.vhd(201)
-Info (10041): Inferred latch for "HEXDIGIT0[0]" at MSX_FPGA_Top.vhd(200)
-Info (10041): Inferred latch for "HEXDIGIT0[1]" at MSX_FPGA_Top.vhd(200)
-Info (10041): Inferred latch for "HEXDIGIT0[2]" at MSX_FPGA_Top.vhd(200)
-Info (10041): Inferred latch for "HEXDIGIT0[3]" at MSX_FPGA_Top.vhd(200)
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(58): used implicit default value for signal "HEX0_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(59): used implicit default value for signal "HEX1_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(60): used implicit default value for signal "HEX2_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(61): used implicit default value for signal "HEX3_DP" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(65): used implicit default value for signal "UART_TXD" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(67): used implicit default value for signal "UART_CTS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(71): used implicit default value for signal "DRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(72): used implicit default value for signal "DRAM_LDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(73): used implicit default value for signal "DRAM_UDQM" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(74): used implicit default value for signal "DRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(75): used implicit default value for signal "DRAM_CAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(76): used implicit default value for signal "DRAM_RAS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(77): used implicit default value for signal "DRAM_CS_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(78): used implicit default value for signal "DRAM_BA_0" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(79): used implicit default value for signal "DRAM_BA_1" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(80): used implicit default value for signal "DRAM_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(81): used implicit default value for signal "DRAM_CKE" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(95): used implicit default value for signal "LCD_BLON" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(96): used implicit default value for signal "LCD_RW" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(97): used implicit default value for signal "LCD_EN" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(98): used implicit default value for signal "LCD_RS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(103): used implicit default value for signal "SD_CLK" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(111): used implicit default value for signal "VGA_HS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(112): used implicit default value for signal "VGA_VS" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(113): used implicit default value for signal "VGA_R" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(114): used implicit default value for signal "VGA_G" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(115): used implicit default value for signal "VGA_B" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(119): used implicit default value for signal "SRAM_ADDR" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(120): used implicit default value for signal "SRAM_UB_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(121): used implicit default value for signal "SRAM_LB_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(122): used implicit default value for signal "SRAM_WE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(123): used implicit default value for signal "SRAM_CE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(124): used implicit default value for signal "SRAM_OE_N" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10541): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(128): used implicit default value for signal "GPIO0_P21" because signal was never assigned a value or an explicit default value. Use of implicit default value may introduce unintended design optimizations.
+Warning (10540): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(163): used explicit default value for signal "s_wait_n" because signal was never assigned a value
+Warning (10540): VHDL Signal Declaration warning at MSX_FPGA_Top.vhd(164): used explicit default value for signal "s_int_n" because signal was never assigned a value
+Warning (10873): Using initial value X (don't care) for net "LEDG[9..8]" at MSX_FPGA_Top.vhd(63)
+Info (10041): Inferred latch for "HEXDIGIT3[0]" at MSX_FPGA_Top.vhd(245)
+Info (10041): Inferred latch for "HEXDIGIT3[1]" at MSX_FPGA_Top.vhd(245)
+Info (10041): Inferred latch for "HEXDIGIT3[2]" at MSX_FPGA_Top.vhd(245)
+Info (10041): Inferred latch for "HEXDIGIT3[3]" at MSX_FPGA_Top.vhd(245)
+Info (10041): Inferred latch for "HEXDIGIT2[0]" at MSX_FPGA_Top.vhd(244)
+Info (10041): Inferred latch for "HEXDIGIT2[1]" at MSX_FPGA_Top.vhd(244)
+Info (10041): Inferred latch for "HEXDIGIT2[2]" at MSX_FPGA_Top.vhd(244)
+Info (10041): Inferred latch for "HEXDIGIT2[3]" at MSX_FPGA_Top.vhd(244)
+Info (10041): Inferred latch for "HEXDIGIT1[0]" at MSX_FPGA_Top.vhd(243)
+Info (10041): Inferred latch for "HEXDIGIT1[1]" at MSX_FPGA_Top.vhd(243)
+Info (10041): Inferred latch for "HEXDIGIT1[2]" at MSX_FPGA_Top.vhd(243)
+Info (10041): Inferred latch for "HEXDIGIT1[3]" at MSX_FPGA_Top.vhd(243)
+Info (10041): Inferred latch for "HEXDIGIT0[0]" at MSX_FPGA_Top.vhd(242)
+Info (10041): Inferred latch for "HEXDIGIT0[1]" at MSX_FPGA_Top.vhd(242)
+Info (10041): Inferred latch for "HEXDIGIT0[2]" at MSX_FPGA_Top.vhd(242)
+Info (10041): Inferred latch for "HEXDIGIT0[3]" at MSX_FPGA_Top.vhd(242)
 Info (12128): Elaborating entity "decoder_7seg" for hierarchy "decoder_7seg:DISPHEX0"
 Warning (13034): The following nodes have both tri-state and non-tri-state drivers
     Warning (13035): Inserted always-enabled tri-state buffer between "FL_DQ15_AM1" and its non-tri-state driver.
@@ -470,12 +470,11 @@ Warning (13024): Output pins are stuck at VCC or GND
 Info (286030): Timing-Driven Synthesis is running
 Info (16010): Generating hard_block partition "hard_block:auto_generated_inst"
     Info (16011): Adding 0 node(s), including 0 DDIO, 0 PLL, 0 transceiver and 0 LCELL
-Warning (21074): Design contains 19 input pin(s) that do not drive logic
+Warning (21074): Design contains 18 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "CLOCK_50"
     Warning (15610): No output dependent on input pin "CLOCK_50_2"
     Warning (15610): No output dependent on input pin "KEY[1]"
     Warning (15610): No output dependent on input pin "KEY[2]"
-    Warning (15610): No output dependent on input pin "SW[3]"
     Warning (15610): No output dependent on input pin "SW[4]"
     Warning (15610): No output dependent on input pin "SW[5]"
     Warning (15610): No output dependent on input pin "SW[6]"
@@ -490,15 +489,15 @@ Warning (21074): Design contains 19 input pin(s) that do not drive logic
     Warning (15610): No output dependent on input pin "IORQ_n"
     Warning (15610): No output dependent on input pin "CS_n"
     Warning (15610): No output dependent on input pin "M1_n"
-Info (21057): Implemented 333 device resources after synthesis - the final resource count might be different
+Info (21057): Implemented 335 device resources after synthesis - the final resource count might be different
     Info (21058): Implemented 45 input pins
     Info (21059): Implemented 142 output pins
     Info (21060): Implemented 65 bidirectional pins
-    Info (21061): Implemented 81 logic cells
-Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 184 warnings
-    Info: Peak virtual memory: 4629 megabytes
-    Info: Processing ended: Sat Feb 18 22:21:20 2023
-    Info: Elapsed time: 00:00:02
+    Info (21061): Implemented 83 logic cells
+Info: Quartus II 64-Bit Analysis & Synthesis was successful. 0 errors, 183 warnings
+    Info: Peak virtual memory: 4635 megabytes
+    Info: Processing ended: Tue Jan 23 18:40:25 2024
+    Info: Elapsed time: 00:00:03
     Info: Total CPU time (on all processors): 00:00:01
 
 

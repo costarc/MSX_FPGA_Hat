@@ -18,17 +18,14 @@
 #
 # Quartus II 64-Bit
 # Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
-# Date created = 19:21:35  February 04, 2023
+# Date created = 16:26:05  February 06, 2023
 #
 # -------------------------------------------------------------------------- #
 
 QUARTUS_VERSION = "13.0"
-DATE = "19:21:35  February 04, 2023"
+DATE = "16:26:05  February 06, 2023"
 
 # Revisions
 
-PROJECT_REVISION = "MegaRAM"
-PROJECT_REVISION = "MemoryMapper512K"
-PROJECT_REVISION = "MegaROM_Top"
-PROJECT_REVISION = "SRAM_Test_Top"
-PROJECT_REVISION = "MSX_DE1_Top"
+PROJECT_REVISION = "SDMapper"
+

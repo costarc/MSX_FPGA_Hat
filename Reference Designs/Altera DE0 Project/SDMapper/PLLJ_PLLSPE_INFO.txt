@@ -1,0 +1,5 @@
+PLL_Name	PLL4XD0:pll_instance|altpll:altpll_component|PLL4XD0_altpll:auto_generated|pll1
+PLLJITTER	30
+PLLSPEmax	84
+PLLSPEmin	-53
+

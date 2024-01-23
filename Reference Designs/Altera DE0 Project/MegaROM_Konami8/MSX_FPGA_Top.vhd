@@ -2,6 +2,47 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
+-- Updated on 23/01/2023
+-- ---------------------
+-- Structure of the FLASH for this core to work:
+-- --------------------------------------------------
+-- #SD Mapper ROM(MSX-DOS/Nextor 128KB ROM): 0x00000
+-- #------------------------------------------------
+-- cat SDMAPPER.ROM > DE1ROMs.bin
+-- 
+-- #MSX-DOS 2.2v3 (64KB ROM):0x20000
+-- #--------------------------------
+-- cat MDOS22V3.ROM >> DE1ROMs.bin
+-- 
+-- #ASCII16 (256KB ROMs): 0x30000
+-- #-----------------------------
+-- cat XEVIOUS.ROM >> DE1ROMs.bin
+-- cat FANZONE2.ROM >> DE1ROMs.bin
+-- cat ISHTAR.ROM >> DE1ROMs.bin
+-- cat ANDROGYN.ROM >> DE1ROMs.bin
+-- 
+-- #Konami8 (128KB ROMs) - 0x130000
+-- #-------------------------------
+-- cat NEMESIS.ROM >> DE1ROMs.bin
+-- cat PENGUIN.ROM >> DE1ROMs.bin
+-- cat USAS.ROM >> DE1ROMs.bin
+-- cat MGEAR.ROM >> DE1ROMs.bin
+-- 
+-- #32KB ROM Games: 0x1b0000
+-- #------------------------
+-- cat CASTLE.ROM >> DE1ROMs.bin
+-- cat ELEVATOR.ROM >> DE1ROMs.bin
+-- cat GALAGA.ROM >> DE1ROMs.bin
+-- cat GOONIES.ROM >>DE1ROMs.bin
+-- cat GULKAVE.ROM >> DE1ROMs.bin
+-- cat GYRODINE.ROM >> DE1ROMs.bin
+-- cat LODERUN.ROM >> DE1ROMs.bin
+-- cat ZANAC.ROM >> DE1ROMs.bin
+-- cat ROAD.ROM >> DE1ROMs.bin
+-- cat HRALLY.ROM >> DE1ROMs.bin
+-- cat AVALANCH.ROM >> DE1ROMs.bin
+-- cat FROGGER.ROM >> DE1ROMs.bin
+
 Entity MSX_FPGA_Top is
 port (
     CLOCK_50:		in std_logic;		--	50 MHz
@@ -176,10 +217,11 @@ begin
 	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
 	-- where the roms for this cores is written.
 	-- ROMs for this core starts at postion 0x100000 and each ROM has 128KB
-	s_flashbase <= x"120000" when SW(0) = '1' else
-	               x"140000" when SW(1) = '1' else
-						x"160000" when SW(2) = '1' else
-						x"100000";
+	s_flashbase <= x"130000" when SW(0) = '1' else  -- NEMESIS.ROM
+	               x"150000" when SW(1) = '1' else  -- PENGUIN.ROM
+						x"170000" when SW(2) = '1' else  -- USAS.ROM
+						x"190000" when SW(3) = '1' else  -- MGEAR.ROM
+						x"130000";                       -- NEMESIS.ROM (Default game)
 
 	D <= FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
          (others => 'Z');

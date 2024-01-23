@@ -1,5 +1,5 @@
 Flow report for MSX_FPGA_Top
-Sat Feb 18 22:06:02 2023
+Tue Jan 23 18:49:13 2024
 Quartus II 64-Bit Version 13.0.1 Build 232 06/12/2013 Service Pack 1 SJ Web Edition
 
 
@@ -40,15 +40,15 @@ applicable agreement for further details.
 +--------------------------------------------------------------------------------------+
 ; Flow Summary                                                                         ;
 +------------------------------------+-------------------------------------------------+
-; Flow Status                        ; Successful - Sat Feb 18 22:06:00 2023           ;
+; Flow Status                        ; Successful - Tue Jan 23 18:49:09 2024           ;
 ; Quartus II 64-Bit Version          ; 13.0.1 Build 232 06/12/2013 SP 1 SJ Web Edition ;
 ; Revision Name                      ; MSX_FPGA_Top                                    ;
 ; Top-level Entity Name              ; MSX_FPGA_Top                                    ;
 ; Family                             ; Cyclone III                                     ;
 ; Device                             ; EP3C16F484C6                                    ;
 ; Timing Models                      ; Final                                           ;
-; Total logic elements               ; 73 / 15,408 ( < 1 % )                           ;
-;     Total combinational functions  ; 73 / 15,408 ( < 1 % )                           ;
+; Total logic elements               ; 106 / 15,408 ( < 1 % )                          ;
+;     Total combinational functions  ; 106 / 15,408 ( < 1 % )                          ;
 ;     Dedicated logic registers      ; 12 / 15,408 ( < 1 % )                           ;
 ; Total registers                    ; 12                                              ;
 ; Total pins                         ; 252 / 347 ( 73 % )                              ;
@@ -64,7 +64,7 @@ applicable agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 02/18/2023 22:05:50 ;
+; Start date & time ; 01/23/2024 18:48:53 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; MSX_FPGA_Top        ;
 +-------------------+---------------------+
@@ -75,7 +75,7 @@ applicable agreement for further details.
 +-------------------------------------+---------------------------------------+---------------+-------------+------------+
 ; Assignment Name                     ; Value                                 ; Default Value ; Entity Name ; Section Id ;
 +-------------------------------------+---------------------------------------+---------------+-------------+------------+
-; COMPILER_SIGNATURE_ID               ; 53447168746495.167675795009404        ; --            ; --          ; --         ;
+; COMPILER_SIGNATURE_ID               ; 234025583596310.170603573336320       ; --            ; --          ; --         ;
 ; MAX_CORE_JUNCTION_TEMP              ; 85                                    ; --            ; --          ; --         ;
 ; MIN_CORE_JUNCTION_TEMP              ; 0                                     ; --            ; --          ; --         ;
 ; OUTPUT_IO_TIMING_FAR_END_VMEAS      ; Half Signal Swing                     ; --            ; --          ; --         ;
@@ -96,11 +96,11 @@ applicable agreement for further details.
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 ; Module Name               ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis      ; 00:00:02     ; 1.0                     ; 4630 MB             ; 00:00:01                           ;
-; Fitter                    ; 00:00:06     ; 1.0                     ; 4900 MB             ; 00:00:06                           ;
-; Assembler                 ; 00:00:01     ; 1.0                     ; 4545 MB             ; 00:00:01                           ;
-; TimeQuest Timing Analyzer ; 00:00:02     ; 1.0                     ; 4589 MB             ; 00:00:02                           ;
-; Total                     ; 00:00:11     ; --                      ; --                  ; 00:00:10                           ;
+; Analysis & Synthesis      ; 00:00:02     ; 1.0                     ; 4633 MB             ; 00:00:00                           ;
+; Fitter                    ; 00:00:09     ; 1.0                     ; 4904 MB             ; 00:00:05                           ;
+; Assembler                 ; 00:00:01     ; 1.0                     ; 4550 MB             ; 00:00:01                           ;
+; TimeQuest Timing Analyzer ; 00:00:03     ; 1.0                     ; 4592 MB             ; 00:00:02                           ;
+; Total                     ; 00:00:15     ; --                      ; --                  ; 00:00:08                           ;
 +---------------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 
@@ -109,10 +109,10 @@ applicable agreement for further details.
 +---------------------------+------------------+-----------+------------+----------------+
 ; Module Name               ; Machine Hostname ; OS Name   ; OS Version ; Processor type ;
 +---------------------------+------------------+-----------+------------+----------------+
-; Analysis & Synthesis      ; AlphaPC          ; Windows 7 ; 6.2        ; x86_64         ;
-; Fitter                    ; AlphaPC          ; Windows 7 ; 6.2        ; x86_64         ;
-; Assembler                 ; AlphaPC          ; Windows 7 ; 6.2        ; x86_64         ;
-; TimeQuest Timing Analyzer ; AlphaPC          ; Windows 7 ; 6.2        ; x86_64         ;
+; Analysis & Synthesis      ; MSI              ; Windows 7 ; 6.2        ; x86_64         ;
+; Fitter                    ; MSI              ; Windows 7 ; 6.2        ; x86_64         ;
+; Assembler                 ; MSI              ; Windows 7 ; 6.2        ; x86_64         ;
+; TimeQuest Timing Analyzer ; MSI              ; Windows 7 ; 6.2        ; x86_64         ;
 +---------------------------+------------------+-----------+------------+----------------+
 
 

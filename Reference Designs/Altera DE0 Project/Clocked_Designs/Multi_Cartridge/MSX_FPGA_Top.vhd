@@ -2,7 +2,7 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
-Entity MegaRAM is
+Entity MSX_FPGA_Top is
 port (
     CLOCK_50:		in std_logic;		--	50 MHz
     CLOCK_50_2:		in std_logic;								--	50 MHz
@@ -81,9 +81,15 @@ port (
     SRAM_WE_N:		out std_logic;								--	SRAM Write Enable
     SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
     SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
-    							
+    
+	 GPIO0_P1:		in std_logic;
+	 GPIO0_P3:		in std_logic;
+	 GPIO0_P21:		out std_logic;
+	 GPIO0_P22:		inout std_logic;
+	 GPIO0_P24:		inout std_logic;
+	 
     -- MSX Bus
-	 U1OE_n:				out std_logic;
+    U1OE_n:				out std_logic;
     A:					in std_logic_vector(15 downto 0);
     D:					inout std_logic_vector(7 downto 0);
     RD_n:				in std_logic;
@@ -97,152 +103,168 @@ port (
     INT_n:				out std_logic;
     RESET_n:			in std_logic;
     WAIT_n:				out std_logic); 
-end MegaRAM;
+end MSX_FPGA_Top;
 
-architecture bevioural of MegaRAM is
+architecture behavioural of MSX_FPGA_Top is
+	component FlashRAM
+	port (
+		-- Flash core signals
+		en:				in std_logic := '0'; 					-- default is disabled
+		reset:			in std_logic;								-- reset enable High / "1"
+		rw:				in std_logic := '0'; 					-- default is read
+		d_bus:			inout	std_logic_vector(7 downto 0);
+		a_bus:			in std_logic_vector(23 downto 0);
+		-- FLASH physical signals
+		FL_DQ:			inout std_logic_vector(14 downto 0);--	FLASH Data bus 15 Bits
+		FL_DQ15_AM1:	inout std_logic;							--	FLASH Data bus Bit 15 or Address A-1
+		FL_ADDR:			out std_logic_vector(21 downto 0);	--	FLASH Address bus 22 Bits
+		FL_WE_N:			out std_logic;								--	FLASH Write Enable
+		FL_RST_N:		out std_logic;								--	FLASH Reset
+		FL_OE_N:			out std_logic;								--	FLASH Output Enable
+		FL_CE_N:			out std_logic;								--	FLASH Chip Enable
+		FL_WP_N:			out std_logic;								--	FLASH Hardware Write Protect
+		FL_BYTE_N:		out std_logic;								--	FLASH Selects 8/16-bit mode
+		FL_RY:			in std_logic);								--	FLASH Ready/Busy
+	end component;
 	
 	component decoder_7seg
 	port (
-		NUMBER		: in   std_logic_vector(3 downto 0);
-		HEX_DISP	: out  std_logic_vector(6 downto 0));
+		NUMBER			: in   std_logic_vector(3 downto 0);
+		HEX_DISP			: out  std_logic_vector(6 downto 0));
+	end component;	
+	
+	component clk_slow 
+	port (
+		inclk0			: IN STD_LOGIC;
+		c0					: OUT STD_LOGIC);
 	end component;
-
-	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
-	signal HEXDIGIT1		: std_logic_vector(3 downto 0);
-	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
-	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
-	-- signals for cartridge emulation
-	signal s_sltsl_en			: std_logic;
-	signal s_busd_en			: std_logic;
-	signal s_io_addr 			: std_logic_vector(7 downto 0);
-	signal s_mgram4			: std_logic_vector(7 downto 0) := "00000000";
-	signal s_mgram6			: std_logic_vector(7 downto 0) := "00000001";
-	signal s_mgram8			: std_logic_vector(7 downto 0) := "00000010";
-	signal s_mgrama			: std_logic_vector(7 downto 0) := "00000011";
-	signal s_mreq				: std_logic;
-	signal s_iorq_r			: std_logic;
-	signal s_iorq_w			: std_logic;
-	signal s_iorq_r_reg		: std_logic;
-	signal s_iorq_w_reg		: std_logic;
-	signal s_mapper_reg_w	: std_logic;
+	signal HEXDIGIT0	: std_logic_vector(3 downto 0);
+	signal HEXDIGIT1	: std_logic_vector(3 downto 0);
+	signal HEXDIGIT2	: std_logic_vector(3 downto 0);
+	signal HEXDIGIT3	: std_logic_vector(3 downto 0);
 	
-	signal s_SRAM_ADDR:	std_logic_vector(23 downto 0);	
-	signal s_reset	: std_logic := '0';
-	signal s_wait_n: std_logic;
-		
-	signal s_segment: std_logic_vector(20 downto 0);
-	
-	signal s_mgram_we		: std_logic;
-	signal s_mgram_reg_en: std_logic;
-	signal s_mgram_mem_en: std_logic;
+	-- signals for clocked components
+	signal s_msx_clk		: std_logic;
+	signal s_msx_clk_div	: std_logic_vector(31 downto 0) := "00000000000000000000000000000001";
+	signal s_msx_clk_div2: std_logic_vector(7 downto 0) := "00000001";
+	signal s_rw				: std_logic;
+	signal s_led_clk		: std_logic;
+	signal s_reset			: std_logic := '0';
+	signal s_wait_n		: std_logic := '1';
+	signal s_int_n			: std_logic := '1';
+	signal s_busdir_n		: std_logic := '1';
+	signal s_sltsl_en		: std_logic;
+	signal s_rom_en			: std_logic;
+	signal s_rom_q			: std_logic_vector(7 downto 0);
+	signal s_flashbase	: std_logic_vector(23 downto 0);	
+	signal s_rom_a			: std_logic_vector(23 downto 0);
 	
 begin
+	
+	HEXDIGIT0 <= s_rom_a(3 downto 0) when A >= x"4000" and A < x"C000";
+	HEXDIGIT1 <= s_rom_a(7 downto 4) when A >= x"4000" and A < x"C000";
+	HEXDIGIT2 <= s_rom_a(11 downto 8) when A >= x"4000" and A < x"C000";
+	HEXDIGIT3 <= s_rom_a(15 downto 12) when A >= x"4000" and A < x"C000";
 
-  LEDG		<= s_reset & s_wait_n & not (s_sltsl_en or s_iorq_r or s_iorq_w) & s_iorq_r & s_sltsl_en & "00000";
-
-  
-	-- Reset circuit
-	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
-    -- during a reset, which causes teh computer to freeze
-	s_reset 	<= not (KEY(0) and RESET_n);
+	
+	s_msx_clk <= RESET_n;    -- msx clock & reset signals shares same gpio - use DIP switch in the cart to select CLOCK signal
+	s_reset <= not KEY(0);
 	WAIT_n 	<= s_wait_n;
-	INT_n  	<= 'Z';
-	BUSDIR_n <= not s_iorq_r;
-	process(s_reset)
+	INT_n  	<= s_int_n;
+	BUSDIR_n <= 'Z';
+
+	LEDG(9) <= SW(9);
+	LEDG(8) <= s_reset;
+	LEDG(7) <= s_sltsl_en;
+	LEDG(6) <= s_rom_en;
+	
+	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';	-- 1 when this slot is selected
+	U1OE_n 		<= not s_sltsl_en; -- Enable BUS in U1 at the interface
+	
+	-- Enable ROM access
+	s_rom_a <= s_flashbase + (A - x"4000");
+	s_flashbase <= x"1A0000" + (SW(5 downto 0) * x"2000"); -- Unbanked ROMS start at 0x1A0000. SW used to switch ROMs
+	s_rw <= RD_n;
+	process(s_msx_clk, s_sltsl_en, RD_n, MREQ_n)
 	begin
-	if s_reset = '1' then
-		s_wait_n <= '1';
-	else
-		s_wait_n <= 'Z';
-	end if;
-	end process;
-	
-	U1OE_n <= not (s_sltsl_en or s_iorq_r or s_iorq_w);
-	
-    -- Auxiliary Generic control signals
-	s_iorq_r		<= '1' when A(7 downto 0) = x"8E" and RD_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
-	s_iorq_w		<= '1' when A(7 downto 0) = x"8E" and WR_n = '0' and  IORQ_n = '0' and M1_n = '1' else '0';
-	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
-	s_sltsl_en	<= (not SLTSL_n) when SLTSL_n = '0' and SW(9) ='1' else '0';
-   
-	-- Mapper implementation								
-	SRAM_CE_N <= not s_sltsl_en;								
-	SRAM_OE_N <= RD_n;	
-	SRAM_WE_N <= WR_n;
-	SRAM_ADDR <= s_SRAM_ADDR(17 downto 0);
-	SRAM_UB_N <= not s_SRAM_ADDR(18);						
-	SRAM_LB_N <= s_SRAM_ADDR(18);
-	
-	SRAM_DQ <= D when WR_n = '0' and s_mgram_mem_en = '1' else (others => 'Z');
-					 
-	s_SRAM_ADDR <= (s_mgram4 * x"2000") + A - x"4000" when A < x"6000" else
-						(s_mgram6 * x"2000") + A - x"6000" when A < x"8000" else
-						(s_mgram8 * x"2000") + A - x"8000" when A < x"A000" else
-						(s_mgrama * x"2000") + A - x"A000" when A < x"C000";
-		
-	D <= SRAM_DQ when s_mreq = '1' and s_sltsl_en = '1' else
-	    (others => 'Z');
-	
-	-- Prepare MegaRAM for bank switching
-	s_mgram_mem_en <= '1' when s_mgram_we = '1' and s_sltsl_en = '1' else '0';
-	s_mgram_reg_en <= '1' when s_mgram_we = '0' and s_sltsl_en = '1' and Wr_n = '0' else '0';
-	
-	process (s_reset, s_iorq_w,s_iorq_r)
-	begin
-		if s_reset = '1' or s_iorq_w = '1' then
-			s_mgram_we <= '0';								-- Disable Write-Access to Megaram / Enable Registry access
-		elsif falling_edge(s_iorq_r) then	
-			s_mgram_we <= '1';								-- Enable Write-access to MegaRAM
+		if rising_edge(s_msx_clk) then
+			if RD_n = '0' and MREQ_n = '0' and s_sltsl_en = '1' then
+				s_rom_en <= '1';
+			else
+				s_rom_en <= '0';
+			end if;
 		end if;
 	end process;
+
+	flash_inst: FlashRAM PORT MAP (
+		en					=>	s_rom_en,
+		reset				=>	s_reset,
+		rw					=>	s_rw,
+		d_bus				=>	D,
+		a_bus				=>	s_rom_a,
+		FL_DQ				=>	FL_DQ,
+		FL_DQ15_AM1		=>	FL_DQ15_AM1,
+		FL_ADDR			=>	FL_ADDR,
+		FL_WE_N			=>	FL_WE_N,
+		FL_RST_N			=>	FL_RST_N,
+		FL_OE_N			=>	FL_OE_N,
+		FL_CE_N			=>	FL_CE_N,
+		FL_WP_N			=>	FL_WP_N,
+		FL_BYTE_N		=>	FL_BYTE_N,
+		FL_RY				=>	FL_RY
+	);
 	
-	process(s_mgram_reg_en,s_reset)
+	
+	process(s_led_clk)
+	variable ledg_reg : std_logic := '0';
 	begin
-		if s_reset = '1' then
-			s_mgram4 <= "00000000";
-			s_mgram6 <= "00000001";
-			s_mgram8 <= "00000010";
-			s_mgrama <= "00000011";
-		elsif falling_edge(s_mgram_reg_en) then
-			case A is
-				when x"4000" => s_mgram4 <= D;
-				when x"6000" => s_mgram6 <= D;
-				when x"8000" => s_mgram8 <= D;
-				when x"A000" => s_mgrama <= D;
-				when others => null;
-			end case ;
+		if rising_edge(s_led_clk) then
+			s_msx_clk_div(31 downto 1) <= s_msx_clk_div(30 downto 0);
+			if s_msx_clk_div(31) = '1' then
+				s_msx_clk_div <= "00000000000000000000000000000001";
+				s_msx_clk_div2(7 downto 1) <= s_msx_clk_div2(6 downto 0);
+				if s_msx_clk_div2(7) = '1' then 
+					s_msx_clk_div2 <= "00000001";
+					ledg_reg := not ledg_reg;
+				end if;
+			end if;
 		end if;
+		
+		LEDG(0) <= ledg_reg;
+		
 	end process;
 	
-	-- Display the current Memory Address in the 7 segment display
-	HEXDIGIT0 <= s_mgram4(3 downto 0);
-	HEXDIGIT1 <= s_mgram6(3 downto 0);
-	HEXDIGIT2 <= s_mgram8(3 downto 0);
-	HEXDIGIT3 <= s_mgrama(3 downto 0);
-		
-		DISPHEX0 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT0,
-			HEX_DISP		=>	HEX0
-		);		
+
+	DISPHEX0 : decoder_7seg PORT MAP (
+		NUMBER		=>	HEXDIGIT0,
+		HEX_DISP		=>	HEX0
+	);		
 	
 	DISPHEX1 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT1,
-			HEX_DISP		=>	HEX1
-		);		
+		NUMBER		=>	HEXDIGIT1,
+		HEX_DISP		=>	HEX1
+	);		
 	
 	DISPHEX2 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT2,
-			HEX_DISP		=>	HEX2
-		);		
+		NUMBER		=>	HEXDIGIT2,
+		HEX_DISP		=>	HEX2
+	);		
 	
 	DISPHEX3 : decoder_7seg PORT MAP (
-			NUMBER		=>	HEXDIGIT3,
-			HEX_DISP		=>	HEX3
-		);
-		
-		SD_DAT		<= 'Z';
-		DRAM_DQ		<= (others => 'Z');
-		FL_DQ		<= (others => 'Z');
+		NUMBER		=>	HEXDIGIT3,
+		HEX_DISP		=>	HEX3
+	);
 
-end bevioural;
+	
+	clk_slow_inst : clk_slow PORT MAP (
+		inclk0	 => s_msx_clk,
+		c0	 			=> s_led_clk
+	);
+
+	SD_DAT		<= 'Z';
+	DRAM_DQ		<= (others => 'Z');	
+	SRAM_DQ		<= (others => 'Z');
+	SRAM_CE_N	<= '1';
+	
+end behavioural;
