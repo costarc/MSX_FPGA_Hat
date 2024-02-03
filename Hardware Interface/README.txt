@@ -1,3 +1,6 @@
+V2.01
+- Added a jumper to select between CS2 adn RFSH (bug in v2.0)
+- Fixed some silk placement
 v2.0 (With a few changes taken from Wondertang!)
 - Added multiplex for MSX signals (shared GPIOS) to allow most MSX signals into the DPGA
 - Added Audio circuitry from Wondertang (Luis Antoniosi project)
