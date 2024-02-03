@@ -2673,6 +2673,12 @@
     (uuid fa1b9d77-4427-4f17-9702-9c3d2f92fa03)
   )
 
+  (rectangle (start 60.96 22.86) (end 162.56 71.12)
+    (stroke (width 0) (type default))
+    (fill (type none))
+    (uuid 3619a588-d7d2-45d2-8ae1-e001a9db7e2a)
+  )
+
   (text "PIN mappings was carefully designed to supporrt\nthe both DE0 and DE1 GPIO connector. \nDE0 board has 2xCLK_IN (1,3) and 2xCLK_OUT (19,21) pins,\nwhich are not present on DE1. These pins cannot operate\nas bi-directional IO signals, and therefore they were \nassigned to specific functions in teh interface - the direction of \ntheir signals must not be changed.\n"
     (at 14.224 27.94 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
@@ -2687,6 +2693,11 @@
     (at 111.76 248.285 0)
     (effects (font (size 1.27 1.27)) (justify left bottom))
     (uuid c7088a39-26cb-4845-adde-f0ab70ea1871)
+  )
+  (text "v2.0 Bug: CS2 & RFSH sharing same pin but  OE is grounded.\nRFSH should not be wired (soldered) in U4 to avoid issues."
+    (at 88.9 27.94 0)
+    (effects (font (size 1 1)) (justify left bottom))
+    (uuid dfb839ed-80f9-4d64-87cf-9fcb6c137066)
   )
 
   (global_label "Vdd" (shape input) (at 83.439 118.364 0) (fields_autoplaced)
