@@ -1,8 +1,11 @@
+
+Note: Current master branch not ready for fabrication due to major changes in the design. I am re-writing the new VHDL Top level design to demux the interface signals and exposed the MSX BUS according to the new interface changes (view v2.0 notes below).
+
 V2.01
 - Removed U4_OE_n signal - this bus is not shared - can be grounded
 - Fixed some silk placement
 v2.0 (With a few changes taken from Wondertang!)
-- Added multiplex for MSX signals (shared GPIOS) to allow most MSX signals into the DPGA
+- Added multiplex for MSX signals (shared GPIOS) to allow most MSX signals into the FPGA
 - Added Audio circuitry from Wondertang (Luis Antoniosi project)
 - Changed the open collector outputs to use transistor (/WAIt & /INT)
 - Completely changed the PIN assigments - no compatible with previous boards
