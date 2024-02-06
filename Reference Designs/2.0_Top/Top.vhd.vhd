@@ -88,15 +88,14 @@ port (
     SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
     SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
     							
-    -- MSX Bus
-	
+	-- Interface control signals
 	U1_DIR:			    out std_logic;
 	U1_OE_n:			out std_logic;
 	U2_OE_n:			out std_logic;
 	U3_OE_n:			out std_logic;
 	U4_OE_n:			out std_logic;
-	
-	
+	AudioOut			out std_logic;
+	-- MSX Bus signals
     pA:                 in std_logic_vector(7 downto 0);
     pD:					inout std_logic_vector(7 downto 0);
     pRD_n:				in std_logic;
@@ -104,20 +103,23 @@ port (
     pMREQ_n:            in std_logic;
     pIORQ_n:            in std_logic;
     pSLTSL_n:			in std_logic;
-    pCS_n:				in std_logic;
+    pCS1_n:				in std_logic;
+	pCS2_n:				in std_logic;
     pBUSDIR_n:			out std_logic;
     pM1_n:				in std_logic;
     pINT_n:				out std_logic;
     pRESET_n:			in std_logic;
-    pWAIT_n:            out std_logic); 
+    pWAIT_n:            out std_logic;
+	pCLOCK				in std_logic;
+	pSOUND              out std_logic); 
 end Top;
 
 architecture behavioural of Top is
 	
 	component decoder_7seg
 	port (
-		NUMBER		: in   std_logic_vector(3 downto 0);
-		HEX_DISP	: out  std_logic_vector(6 downto 0));
+		NUMBER		        : in   std_logic_vector(3 downto 0);
+		HEX_DISP	        : out  std_logic_vector(6 downto 0));
 	end component;
 	
 	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
@@ -126,7 +128,7 @@ architecture behavioural of Top is
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
 	
 	signal s_reset			: std_logic := '0';
-	signal s_wait_n		: std_logic := '1';
+	signal s_wait_n		    : std_logic := '1';
 	signal s_int_n			: std_logic := '1';
 	
 	-- signals for cartridge emulation
@@ -136,99 +138,35 @@ architecture behavioural of Top is
 	
 	-- Flash ASCII16
 	signal rom_bank_wr_s	: std_logic;
-	signal rom_bank1_q	: std_logic_vector(7 downto 0);
-	signal rom_bank2_q	: std_logic_vector(7 downto 0);
+	signal rom_bank1_q	    : std_logic_vector(7 downto 0);
+	signal rom_bank2_q	    : std_logic_vector(7 downto 0);
 	
 	signal s_flashbase	: std_logic_vector(23 downto 0);
+
+    -- MSX BUS Signals - to be used in the designs since they are demultiplexed
+	signal busDemuxState    : std_logic := "00";
+	signal busDataType      : std_logic := '0';
+	signal U2_en            : std_logic := '1';
+	signal U3_en            : std_logic := '0';
+    signal A                : std_logic;
+    signal D                : std_logic;
+    signal RD_n             : std_logic;
+    signal WR_n             : std_logic;
+    signal MREQ_n           : std_logic;
+    signal IORQ_n           : std_logic;
+    signal SLTSL_n          : std_logic
+    signal CS1_n            : std_logic;
+	signal CS2_n            : std_logic;
+    signal BUSDIR_n         : std_logic;
+    signal M1_n             : std_logic;
+    signal INT_n            : std_logic;
+    signal RESET_n          : std_logic;
+    signal WAIT_n           : std_logic;
+	signal CLOCK            : std_logic;
 	
 begin
   
 -- --------------------------------Common Signals & assertions ------------------------------------------
-	
-	LEDG(7 downto 0) <= s_reset & s_sltsl_en & "000000";
-	HEXDIGIT0 <= s_rom_a(3 downto 0) when A >= x"4000" and A < x"C000";
-	HEXDIGIT1 <= s_rom_a(7 downto 4) when A >= x"4000" and A < x"C000";
-	HEXDIGIT2 <= s_rom_a(11 downto 8) when A >= x"4000" and A < x"C000";
-	HEXDIGIT3 <= s_rom_a(15 downto 12) when A >= x"4000" and A < x"C000";
-	
-	-- Reset circuit
-	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
-   -- during a reset, which causes teh computer to freeze
-	s_reset 	<= not (KEY(0) and RESET_n);
-	WAIT_n 	<= s_wait_n;
-	INT_n  	<= s_int_n;
-	BUSDIR_n <= 'Z';
-	
-	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';	-- 1 when this slot is selected
-	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
-	
-	-- Control the data direction in the 74LVC245 (U1)
-	U1OE_n <= not (s_sltsl_en); -- Enable BUS in U1
-
-   ----------------------------------------------------------------------	
-   -- MEGAROM ASCI-16 (For the SDMapper and ASCII-16 games in the Flash)	
-   ----------------------------------------------------------------------	  
-	FL_WE_N  <= '1';
-	FL_RST_N <= not s_reset;
-	FL_CE_N  <= not s_sltsl_en;
-	FL_OE_N  <= RD_n;
-	
-	-- Checks address being access. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
-	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when s_sltsl_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
-                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when s_sltsl_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
-	                        (others => '-');
-	
-	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
-	-- where the roms for this cores is written.
-	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
-	s_flashbase <=  x"030000" when SW(4) = '1' else  -- XEVIOUS.ROM 
-                   x"070000" when SW(5) = '1' else  -- FANZONE2.ROM
-                   x"0B0000" when SW(6) = '1' else  -- ISHTAR.ROM
-                   x"0F0000" when SW(7) = '1' else  -- ANDROGYN.ROM
-                   x"000000" when SW(9) = '1';      -- SDMAPER.ROM - FBLABS
-
-
-	rom_bank_wr_s <= '1' when s_sltsl_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
-	
-	process (s_reset, rom_bank_wr_s)
-	begin
-		if s_reset = '1' then
-			rom_bank1_q		<= (others => '0');
-			rom_bank2_q		<= (others => '0');
-		elsif falling_edge(rom_bank_wr_s) then
-			case A(12) is
-				when '0'   =>
-					rom_bank1_q		<= D;
-				when '1'   =>
-					rom_bank2_q		<= D;
-				when others =>
-					null;
-			end case;
-		end if;
-	end process;
-
-	------------------------------------------
-	-- End of MegaROM ASCI-16 Implementation
-	-- ---------------------------------------
-	
-	-----------------
-	-- MAPPER 512KB
-	-----------------
-	
-	
-	-------------------
-	-- SDCARD Interface
-	-------------------
-	
-	
-	-------------------------------------------------------------------------------
-	-- I/O Between MSX and peripherals (MegaROm, Memory Mapper, SD Card intercace)
-	-------------------------------------------------------------------------------
-	
-	D <= FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
-         (others => 'Z');
-			
-
 	
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,
@@ -250,7 +188,61 @@ begin
 		HEX_DISP		=>	HEX3
 	);
 	
--- --------------------------------------- DE0 Only -----------------------------------------------------
+	
+--------------------------------- Common design to demux the MSX Bus  -----------------------------------------
+
+U2_OE_n <= not U2_en;
+U3_OE_n <= not U3_en;
+
+process (pCLOCK, pRESET_n, busMuxReady)
+begin
+    if pRESET_n = '0' then
+	    busDemuxState <= "00";
+		U2_en <= '1';
+		U3_en <= '0';
+    elsif rising_edge(pCLOCK) then
+		if pSLTSL_n = '0' then 
+			if busDemuxState = "00" then
+			    busDemuxState <= "01";
+	            U2_en <= '1';
+	            U3_en <= '0';
+			elsif busDemuxState = "01" then
+			    busDemuxState <= "10";
+	            U2_en <= '0';
+	            U3_en <= '1';
+			else 
+			    busDemuxState <= "00";
+	            U2_en <= '1';
+	            U3_en <= '0';			
+			end if;
+        end if;
+	end if;
+end process;
+
+process (busDemuxState)
+begin
+    if pRESET_n = '0' then
+        busMuxReady <= '0';
+    	RESET_n <= '0';
+    elsif busDemuxState = "01" then
+        A(7 downto 0) <= pA;
+    	RD_n     <= pRD_n;
+    	WR_n     <= pWR_n;
+    	MREQ_n   <= pMREQ_n;
+    	IORQ_n   <= pIORQ_n;
+    	SLTSL_n  <= pSLTSL_n;
+    	CS1_n    <= pCS1_n;
+    	CS2_n    <= pCS2_n;
+    	M1_n     <= pM1_n;
+    	RESET_n  <= pRESET_n;
+    	CLOCK    <= pCLOCK;
+    elsif busDemuxState = "10" then
+        A(15 downto 8) <= pA;
+		busMuxReady <= '1';
+    end if;
+end process
+
+-- --------------------------------------- DE0 - Use this -----------------------------------------------------
 	FL_DQ15_AM1 <= s_rom_a(0);			-- input for the LSB (A-1) address function for the flash in Byte mode
 	FL_ADDR     <= s_rom_a(22 downto 1);
 	
@@ -259,18 +251,17 @@ begin
 	DRAM_DQ		<= (others => 'Z');
 	SRAM_DQ		<= (others => 'Z');
 
--- --------------------------------------- DE1 Only -----------------------------------------------------
-	--FL_ADDR 	<= s_rom_a(21 downto 0);
-   --SD_DAT		<= 'Z';
-   --I2C_SDAT	<= 'Z';
-   --AUD_ADCLRCK<= 'Z';
-   --AUD_DACLRCK<= 'Z';
-   --AUD_BCLK	<= 'Z';
-   --DRAM_DQ		<= (others => 'Z');
-   --FL_DQ		<= (others => 'Z');
-   --SRAM_DQ		<= (others => 'Z');
-   --GPIO_0		<= (others => 'Z');
-	 
--- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- --------------------------------------- DE1 - Use this -----------------------------------------------------
+    --FL_ADDR 	<= s_rom_a(21 downto 0);
+    --SD_DAT		<= 'Z';
+    --I2C_SDAT	<= 'Z';
+    --AUD_ADCLRCK<= 'Z';
+    --AUD_DACLRCK<= 'Z';
+    --AUD_BCLK	<= 'Z';
+    --DRAM_DQ		<= (others => 'Z');
+    --FL_DQ		<= (others => 'Z');
+    --SRAM_DQ		<= (others => 'Z');
+    --GPIO_0		<= (others => 'Z');
+    -- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 	
 end behavioural;

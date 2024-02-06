@@ -1,5 +1,5 @@
 V2.01
-- Added a jumper to select between CS2 adn RFSH (bug in v2.0)
+- Removed U4_OE_n signal - this bus is not shared - can be grounded
 - Fixed some silk placement
 v2.0 (With a few changes taken from Wondertang!)
 - Added multiplex for MSX signals (shared GPIOS) to allow most MSX signals into the DPGA
