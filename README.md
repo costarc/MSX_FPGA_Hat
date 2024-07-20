@@ -3,11 +3,7 @@ A Cartridge interface that converts MSX 5v signal levels to 3v, exposing an IDC 
 
 Interface for MSX computers with level shift conversion to 3.3v. Allow MSX to use FPGA development boards such as Terasic DE0 and DE1 as generic peripherals.
 
-THIS IS WORKING IN PROGRESS. THE BOARD IS BEING TESTED, AND REFERENCE DESIGNS CREATED.
-
-THIS PROJECT IS NOT READY FOR FABRICATION!!
-
-IF YOU SEND FOR PRODUCTION, BE AWARE IT MIGHT NOT WORK, OR ONLY WORK WITH SEVERAL MANUAL FIXES TO THE BOARD.
+THIS IS WORKING IN PROGRESS. THE BOARD IS BEING TESTED, AND REFERENCE DESIGNS CREATED. ROM and RAM reference designs work well, but as of now I was not able to implement a stable SD Card interface.
 
 
 # Technical Description of the Interface
