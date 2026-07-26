@@ -16,3 +16,10 @@ db/
 output_files/
 !DE1_TOP.jic
 !DE1_TOP.sof
+
+# Local-only third-party simulation tools (not project source)
+/GHDL/
+/gtkwave/
+
+# KiCad open-file lock markers
+*.lck

@@ -12,6 +12,22 @@
 -- Please see the CERN OHL v.1.1 for applicable conditions
 
 -- Implementa um expansor de slots padrao.
+--
+-- STABILITY FIX:
+-- The original design clocked exp_reg directly off "falling_edge(exp_wr)",
+-- where exp_wr is a combinational signal derived from sltsl_n, cpu_wr_n and
+-- ffff. On real Z80 hardware these three asynchronous bus signals arrive
+-- with independent skew, so the combinational AND expression can glitch,
+-- generating spurious clock edges and corrupting exp_reg. This is the same
+-- hazard found and fixed elsewhere in this project.
+--
+-- Fix: a clock_i input has been added. sltsl_n, cpu_wr_n and ffff are
+-- synchronized into that clock domain before being combined, and exp_reg is
+-- now a normal clock_i-synchronous register triggered by an edge-detected
+-- pulse instead of being clocked directly off the raw combinational signal.
+-- clock_i must be connected to the same free-running clock used elsewhere
+-- in the design (e.g. the 25MHz clock_i in SDMapper_Top.vhd) when this
+-- component is instantiated.
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -19,6 +35,7 @@ use ieee.std_logic_unsigned.all;
 
 entity exp_slot is
 	port(
+		clock_i	: in    std_logic;								-- Free-running clock (e.g. 25MHz clock_i), used to synchronize the bus signals below
 		reset_n	: in    std_logic;								-- /RESET
 		sltsl_n	: in    std_logic;								-- Sinal de selecao do slot a ser expandido
 		cpu_rd_n	: in    std_logic;								-- /RD da CPU
@@ -38,20 +55,67 @@ architecture rtl of exp_slot is
 	signal exp_wr   : std_logic;
 	signal exp_rd   : std_logic;
 
+	-- ------------------------------------------------------------------------
+	-- Synchronizers for the write-qualifying signals. All three are sampled
+	-- together on every clock_i edge so they stay aligned with each other,
+	-- removing the dependency on their real-world relative skew.
+	-- ------------------------------------------------------------------------
+	signal sltsl_n_meta, sltsl_n_sync    : std_logic;
+	signal cpu_wr_n_meta, cpu_wr_n_sync  : std_logic;
+	signal ffff_meta, ffff_sync          : std_logic;
+
+	signal exp_wr_sync, exp_wr_sync_d    : std_logic;
+	signal exp_wr_falling_pulse          : std_logic;
+
 begin
 
-	-- Sinais de selecao do slot
-	exp_wr <= '1' when sltsl_n = '0' and cpu_wr_n = '0' and ffff = '1'	else '0';
+	-- Sinais de selecao do slot (kept combinational, level-based - used only
+	-- for the read-side tri-state mux below, not as a clock)
 	exp_rd <= '1' when sltsl_n = '0' and cpu_rd_n = '0' and ffff = '1'	else '0';
 
-	process(reset_n, exp_wr)
+	-- ------------------------------------------------------------------------
+	-- Synchronize sltsl_n, cpu_wr_n and ffff into the clock_i domain.
+	-- ------------------------------------------------------------------------
+	process(clock_i)
 	begin
-		if (reset_n = '0') then				-- Zerar registrador do expansor em um reset
-			exp_reg <= X"00";
-		elsif (falling_edge(exp_wr)) then	-- Escrita no endereco &HFFFF
-			exp_reg <= cpu_d;
+		if rising_edge(clock_i) then
+			sltsl_n_meta  <= sltsl_n;
+			sltsl_n_sync  <= sltsl_n_meta;
+
+			cpu_wr_n_meta <= cpu_wr_n;
+			cpu_wr_n_sync <= cpu_wr_n_meta;
+
+			ffff_meta     <= ffff;
+			ffff_sync     <= ffff_meta;
 		end if;
- 	end process;
+	end process;
+
+	-- Recompute the write qualifier from the now-synchronized, glitch-free
+	-- signals, then edge-detect its falling edge to get a one clock_i-wide
+	-- pulse at the end of the write cycle (same trigger point as the
+	-- original falling_edge(exp_wr) design).
+	exp_wr_sync <= '1' when sltsl_n_sync = '0' and cpu_wr_n_sync = '0' and ffff_sync = '1' else '0';
+
+	process(clock_i)
+	begin
+		if rising_edge(clock_i) then
+			exp_wr_sync_d <= exp_wr_sync;
+		end if;
+	end process;
+
+	exp_wr_falling_pulse <= exp_wr_sync_d and not exp_wr_sync;
+
+	-- Expansion register - now fully synchronous
+	process(clock_i)
+	begin
+		if rising_edge(clock_i) then
+			if reset_n = '0' then				-- Zerar registrador do expansor em um reset
+				exp_reg <= X"00";
+			elsif exp_wr_falling_pulse = '1' then	-- Escrita no endereco &HFFFF
+				exp_reg <= cpu_d;
+			end if;
+		end if;
+	end process;
 
 	-- Leitura dos registros
 	cpu_q <= (not exp_reg) when exp_rd = '1';
@@ -69,5 +133,5 @@ begin
 				"1101" when sltsl_n = '0' and exp_sel = "01" else
 				"1011" when sltsl_n = '0' and exp_sel = "10" else
 				"0111";
-		
+
 end rtl;

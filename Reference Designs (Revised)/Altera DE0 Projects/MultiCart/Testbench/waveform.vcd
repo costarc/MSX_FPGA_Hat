@@ -1,0 +1,559 @@
+$date
+  Tue Jan 14 23:54:47 2025
+$end
+$version
+  GHDL v0
+$end
+$timescale
+  1 fs
+$end
+$scope module standard $end
+$upscope $end
+$scope module std_logic_1164 $end
+$upscope $end
+$scope module numeric_std $end
+$upscope $end
+$scope module std_logic_arith $end
+$upscope $end
+$scope module std_logic_unsigned $end
+$upscope $end
+$scope module tb_multicart $end
+$var reg 1 ! clock_50 $end
+$var reg 1 " clock_50_2 $end
+$var reg 3 # key[2:0] $end
+$var reg 10 $ sw[9:0] $end
+$var reg 7 % hex0[6:0] $end
+$var reg 7 & hex1[6:0] $end
+$var reg 7 ' hex2[6:0] $end
+$var reg 7 ( hex3[6:0] $end
+$var reg 1 ) hex0_dp $end
+$var reg 1 * hex1_dp $end
+$var reg 1 + hex2_dp $end
+$var reg 1 , hex3_dp $end
+$var reg 10 - ledg[9:0] $end
+$var reg 1 . uart_txd $end
+$var reg 1 / uart_rxd $end
+$var reg 1 0 uart_cts $end
+$var reg 1 1 uart_rts $end
+$var reg 16 2 dram_dq[15:0] $end
+$var reg 13 3 dram_addr[12:0] $end
+$var reg 1 4 dram_ldqm $end
+$var reg 1 5 dram_udqm $end
+$var reg 1 6 dram_we_n $end
+$var reg 1 7 dram_cas_n $end
+$var reg 1 8 dram_ras_n $end
+$var reg 1 9 dram_cs_n $end
+$var reg 1 : dram_ba_0 $end
+$var reg 1 ; dram_ba_1 $end
+$var reg 1 < dram_clk $end
+$var reg 1 = dram_cke $end
+$var reg 15 > fl_dq[14:0] $end
+$var reg 1 ? fl_dq15_am1 $end
+$var reg 22 @ fl_addr[21:0] $end
+$var reg 1 A fl_we_n $end
+$var reg 1 B fl_rst_n $end
+$var reg 1 C fl_oe_n $end
+$var reg 1 D fl_ce_n $end
+$var reg 1 E fl_wp_n $end
+$var reg 1 F fl_byte_n $end
+$var reg 1 G fl_ry $end
+$var reg 8 H lcd_data[7:0] $end
+$var reg 1 I lcd_blon $end
+$var reg 1 J lcd_rw $end
+$var reg 1 K lcd_en $end
+$var reg 1 L lcd_rs $end
+$var reg 1 M sd_cs $end
+$var reg 1 N sd_clk $end
+$var reg 1 O sd_miso $end
+$var reg 1 P sd_mosi $end
+$var reg 1 Q sd_wp_n $end
+$var reg 1 R ps2_kbdat $end
+$var reg 1 S ps2_kbclk $end
+$var reg 1 T ps2_msdat $end
+$var reg 1 U ps2_msclk $end
+$var reg 1 V vga_hs $end
+$var reg 1 W vga_vs $end
+$var reg 4 X vga_r[3:0] $end
+$var reg 4 Y vga_g[3:0] $end
+$var reg 4 Z vga_b[3:0] $end
+$var reg 8 [ sram_dq[7:0] $end
+$var reg 18 \ sram_addr[17:0] $end
+$var reg 1 ] sram_ub_n $end
+$var reg 1 ^ sram_lb_n $end
+$var reg 1 _ sram_we_n $end
+$var reg 1 ` sram_ce_n $end
+$var reg 1 a sram_oe_n $end
+$var reg 1 b gpio0_p1 $end
+$var reg 1 c gpio0_p3 $end
+$var reg 1 d gpio0_p21 $end
+$var reg 1 e gpio0_p22 $end
+$var reg 1 f gpio0_p24 $end
+$var reg 1 g u1_dir $end
+$var reg 1 h u1_oe_n $end
+$var reg 1 i u2_oe_n $end
+$var reg 1 j u3_oe_n $end
+$var reg 1 k u4_oe_n $end
+$var reg 1 l audio $end
+$var reg 1 m sound $end
+$var reg 1 n a0_8 $end
+$var reg 1 o a1_9 $end
+$var reg 1 p a2_10 $end
+$var reg 1 q a3_11 $end
+$var reg 1 r a4_12 $end
+$var reg 1 s a5_13 $end
+$var reg 1 t a6_14 $end
+$var reg 1 u a7_15 $end
+$var reg 8 v d[7:0] $end
+$var reg 1 w rd_n $end
+$var reg 1 x wr_n $end
+$var reg 1 y mreq_n $end
+$var reg 1 z iorq_n $end
+$var reg 1 { sltsl_n $end
+$var reg 1 | cs1_n $end
+$var reg 1 } cs2_n $end
+$var reg 1 !" busdir_n $end
+$var reg 1 "" m1_n $end
+$var reg 1 #" int_n $end
+$var reg 1 $" reset_n $end
+$var reg 1 %" wait_n $end
+$var reg 1 &" msxclk $end
+$scope module uut $end
+$var reg 1 '" clock_50 $end
+$var reg 1 (" clock_50_2 $end
+$var reg 3 )" key[2:0] $end
+$var reg 10 *" sw[9:0] $end
+$var reg 7 +" hex0[6:0] $end
+$var reg 7 ," hex1[6:0] $end
+$var reg 7 -" hex2[6:0] $end
+$var reg 7 ." hex3[6:0] $end
+$var reg 1 /" hex0_dp $end
+$var reg 1 0" hex1_dp $end
+$var reg 1 1" hex2_dp $end
+$var reg 1 2" hex3_dp $end
+$var reg 10 3" ledg[9:0] $end
+$var reg 1 4" uart_txd $end
+$var reg 1 5" uart_rxd $end
+$var reg 1 6" uart_cts $end
+$var reg 1 7" uart_rts $end
+$var reg 16 8" dram_dq[15:0] $end
+$var reg 13 9" dram_addr[12:0] $end
+$var reg 1 :" dram_ldqm $end
+$var reg 1 ;" dram_udqm $end
+$var reg 1 <" dram_we_n $end
+$var reg 1 =" dram_cas_n $end
+$var reg 1 >" dram_ras_n $end
+$var reg 1 ?" dram_cs_n $end
+$var reg 1 @" dram_ba_0 $end
+$var reg 1 A" dram_ba_1 $end
+$var reg 1 B" dram_clk $end
+$var reg 1 C" dram_cke $end
+$var reg 15 D" fl_dq[14:0] $end
+$var reg 1 E" fl_dq15_am1 $end
+$var reg 22 F" fl_addr[21:0] $end
+$var reg 1 G" fl_we_n $end
+$var reg 1 H" fl_rst_n $end
+$var reg 1 I" fl_oe_n $end
+$var reg 1 J" fl_ce_n $end
+$var reg 1 K" fl_wp_n $end
+$var reg 1 L" fl_byte_n $end
+$var reg 1 M" fl_ry $end
+$var reg 8 N" lcd_data[7:0] $end
+$var reg 1 O" lcd_blon $end
+$var reg 1 P" lcd_rw $end
+$var reg 1 Q" lcd_en $end
+$var reg 1 R" lcd_rs $end
+$var reg 1 S" sd_cs $end
+$var reg 1 T" sd_clk $end
+$var reg 1 U" sd_miso $end
+$var reg 1 V" sd_mosi $end
+$var reg 1 W" sd_wp_n $end
+$var reg 1 X" ps2_kbdat $end
+$var reg 1 Y" ps2_kbclk $end
+$var reg 1 Z" ps2_msdat $end
+$var reg 1 [" ps2_msclk $end
+$var reg 1 \" vga_hs $end
+$var reg 1 ]" vga_vs $end
+$var reg 4 ^" vga_r[3:0] $end
+$var reg 4 _" vga_g[3:0] $end
+$var reg 4 `" vga_b[3:0] $end
+$var reg 8 a" sram_dq[7:0] $end
+$var reg 18 b" sram_addr[17:0] $end
+$var reg 1 c" sram_ub_n $end
+$var reg 1 d" sram_lb_n $end
+$var reg 1 e" sram_we_n $end
+$var reg 1 f" sram_ce_n $end
+$var reg 1 g" sram_oe_n $end
+$var reg 1 h" gpio0_p1 $end
+$var reg 1 i" gpio0_p3 $end
+$var reg 1 j" gpio0_p21 $end
+$var reg 1 k" gpio0_p22 $end
+$var reg 1 l" gpio0_p24 $end
+$var reg 1 m" u1_dir $end
+$var reg 1 n" u1_oe_n $end
+$var reg 1 o" u2_oe_n $end
+$var reg 1 p" u3_oe_n $end
+$var reg 1 q" u4_oe_n $end
+$var reg 1 r" audio $end
+$var reg 1 s" sound $end
+$var reg 1 t" a0_8 $end
+$var reg 1 u" a1_9 $end
+$var reg 1 v" a2_10 $end
+$var reg 1 w" a3_11 $end
+$var reg 1 x" a4_12 $end
+$var reg 1 y" a5_13 $end
+$var reg 1 z" a6_14 $end
+$var reg 1 {" a7_15 $end
+$var reg 8 |" d[7:0] $end
+$var reg 1 }" rd_n $end
+$var reg 1 !# wr_n $end
+$var reg 1 "# mreq_n $end
+$var reg 1 ## iorq_n $end
+$var reg 1 $# sltsl_n $end
+$var reg 1 %# cs1_n $end
+$var reg 1 &# cs2_n $end
+$var reg 1 '# busdir_n $end
+$var reg 1 (# m1_n $end
+$var reg 1 )# int_n $end
+$var reg 1 *# reset_n $end
+$var reg 1 +# wait_n $end
+$var reg 1 ,# msxclk $end
+$var reg 4 -# hexdigit0[3:0] $end
+$var reg 4 .# hexdigit1[3:0] $end
+$var reg 4 /# hexdigit2[3:0] $end
+$var reg 4 0# hexdigit3[3:0] $end
+$var reg 16 1# a[15:0] $end
+$var reg 1 2# reset_s $end
+$var reg 1 3# slten_s $end
+$var reg 1 4# mreq_s $end
+$var reg 8 5# romq_s[7:0] $end
+$var reg 24 6# rombaseaddress_s[23:0] $end
+$var reg 24 7# romaddress_s[23:0] $end
+$var reg 1 8# ledgclock_s $end
+$var reg 1 9# address_ready_s $end
+$scope module uut $end
+$var reg 1 :# clock_50 $end
+$var reg 1 ;# slten_s $end
+$var reg 1 <# a0_8 $end
+$var reg 1 =# a1_9 $end
+$var reg 1 ># a2_10 $end
+$var reg 1 ?# a3_11 $end
+$var reg 1 @# a4_12 $end
+$var reg 1 A# a5_13 $end
+$var reg 1 B# a6_14 $end
+$var reg 1 C# a7_15 $end
+$var reg 16 D# a[15:0] $end
+$var reg 1 E# u2_oe_n $end
+$var reg 1 F# u3_oe_n $end
+$var reg 1 G# address_ready $end
+$comment current_state is not handled $end
+$comment next_state is not handled $end
+$upscope $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+#0
+0!
+0"
+b000 #
+b0000000000 $
+bUUUUUUU %
+bUUUUUUU &
+bUUUUUUU '
+bUUUUUUU (
+U)
+U*
+U+
+U,
+b0UU0000000 -
+U.
+1/
+U0
+11
+bZZZZZZZZZZZZZZZZ 2
+bUUUUUUUUUUUUU 3
+U4
+U5
+U6
+U7
+U8
+U9
+U:
+U;
+U<
+U=
+bUUUUUUUUUUUUUUU >
+U?
+bUUUUUUUUUUUUUUUUUUUUUU @
+UA
+UB
+UC
+UD
+UE
+UF
+UG
+bUUUUUUUU H
+UI
+UJ
+UK
+UL
+UM
+UN
+UO
+UP
+UQ
+UR
+US
+UT
+UU
+UV
+UW
+bUUUU X
+bUUUU Y
+bUUUU Z
+bZZZZZZZZ [
+bUUUUUUUUUUUUUUUUUU \
+U]
+U^
+U_
+U`
+Ua
+0b
+0c
+Ud
+Ue
+Uf
+Ug
+Uh
+1i
+1j
+Uk
+Ul
+Um
+0n
+0o
+0p
+0q
+0r
+0s
+0t
+0u
+bUUUUUUUU v
+1w
+1x
+1y
+1z
+1{
+1|
+1}
+Z!"
+1""
+Z#"
+1$"
+Z%"
+1&"
+0'"
+0("
+b000 )"
+b0000000000 *"
+bUUUUUUU +"
+bUUUUUUU ,"
+bUUUUUUU -"
+bUUUUUUU ."
+U/"
+U0"
+U1"
+U2"
+b0UU0000000 3"
+U4"
+15"
+U6"
+17"
+bZZZZZZZZZZZZZZZZ 8"
+bUUUUUUUUUUUUU 9"
+U:"
+U;"
+U<"
+U="
+U>"
+U?"
+U@"
+UA"
+UB"
+UC"
+bUUUUUUUUUUUUUUU D"
+UE"
+bUUUUUUUUUUUUUUUUUUUUUU F"
+UG"
+UH"
+UI"
+UJ"
+UK"
+UL"
+UM"
+bUUUUUUUU N"
+UO"
+UP"
+UQ"
+UR"
+US"
+UT"
+UU"
+UV"
+UW"
+UX"
+UY"
+UZ"
+U["
+U\"
+U]"
+bUUUU ^"
+bUUUU _"
+bUUUU `"
+bZZZZZZZZ a"
+bUUUUUUUUUUUUUUUUUU b"
+Uc"
+Ud"
+Ue"
+Uf"
+Ug"
+0h"
+0i"
+Uj"
+Uk"
+Ul"
+Um"
+Un"
+1o"
+1p"
+Uq"
+Ur"
+Us"
+0t"
+0u"
+0v"
+0w"
+0x"
+0y"
+0z"
+0{"
+bUUUUUUUU |"
+1}"
+1!#
+1"#
+1##
+1$#
+1%#
+1&#
+Z'#
+1(#
+Z)#
+1*#
+Z+#
+1,#
+b0000 -#
+b0000 .#
+b0000 /#
+b0000 0#
+b0000000000000000 1#
+02#
+03#
+04#
+bUUUUUUUU 5#
+bUUUUUUUUUUUUUUUUUUUUUUUU 6#
+bUUUUUUUUUUUUUUUUUUUUUUUU 7#
+U8#
+09#
+0:#
+0;#
+0<#
+0=#
+0>#
+0?#
+0@#
+0A#
+0B#
+0C#
+b0000000000000000 D#
+1E#
+1F#
+0G#
+#10000000
+1!
+1'"
+1:#
+#20000000
+0!
+0'"
+0:#
+#30000000
+1!
+1'"
+1:#
+#40000000
+0!
+0'"
+0:#
+#50000000
+1!
+1'"
+1:#
+#60000000
+0!
+0'"
+0:#
+#70000000
+1!
+1'"
+1:#
+#80000000
+0!
+0'"
+0:#
+#90000000
+1!
+1'"
+1:#
+#100000000
+0!
+0'"
+0:#
+#110000000
+1!
+1'"
+1:#
+#120000000
+0!
+0'"
+0:#
+#130000000
+1!
+1'"
+1:#
+#140000000
+0!
+0'"
+0:#
+#150000000
+1!
+1'"
+1:#
+#160000000
+0!
+0'"
+0:#
+#170000000
+1!
+1'"
+1:#
+#180000000
+0!
+0'"
+0:#
+#190000000
+1!
+1'"
+1:#
+#200000000
+0!
+0'"
+0:#

@@ -128,7 +128,7 @@ port (
 	GPIO0_P22:		inout std_logic;
 	GPIO0_P24:		inout std_logic;
 	 
-	-- MSX Bus
+	-- MSX FPGA HAT Control signals
 	U1_DIR:			out std_logic;
 	U1_OE_n:			out std_logic;
 	U2_OE_n:			out std_logic;
@@ -136,14 +136,16 @@ port (
 	U4_OE_n:			out std_logic;
 	AUDIO:			out std_logic;
 	SOUND:			out std_logic;
+	
+	--MSX Bus
 	A0_8:				in std_logic;		-- MSX Address Bus is shared between high/low bytes in the interface
 	A1_9:				in std_logic;
-	A2_10:				in std_logic;
-	A3_11:				in std_logic;
-	A4_12:				in std_logic;
-	A5_13:				in std_logic;
-	A6_14:				in std_logic;
-	A7_15:				in std_logic;
+	A2_10:			in std_logic;
+	A3_11:			in std_logic;
+	A4_12:			in std_logic;
+	A5_13:			in std_logic;
+	A6_14:			in std_logic;
+	A7_15:			in std_logic;
 	D:					inout std_logic_vector(7 downto 0);
 	RD_n:				in std_logic;
 	WR_n:				in std_logic;
@@ -161,18 +163,13 @@ port (
 end MultiCart;
 
 architecture behavioural of MultiCart is
-	
-	component decoder_7seg
-	port (
-		NUMBER		: in   std_logic_vector(3 downto 0);
-		HEX_DISP		: out  std_logic_vector(6 downto 0));
-	end component;
-	
+		
 	signal HEXDIGIT0			: std_logic_vector(3 downto 0);
 	signal HEXDIGIT1			: std_logic_vector(3 downto 0);
 	signal HEXDIGIT2			: std_logic_vector(3 downto 0);
 	signal HEXDIGIT3			: std_logic_vector(3 downto 0);
 	
+	signal A					: std_logic_vector(15 downto 0);
 	signal reset_s				: std_logic := '0';
 	signal slten_s				: std_logic;
 	signal mreq_s				: std_logic;
@@ -181,6 +178,7 @@ architecture behavioural of MultiCart is
 	signal romaddress_s 		: std_logic_vector(23 downto 0);
 	
 	signal ledgclock_s		: std_logic;
+	signal address_ready_s	: std_logic;
 	
 begin
   
@@ -209,32 +207,40 @@ begin
 	mreq_s	<= '1' when MREQ_n = '0' and M1_n = '1' else '0';
 
 
-	process(MSXCLK)
+	--process(MSXCLK)
+	--begin
+	--	if rising_edge(MSXCLK) then
+	--		ledgclock_s <= not ledgclock_s;
+	--	end if;
+	--end process;
+
+	-- Perform memory read only when the A bus is fully decoded
+	process(address_ready_s)
 	begin
-		if rising_edge(MSXCLK) then
+		if rising_edge(address_ready_s) then
+			-- Perform actions when address_ready goes high (indicating address is ready)
+			-- For example, read the address or perform some logic
 			ledgclock_s <= not ledgclock_s;
 		end if;
-	end process;
-	
-	DISPHEX0 : decoder_7seg PORT MAP (
-		NUMBER		=>	HEXDIGIT0,
-		HEX_DISP		=>	HEX0
-	);		
-	
-	DISPHEX1 : decoder_7seg PORT MAP (
-		NUMBER		=>	HEXDIGIT1,
-		HEX_DISP		=>	HEX1
-	);		
-	
-	DISPHEX2 : decoder_7seg PORT MAP (
-		NUMBER		=>	HEXDIGIT2,
-		HEX_DISP		=>	HEX2
-	);		
-	
-	DISPHEX3 : decoder_7seg PORT MAP (
-		NUMBER		=>	HEXDIGIT3,
-		HEX_DISP		=>	HEX3
-	);
+	end process;	
+ 
+    uut: entity work.msxaddressbus
+        Port map (
+            CLOCK_50 => CLOCK_50,
+            slten_s  => slten_s,
+            A0_8     => A0_8,
+            A1_9     => A1_9,
+            A2_10    => A2_10,
+            A3_11    => A3_11,
+            A4_12    => A4_12,
+            A5_13    => A5_13,
+            A6_14    => A6_14,
+            A7_15    => A7_15,
+            A        => A,
+            U2_OE_n  => U2_OE_n,
+            U3_OE_n  => U3_OE_n,
+				address_ready => address_ready_s
+        );
 
 --
 end behavioural;

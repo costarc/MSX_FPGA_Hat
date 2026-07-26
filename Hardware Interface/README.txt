@@ -1,8 +1,17 @@
-v2.0 (With a few changes taken from Wondertang!)
-- Added multiplex for MSX signals (shared GPIOS) to allow most MSX signals into the DPGA
+v2.1 This versin breaks compatibility with all previous interfaces.
+- Redesigned the schema & PCB with change of signals assignments
+- MSX Address bus now sharing a 8 bits bus in the FPGA (fsm decode the low/high bits)
+- Removed RESET signal circuitry
 - Added Audio circuitry from Wondertang (Luis Antoniosi project)
-- Changed the open collector outputs to use transistor (/WAIt & /INT)
-- Completely changed the PIN assigments - no compatible with previous boards
+- Updated /int and /wait signals to open collector outputs using transistors
+- added test points to /wait, /int and /busdir
+- Jumper added to select between MSX Refresh and CS2 signals
+- change in silk layout
+- Added audiojack for future use
+- Connected MSX SOUND to the FPGA
+
+v2.0 Lost track of the changes in this release.
+
 v1.6 (never sent for fabrication)
 - Removed /CS1, CS2, CS12, RFSH, SOUND
 - Moded U1 DIR control to jumper (allow enable by /RD or FPGA pin)
