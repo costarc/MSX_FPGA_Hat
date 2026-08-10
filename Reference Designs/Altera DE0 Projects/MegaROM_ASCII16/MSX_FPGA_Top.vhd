@@ -288,6 +288,24 @@ architecture behavioural of MSX_FPGA_Top is
 	-- is visible on LEDG(8) even between glances at the board.
 	signal s_io_read_5A_ever_q : std_logic := '0';
 
+	-- ------------------------------------------------------------------------
+	-- FLASH READ WINDOW (new): reading MSX memory 0x9000-0x9FFF returns
+	-- real Flash content, linearly mapped from Flash offset 0x000000
+	-- (address - 0x9000). Unlike the Register5A test above (which used an
+	-- I/O port for its read side specifically to avoid ever contending
+	-- with real memory), this IS a memory-mapped read in a range real
+	-- system RAM also normally occupies - so it's gated on SLTSL_n (this
+	-- cartridge's slot actually selected), unlike every other test in this
+	-- file, to avoid fighting the real RAM chip for the bus on every
+	-- ordinary BASIC memory access to that page.
+	-- ------------------------------------------------------------------------
+	signal s_sltsl_en : std_logic;
+
+	signal s_flash_read_en        : std_logic;
+	signal s_flash_read_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_flash_read_qualified : std_logic := '0';
+	signal s_flash_a : std_logic_vector(23 downto 0);
+
 begin
 
 	s_reset <= not (KEY(0) and RESET_n);
@@ -590,19 +608,6 @@ begin
 		end if;
 	end process;
 
-	-- Drive Register5A_q back onto D ONLY during a qualified 0x5A I/O
-	-- read - this is the first time this build drives the data bus at
-	-- all. U1 (74LVC245) is enabled/directed the same way as every other
-	-- proven design in this repo: U1_DIR='1' drives toward the real MSX
-	-- bus, gated on the same qualified condition so U1 can never engage
-	-- outside this one, narrowly-tested case. I/O cycles have an extra,
-	-- automatically-inserted Z80 wait state (Zilog UM0080, "Input or
-	-- Output Cycles") versus a plain memory cycle, giving comfortable
-	-- margin for the MIN_PULSE_CYCLES qualification delay before driving.
-	D      <= Register5A_q when s_io_read_5A_qualified = '1' else (others => 'Z');
-	U1OE_n <= not s_io_read_5A_qualified;
-	U1_DIR <= '1' when s_io_read_5A_qualified = '1' else '0';
-
 	-- Latched "was port 0x5A ever read" - confirms the I/O decode path
 	-- fires at all, independent of Register5A_q's actual value.
 	process(CLOCK_50)
@@ -618,6 +623,59 @@ begin
 
 	LEDG(8)          <= s_io_read_5A_ever_q;
 	LEDG(7 downto 0) <= Register5A_q;	-- live view of the latched register value
+
+	-- ------------------------------------------------------------------------
+	-- FLASH READ WINDOW logic - see declarations above.
+	-- ------------------------------------------------------------------------
+	s_sltsl_en <= not SLTSL_n;
+
+	s_flash_read_en <= '1' when s_sltsl_en = '1' and RD_n = '0' and s_A >= x"9000" and s_A <= x"9FFF" else '0';
+
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_flash_read_dur_cnt   <= (others => '0');
+				s_flash_read_qualified <= '0';
+			else
+				if s_flash_read_en = '1' then
+					if s_flash_read_dur_cnt < MIN_PULSE_CYCLES then
+						s_flash_read_dur_cnt <= s_flash_read_dur_cnt + 1;
+					end if;
+					if s_flash_read_dur_cnt >= MIN_PULSE_CYCLES then
+						s_flash_read_qualified <= '1';
+					end if;
+				else
+					s_flash_read_dur_cnt   <= (others => '0');
+					s_flash_read_qualified <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+
+	-- Linear map: Flash offset = MSX address - 0x9000, per the user's
+	-- request to read relative to Flash address 0x000000.
+	s_flash_a <= x"000000" + ("00000000" & (s_A - x"9000")) when s_flash_read_en = '1' else (others => '0');
+
+	-- Real Flash chip in byte mode: DQ15/A-1 becomes the extra low
+	-- address bit, FL_ADDR carries the rest - same convention used (and
+	-- independently verified pin-correct against the DE0 User Manual)
+	-- during the earlier Flash-boot attempt.
+	FL_DQ15_AM1 <= s_flash_a(0);
+	FL_ADDR     <= s_flash_a(22 downto 1);
+	FL_WE_N     <= '1';	-- never write to Flash
+	FL_CE_N     <= not s_flash_read_en;
+	FL_OE_N     <= RD_n;
+
+	-- Drive Register5A_q OR the Flash byte back onto D, depending on
+	-- which qualified condition is active - single merged driver for D
+	-- (and for U1OE_n/U1_DIR below), since VHDL doesn't allow two
+	-- separate unconditional concurrent assignments to the same signal.
+	D      <= Register5A_q      when s_io_read_5A_qualified = '1' else
+	          FL_DQ(7 downto 0) when s_flash_read_qualified = '1' else
+	          (others => 'Z');
+	U1OE_n <= not (s_io_read_5A_qualified or s_flash_read_qualified);
+	U1_DIR <= '1' when (s_io_read_5A_qualified = '1' or s_flash_read_qualified = '1') else '0';
 
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,
@@ -639,16 +697,12 @@ begin
 		HEX_DISP		=>	HEX3
 	);
 
-	-- Everything below is NOT USED in this test variant - tied to safe,
-	-- inactive constants. No ROM/Flash/mapper/SRAM feature is exercised.
-	FL_WE_N <= '1';
+	-- FL_WE_N/FL_CE_N/FL_OE_N/FL_ADDR/FL_DQ15_AM1 are now driven above by
+	-- the Flash read window. Everything else below is still NOT USED in
+	-- this test variant - tied to safe, inactive constants.
 	FL_RST_N <= not s_reset;
-	FL_CE_N <= '1';
-	FL_OE_N <= '1';
 	FL_BYTE_N <= '0';
 	FL_WP_N <= '0';
-	FL_ADDR <= (others => '0');
-	FL_DQ15_AM1 <= '0';
 	SD_DAT <= 'Z';
 	DRAM_DQ <= (others => 'Z');
 	SRAM_DQ <= (others => 'Z');
