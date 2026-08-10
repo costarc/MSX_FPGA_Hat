@@ -737,28 +737,30 @@ begin
 		end if;
 	end process;
 
-	-- Real Flash chip in byte mode: DQ15/A-1 becomes the extra low
-	-- address bit, FL_ADDR carries the rest - same convention used (and
-	-- independently verified pin-correct against the DE0 User Manual)
-	-- during the earlier Flash-boot attempt. FL_CE_N/FL_OE_N are gated on
-	-- the RAW (unqualified) read enable, matching the proven DE1
-	-- reference's own Flash timing - only the decision to trust/drive the
-	-- result onto D (below) waits for qualification.
-	FL_DQ15_AM1 <= s_flash_ptr_q(0);
-	FL_ADDR     <= s_flash_ptr_q(22 downto 1);
-	FL_WE_N     <= '1';	-- never write to Flash
-	FL_CE_N     <= not s_io_read_5A_en;
-	FL_OE_N     <= RD_n;
+	-- TEMPORARILY DISABLED for isolation testing: port 0x5B (Register5A_q
+	-- read-back) now ALSO returns 0xFF, even though it uses the exact
+	-- mechanism that worked before Flash was wired up - so something
+	-- about actively enabling the Flash chip elsewhere may be
+	-- interfering with U1/D in general. Tying these back to the same
+	-- safe inactive constants they had before, to test that in isolation
+	-- (port 0x5A's Flash read will not work while this is disabled -
+	-- that's expected and not what's under test right now).
+	FL_DQ15_AM1 <= '0';
+	FL_ADDR     <= (others => '0');
+	FL_WE_N     <= '1';
+	FL_CE_N     <= '1';
+	FL_OE_N     <= '1';
 
-	-- Drive the Flash byte (port 0x5A) or Register5A_q (port 0x5B,
-	-- isolation test) back onto D - single merged driver for D (and for
-	-- U1OE_n/U1_DIR/BUSDIR_n below), since VHDL doesn't allow two separate
-	-- unconditional concurrent assignments to the same signal.
+	-- TIMING TEST: port 0x5B now drives D/U1 immediately off the RAW
+	-- (unqualified) s_io_read_5B_en instead of waiting MIN_PULSE_CYCLES -
+	-- engaging as early as possible, to test whether the qualification
+	-- delay itself is why the CPU never catches valid data. Port 0x5A
+	-- (Flash, currently disabled anyway) is untouched/still qualified.
 	D        <= s_flash_data_q when s_io_read_5A_qualified = '1' else
-	            Register5A_q   when s_io_read_5B_qualified = '1' else
+	            Register5A_q   when s_io_read_5B_en = '1' else
 	            (others => 'Z');
-	U1OE_n   <= not (s_io_read_5A_qualified or s_io_read_5B_qualified);
-	U1_DIR   <= '1' when (s_io_read_5A_qualified = '1' or s_io_read_5B_qualified = '1') else '0';
+	U1OE_n   <= not (s_io_read_5A_qualified or s_io_read_5B_en);
+	U1_DIR   <= '1' when (s_io_read_5A_qualified = '1' or s_io_read_5B_en = '1') else '0';
 	-- REVERTED to tri-stated: driving BUSDIR_n low (matching the
 	-- documented spec and the SDMapper reference) made things WORSE, not
 	-- better - the internal capture (s_flash_data_q) is provably correct
