@@ -289,14 +289,18 @@ architecture behavioural of MSX_FPGA_Top is
 	signal s_io_read_5A_ever_q : std_logic := '0';
 
 	-- ------------------------------------------------------------------------
-	-- FLASH READ WINDOW (new): reading MSX memory 0x9000-0x9FFF returns
+	-- FLASH READ WINDOW (new): reading MSX memory 0x4000-0x4FFF (start of
+	-- page 1, the standard cartridge ROM window - moved here from an
+	-- initial 0x9000 attempt, since page 2 is BASIC's own workspace RAM,
+	-- where our SLTSL_n would never assert while BASIC is running) returns
 	-- real Flash content, linearly mapped from Flash offset 0x000000
-	-- (address - 0x9000). Unlike the Register5A test above (which used an
+	-- (address - 0x4000). Unlike the Register5A test above (which used an
 	-- I/O port for its read side specifically to avoid ever contending
 	-- with real memory), this IS a memory-mapped read in a range real
-	-- system RAM also normally occupies - so it's gated on SLTSL_n (this
-	-- cartridge's slot actually selected), unlike every other test in this
-	-- file, to avoid fighting the real RAM chip for the bus on every
+	-- system RAM/ROM also normally occupies - so it's gated on SLTSL_n
+	-- (this cartridge's slot actually selected), unlike every other test
+	-- in this file, to avoid fighting the real memory device for the bus
+	-- on every
 	-- ordinary BASIC memory access to that page.
 	-- ------------------------------------------------------------------------
 	signal s_sltsl_en : std_logic;
@@ -629,7 +633,12 @@ begin
 	-- ------------------------------------------------------------------------
 	s_sltsl_en <= not SLTSL_n;
 
-	s_flash_read_en <= '1' when s_sltsl_en = '1' and RD_n = '0' and s_A >= x"9000" and s_A <= x"9FFF" else '0';
+	-- 0x4000-0x4FFF (start of page 1, the standard MSX cartridge ROM
+	-- window) instead of 0x9000 - page 2 is where BASIC's own workspace
+	-- RAM lives, so SLTSL_n for our slot would never assert there while
+	-- BASIC is running; page 1 is where SLTSL_n was already confirmed to
+	-- genuinely assert (the earlier "slot ever selected" diagnostic).
+	s_flash_read_en <= '1' when s_sltsl_en = '1' and RD_n = '0' and s_A >= x"4000" and s_A <= x"4FFF" else '0';
 
 	process(CLOCK_50)
 	begin
@@ -653,9 +662,9 @@ begin
 		end if;
 	end process;
 
-	-- Linear map: Flash offset = MSX address - 0x9000, per the user's
-	-- request to read relative to Flash address 0x000000.
-	s_flash_a <= x"000000" + ("00000000" & (s_A - x"9000")) when s_flash_read_en = '1' else (others => '0');
+	-- Linear map: Flash offset = MSX address - 0x4000, so it still reads
+	-- relative to Flash address 0x000000 as requested.
+	s_flash_a <= x"000000" + ("00000000" & (s_A - x"4000")) when s_flash_read_en = '1' else (others => '0');
 
 	-- Real Flash chip in byte mode: DQ15/A-1 becomes the extra low
 	-- address bit, FL_ADDR carries the rest - same convention used (and
