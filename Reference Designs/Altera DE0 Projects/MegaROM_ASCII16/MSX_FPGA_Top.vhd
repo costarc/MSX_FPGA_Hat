@@ -721,11 +721,18 @@ begin
 	D        <= s_flash_data_q when s_io_read_5A_qualified = '1' else (others => 'Z');
 	U1OE_n   <= not s_io_read_5A_qualified;
 	U1_DIR   <= '1' when s_io_read_5A_qualified = '1' else '0';
-	-- BUSDIR_n forced low while actively sending data to the CPU on this
-	-- I/O read (MSX Technical Data Book 1.6.2 - see note above); tri-stated
-	-- otherwise, same as the SDMapper_V2.1b/SDMapper_Top.vhd reference's
-	-- own "BUSDIR_n <= not s_iorq_r_reg" pattern for its I/O reads.
-	BUSDIR_n <= '0' when s_io_read_5A_qualified = '1' else 'Z';
+	-- REVERTED to tri-stated: driving BUSDIR_n low (matching the
+	-- documented spec and the SDMapper reference) made things WORSE, not
+	-- better - the internal capture (s_flash_data_q) is provably correct
+	-- via the HEX display, yet the MSX still got 0xFF with BUSDIR_n
+	-- driven. Since D/U1OE_n/U1_DIR are structurally identical to the
+	-- earlier Register5A mechanism that worked correctly WITHOUT touching
+	-- BUSDIR_n at all, BUSDIR_n is the one real difference - isolating it
+	-- back to tri-stated to test that specifically, rather than assume
+	-- the documented spec's polarity matches this particular interface
+	-- board's actual wiring (WAIT_n/INT_n already needed an inverting
+	-- stage here that the generic spec wouldn't predict either).
+	BUSDIR_n <= 'Z';
 
 	-- s_flash_data_q: re-latches FL_DQ continuously while the qualified
 	-- read holds, same settle-during-access technique as Register5A_q -
