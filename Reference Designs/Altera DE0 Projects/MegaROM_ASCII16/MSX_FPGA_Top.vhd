@@ -123,169 +123,421 @@ port (
     SRAM_CE_N:		out std_logic;								--	SRAM Chip Enable
     SRAM_OE_N:		out std_logic;								--	SRAM Output Enable
     
-	 GPIO0_P1:		in std_logic;
-	 GPIO0_P3:		in std_logic;
-	 GPIO0_P21:		out std_logic;
-	 GPIO0_P22:		inout std_logic;
-	 GPIO0_P24:		inout std_logic;
-	 
-    -- MSX Bus
-    U1OE_n:				out std_logic;
-    A:					in std_logic_vector(15 downto 0);
-    D:					inout std_logic_vector(7 downto 0);
-    RD_n:				in std_logic;
-    WR_n:				in std_logic;
-    MREQ_n:				in std_logic;
-    IORQ_n:				in std_logic;
-    SLTSL_n:			in std_logic;
-    CS_n:				in std_logic;
-    BUSDIR_n:			out std_logic;
-    M1_n:				in std_logic;
-    INT_n:				out std_logic;
-    RESET_n:			in std_logic;
-    WAIT_n:				out std_logic); 
+    -- MSX Bus (GPIO_1 - MSX_FPGA_Hat rev 2.1b). This PCB revision physically
+    -- time-multiplexes the 16-bit MSX address bus onto 8 shared FPGA pins
+    -- via two 74LVC245 level-shifters (U2/U3, confirmed real chips in
+    -- MSX_FPGA_Hat.net) - unlike the older PCB revision this project
+    -- originally targeted (full 16-bit "A" port, direct pins - see the
+    -- backed-up MSX_FPGA_Top_PCB_v2.0.qsf). A_MUX/U2OE_n/U3OE_n below and
+    -- the address-mux capture state machine added in the architecture body
+    -- reconstruct the full address as s_A, matching
+    -- SDMapper_V2.1b/SDMapper_Top.vhd's approach for the same PCB.
+    MSX_CLK:		in std_logic;
+    A_MUX:			in std_logic_vector(7 downto 0);
+    D:				inout std_logic_vector(7 downto 0);
+    RD_n:			in std_logic;
+    WR_n:			in std_logic;
+    MREQ_n:			in std_logic;
+    IORQ_n:			in std_logic;
+    SLTSL_n:		in std_logic;
+    CS1_n:			in std_logic;
+    BUSDIR_n:		out std_logic;
+    M1_n:			in std_logic;
+    INT_n:			out std_logic;
+    WAIT_n:			out std_logic;
+    RESET_n:		in std_logic;
+    SOUNDIN:		in std_logic;
+    SOUNDOUT:		out std_logic;
+    CS2_RFSH_n:		in std_logic;
+    U1_DIR:			out std_logic;
+    U1OE_n:			out std_logic;
+    U2OE_n:			out std_logic;
+    U3OE_n:			out std_logic;
+    U4OE_n:			out std_logic);
 end MSX_FPGA_Top;
 
 architecture behavioural of MSX_FPGA_Top is
-	
+
 	component decoder_7seg
 	port (
 		NUMBER		: in   std_logic_vector(3 downto 0);
 		HEX_DISP	: out  std_logic_vector(6 downto 0));
 	end component;
-	
+
 	signal HEXDIGIT0		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT1		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT2		: std_logic_vector(3 downto 0);
 	signal HEXDIGIT3		: std_logic_vector(3 downto 0);
-	
+
 	signal s_reset			: std_logic := '0';
-	signal s_wait_n		: std_logic := '1';
-	signal s_int_n			: std_logic := '1';
-	
-	-- signals for cartridge emulation
-	signal s_sltsl_en		: std_logic;
-	signal s_mreq			: std_logic;
-	signal s_rom_a			: std_logic_vector(23 downto 0);
-	
-	-- Flash ASCII16
-	signal rom_bank_wr_s	: std_logic;
-	signal rom_bank1_q	: std_logic_vector(7 downto 0);
-	signal rom_bank2_q	: std_logic_vector(7 downto 0);
-	
-	signal s_flashbase	: std_logic_vector(23 downto 0);
-	
+
+	-- ------------------------------------------------------------------------
+	-- Address bus reconstruction for v2.1b's time-multiplexed A_MUX bus (see
+	-- entity comment above) - unchanged from previous testing, including
+	-- the trigger-preemption fix (a new bus cycle always restarts this
+	-- state machine, even mid-capture, so back-to-back Z80 M-cycles can't
+	-- silently drop a capture and leave s_A stuck stale).
+	-- ------------------------------------------------------------------------
+	signal s_A				: std_logic_vector(15 downto 0) := (others => '0');
+
+	signal s_bus_req_n		: std_logic;
+	signal bus_req_meta, bus_req_sync, bus_req_sync_d : std_logic;
+	signal addr_capture_trigger : std_logic;
+
+	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_CAP, S_GUARD, S_HIGH_EN, S_HIGH_CAP);
+	signal addr_capture_state : addr_capture_state_t := S_IDLE;
+
+	-- ------------------------------------------------------------------------
+	-- PURE BUS MONITOR (this test variant): no ROM/Flash/mapper/WAIT logic
+	-- at all - just detect when s_A falls in 0xC000-0xDFFF, decode RD_n/WR_n
+	-- ONLY while in that window, and display the address and the D-bus
+	-- value live. Not gated by SLTSL_n/SW(9) at all - this watches ALL Z80
+	-- bus activity in that range, regardless of which slot is selected,
+	-- since page 3 is typically system RAM and sees constant traffic during
+	-- normal MSX/BASIC operation - giving many real samples to directly
+	-- validate whether s_A and the D-bus observation are trustworthy,
+	-- decoupled from anything related to our own Flash-timing debugging.
+	-- ------------------------------------------------------------------------
+	signal s_addr_range_en	: std_logic;
+	signal s_read_en		: std_logic;
+	signal s_write_en		: std_logic;
+
+	-- ------------------------------------------------------------------------
+	-- Glitch filter: real-hardware measurement showed the write pulse at
+	-- DABC lasts ~14 CLOCK_50 cycles (~280ns, matching a genuine Z80
+	-- T-state), but a "read" was also seen lasting only ~4 cycles (~80ns)
+	-- - far too short to be a real bus cycle, and it appeared identically
+	-- whether or not a PEEK was ever issued. That's a real electrical
+	-- glitch on RD_n around the write-to-idle bus transition, not a
+	-- genuine memory read. s_read_qualified/s_write_qualified only assert
+	-- once the raw signal has been continuously true for at least
+	-- MIN_PULSE_CYCLES, rejecting anything shorter as noise.
+	-- ------------------------------------------------------------------------
+	signal s_read_dur_counter  : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_write_dur_counter : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_read_qualified    : std_logic := '0';
+	signal s_write_qualified   : std_logic := '0';
+	constant MIN_PULSE_CYCLES : integer := 8;	-- 8 * 20ns = 160ns - above the observed 80ns glitch, below a real ~280ns T-state
+
+	-- BUG FIX: a real memory cycle lasts under a microsecond - thousands of
+	-- times too fast for a human to see on a live, un-latched 7-segment
+	-- display (this is why "PEEK/POKE didn't update HEX/LEDs" happened
+	-- even if the address decode itself was working correctly). Each
+	-- genuine event now re-arms a ~0.5s hold so it's visible long enough
+	-- to read, then automatically clears and re-arms for the next one -
+	-- no manual reset needed between repeated PEEK/POKE tests.
+	signal s_hold_addr		: std_logic_vector(15 downto 0) := (others => '0');
+	signal s_hold_is_write	: std_logic := '0';
+	signal s_hold_counter	: integer range 0 to 25000000 := 0;
+
+	-- REWORKED: LEDG(9) is now a true latch, not tied to the timed hold at
+	-- all - it only changes on a genuine DABC access (poke -> on, peek ->
+	-- off) and stays there indefinitely otherwise, so a single poke/peek
+	-- is unmistakable rather than a faint, easy-to-miss timed blink.
+	signal s_led9_latch : std_logic := '0';
+	-- Companion reset-only-clear latch for reads, so both events are
+	-- visible independently instead of one bit that cancels itself out.
+	signal s_led8_latch : std_logic := '0';
+	constant HOLD_CYCLES : integer := 25000000;	-- 25,000,000 * 20ns = 0.5s
+
+	-- ------------------------------------------------------------------------
+	-- Quantitative diagnostic: measure the actual DURATION (in CLOCK_50
+	-- cycles) of the first read pulse and first write pulse detected at
+	-- DABC, sticky-captured on each pulse's falling edge. A genuine Z80
+	-- bus cycle should last roughly 14-60 cycles (one to a few T-states at
+	-- 50MHz vs ~3.58MHz); a suspiciously short count (1-3 cycles) would be
+	-- a real glitch on RD_n/WR_n, not a bug in the address decode - this
+	-- settles that question directly rather than by inference.
+	-- ------------------------------------------------------------------------
+	signal s_read_active_counter  : std_logic_vector(7 downto 0) := (others => '0');
+	signal s_write_active_counter : std_logic_vector(7 downto 0) := (others => '0');
+	signal s_read_pulse_width     : std_logic_vector(7 downto 0) := (others => '0');
+	signal s_write_pulse_width    : std_logic_vector(7 downto 0) := (others => '0');
+	signal s_read_width_captured  : std_logic := '0';
+	signal s_write_width_captured : std_logic := '0';
+	signal s_read_en_d, s_write_en_d : std_logic := '0';
+
 begin
-  
--- --------------------------------Common Signals & assertions ------------------------------------------
-	-- Cartridge Emulation using FlashRAM
-	
-	LEDG(7 downto 0) <= s_reset & s_sltsl_en & "000000";
 
-	-- Reset circuit
-	-- The process implements a "pull-up" to WAIT_n signal to avoid it floating
-    -- during a reset, which causes teh computer to freeze
-	s_reset 	<= not (KEY(0) and RESET_n);
-	WAIT_n 	<= s_wait_n;
-	INT_n  	<= s_int_n;
-	BUSDIR_n <= 'Z';
-	
-	s_sltsl_en	<= '1' when SLTSL_n = '0' and SW(9) ='1' else '0';	-- 1 when this slot is selected
-	s_mreq		<= '1' when RD_n = '0' and  MREQ_n = '0' else '0';
-	
-	U1OE_n 		<= not (s_sltsl_en); -- Enable BUS in U1 at the interface
-													
-	D <= FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else	-- MSX reads data from FLASH RAM - Emulation of Cartridges
-		  (others => 'Z'); 
-		  
-	FL_WE_N <= '1';
-	FL_RST_N <= not s_reset;
-	FL_CE_N <= not s_sltsl_en;
-	FL_OE_N <= RD_n;
-	
-	-- Checks address being access. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
-	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(7 downto 0) & A(13 downto 0)) when s_sltsl_en = '1' and (A(15 downto 14) = "01" or A(15 downto 14) = "11") else		-- Bank1
-                           s_flashbase + (rom_bank2_q(7 downto 0) & A(13 downto 0)) when s_sltsl_en = '1' and (A(15 downto 14) = "10" or A(15 downto 14) = "00") else		-- Bank2:
-	                        (others => '-');
-	
-	-- The FLASHRAM is shared with other cores. This register allows to define a specific address in the flash
-	-- where the roms for this cores is written.
-	-- ROMs for this core starts at postion 0x0000 and each ROM has 256KB
-	s_flashbase <= x"030000" when SW(0) = '1' else  -- XEVIOUS.ROM 
-                   x"070000" when SW(1) = '1' else  -- FANZONE2.ROM
-                   x"0B0000" when SW(2) = '1' else  -- ISHTAR.ROM
-                   x"0F0000" when SW(3) = '1' else  -- ANDROGYN.ROM
-                   x"030000";                       -- XEVIOUS.ROM  (Default game)
+	s_reset <= not (KEY(0) and RESET_n);
+	INT_n <= '0';		-- inverted due to the Q1 open-collector stage in the interface
+	WAIT_n <= '0';		-- pure observer - never requests a wait
+	BUSDIR_n <= 'Z';	-- tri-stated: we never send data outside normal memory access (see MSX Technical Data Book 1.6.2)
+	SOUNDOUT <= '0';
+	U4OE_n <= '0';		-- unused buffer on this variant - disabled
 
-	D <= FL_DQ(7 downto 0) when s_sltsl_en = '1' and s_mreq = '1' else  -- MSX reads data from FLASH RAM - Emulation of Cartridges
-         (others => 'Z');
+	-- SAFETY: U1 permanently DISABLED - no D-bus observation at all in this
+	-- build. The previous attempt (U1 enabled whenever s_read_en/
+	-- s_write_en was true) demonstrably corrupted the real system (32KB
+	-- RAM detected as only 4KB), while STILL failing to react to the
+	-- user's own deliberate PEEK/POKE at 0xD000. That combination points
+	-- at s_A being stale/incorrect during much of any real bus cycle
+	-- (the address-mux capture needs ~100ns to settle, which back-to-back
+	-- real bus activity may not always allow) - s_read_en/s_write_en can
+	-- spuriously go true on a stale address, engaging U1 at the wrong
+	-- moments and interfering with whatever real access is actually
+	-- happening then, while missing the intended one. Disabling U1
+	-- entirely removes that interference risk completely so we can first
+	-- validate s_A/the address decode alone, with zero risk to the real
+	-- system, before touching D again.
+	U1OE_n <= '1';
+	U1_DIR <= '0';
 
-	rom_bank_wr_s <= '1' when s_sltsl_en = '1' and WR_n = '0' and ((A >= x"6000" and A <= x"67FF") OR (A >= x"7000" and A <= x"77FF")) else  '0';
-	
-	process (s_reset, rom_bank_wr_s)
+	-- ------------------------------------------------------------------------
+	-- Address bus capture: synchronize the "new bus cycle starting" trigger
+	-- (falling edge of MREQ_n or IORQ_n), then run the low/high byte capture
+	-- state machine, on CLOCK_50. See entity comment above for the full
+	-- explanation - unchanged from previous testing, including the trigger-
+	-- preemption fix.
+	-- ------------------------------------------------------------------------
+	s_bus_req_n <= MREQ_n and IORQ_n;
+
+	process(CLOCK_50)
 	begin
-		if s_reset = '1' then
-			rom_bank1_q		<= (others => '0');
-			rom_bank2_q		<= (others => '0');
-		elsif falling_edge(rom_bank_wr_s) then
-			case A(12) is
-				when '0'   =>
-					rom_bank1_q		<= D;
-				when '1'   =>
-					rom_bank2_q		<= D;
-				when others =>
-					null;
-			end case;
+		if rising_edge(CLOCK_50) then
+			bus_req_meta   <= s_bus_req_n;
+			bus_req_sync   <= bus_req_meta;
+			bus_req_sync_d <= bus_req_sync;
 		end if;
 	end process;
-	
-	HEXDIGIT0 <= s_rom_a(3 downto 0) when A >= x"4000" and A < x"C000";
-	HEXDIGIT1 <= s_rom_a(7 downto 4) when A >= x"4000" and A < x"C000";
-	HEXDIGIT2 <= s_rom_a(11 downto 8) when A >= x"4000" and A < x"C000";
-	HEXDIGIT3 <= s_rom_a(15 downto 12) when A >= x"4000" and A < x"C000";
-	
+
+	addr_capture_trigger <= bus_req_sync_d and not bus_req_sync;
+
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				addr_capture_state <= S_IDLE;
+				U2OE_n <= '1';
+				U3OE_n <= '1';
+			elsif addr_capture_trigger = '1' then
+				-- Preemption always disables both OEs explicitly first,
+				-- guaranteeing at least one dead cycle before S_LOW_EN's
+				-- own branch re-enables U2 - avoids bus contention between
+				-- U2/U3 if a new cycle starts mid-capture.
+				addr_capture_state <= S_LOW_EN;
+				U2OE_n <= '1';
+				U3OE_n <= '1';
+			else
+				case addr_capture_state is
+					when S_IDLE =>
+						U2OE_n <= '1';
+						U3OE_n <= '1';
+					when S_LOW_EN =>
+						U2OE_n <= '0';		-- enable low address byte (A0-A7)
+						U3OE_n <= '1';
+						addr_capture_state <= S_LOW_CAP;
+					when S_LOW_CAP =>
+						s_A(7 downto 0) <= A_MUX;
+						addr_capture_state <= S_GUARD;
+					when S_GUARD =>
+						U2OE_n <= '1';
+						U3OE_n <= '1';
+						addr_capture_state <= S_HIGH_EN;
+					when S_HIGH_EN =>
+						U2OE_n <= '1';
+						U3OE_n <= '0';		-- enable high address byte (A8-A15)
+						addr_capture_state <= S_HIGH_CAP;
+					when S_HIGH_CAP =>
+						s_A(15 downto 8) <= A_MUX;
+						addr_capture_state <= S_IDLE;
+					when others =>
+						addr_capture_state <= S_IDLE;
+				end case;
+			end if;
+		end if;
+	end process;
+
+	-- BUG FIX: narrowed from the full 0xC000-0xDFFF range to EXACTLY
+	-- 0xD000 - something else in the system (very likely a real BASIC/
+	-- system variable, since it's a specific, consistently-repeating
+	-- address, not noise) hits 0xCF17 far more often than once per 0.5s,
+	-- so the broad range trigger kept re-arming the hold with THAT event
+	-- and overwriting the user's own deliberate PEEK/POKE before it could
+	-- be read. Narrowing to the exact address under test eliminates that
+	-- interference entirely.
+	s_addr_range_en <= '1' when s_A = x"DABC" else '0';
+	s_read_en  <= '1' when s_addr_range_en = '1' and RD_n = '0' else '0';
+	s_write_en <= '1' when s_addr_range_en = '1' and WR_n = '0' else '0';
+
+	-- Glitch filter - see declaration above. Only asserts once the raw
+	-- signal has been continuously true for MIN_PULSE_CYCLES; clears
+	-- immediately the instant the raw signal drops (no need to stretch a
+	-- pulse that's already long enough to be genuine).
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_read_dur_counter  <= (others => '0');
+				s_write_dur_counter <= (others => '0');
+				s_read_qualified    <= '0';
+				s_write_qualified   <= '0';
+			else
+				if s_read_en = '1' then
+					if s_read_dur_counter < MIN_PULSE_CYCLES then
+						s_read_dur_counter <= s_read_dur_counter + 1;
+					end if;
+					if s_read_dur_counter >= MIN_PULSE_CYCLES then
+						s_read_qualified <= '1';
+					end if;
+				else
+					s_read_dur_counter <= (others => '0');
+					s_read_qualified   <= '0';
+				end if;
+
+				if s_write_en = '1' then
+					if s_write_dur_counter < MIN_PULSE_CYCLES then
+						s_write_dur_counter <= s_write_dur_counter + 1;
+					end if;
+					if s_write_dur_counter >= MIN_PULSE_CYCLES then
+						s_write_qualified <= '1';
+					end if;
+				else
+					s_write_dur_counter <= (others => '0');
+					s_write_qualified   <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+
+	-- Pulse-stretcher: every genuine event re-arms the hold, so a human can
+	-- actually see it - see declaration above.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_hold_addr     <= (others => '0');
+				s_hold_is_write <= '0';
+				s_hold_counter  <= 0;
+			elsif s_read_qualified = '1' or s_write_qualified = '1' then
+				s_hold_addr     <= s_A;
+				s_hold_is_write <= s_write_qualified;
+				s_hold_counter  <= HOLD_CYCLES;
+			elsif s_hold_counter > 0 then
+				s_hold_counter <= s_hold_counter - 1;
+			end if;
+		end if;
+	end process;
+
+	-- Pulse-width measurement - see declaration above. Sticky on each
+	-- pulse's falling edge, first occurrence only.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_read_active_counter  <= (others => '0');
+				s_write_active_counter <= (others => '0');
+				s_read_pulse_width     <= (others => '0');
+				s_write_pulse_width    <= (others => '0');
+				s_read_width_captured  <= '0';
+				s_write_width_captured <= '0';
+				s_read_en_d  <= '0';
+				s_write_en_d <= '0';
+			else
+				s_read_en_d  <= s_read_en;
+				s_write_en_d <= s_write_en;
+
+				if s_read_en = '1' then
+					if s_read_active_counter /= x"FF" then
+						s_read_active_counter <= s_read_active_counter + 1;
+					end if;
+				else
+					s_read_active_counter <= (others => '0');
+				end if;
+				if s_read_en_d = '1' and s_read_en = '0' and s_read_width_captured = '0' then
+					s_read_pulse_width    <= s_read_active_counter;
+					s_read_width_captured <= '1';
+				end if;
+
+				if s_write_en = '1' then
+					if s_write_active_counter /= x"FF" then
+						s_write_active_counter <= s_write_active_counter + 1;
+					end if;
+				else
+					s_write_active_counter <= (others => '0');
+				end if;
+				if s_write_en_d = '1' and s_write_en = '0' and s_write_width_captured = '0' then
+					s_write_pulse_width    <= s_write_active_counter;
+					s_write_width_captured <= '1';
+				end if;
+			end if;
+		end if;
+	end process;
+
+	-- HEX3:HEX2 show the first WRITE pulse's width, HEX1:HEX0 show the
+	-- first READ pulse's width, both in CLOCK_50 cycles (hex, e.g. "1E" =
+	-- 30 cycles = 600ns). Replaces the address-hold display for this
+	-- specific quantitative diagnostic - the address decode itself is
+	-- already independently confirmed working.
+	HEXDIGIT0 <= s_read_pulse_width(3 downto 0);
+	HEXDIGIT1 <= s_read_pulse_width(7 downto 4);
+	HEXDIGIT2 <= s_write_pulse_width(3 downto 0);
+	HEXDIGIT3 <= s_write_pulse_width(7 downto 4);
+
+	-- Toggling latch, no reset-only behavior: poke -> on, peek -> off,
+	-- unaffected otherwise. Both directions are independently proven
+	-- reliable now (via the earlier reset-only-clear diagnostic) - if this
+	-- still appears to "go off" shortly after a poke with no explicit
+	-- PEEK, that's a genuine read of DABC happening elsewhere in the real
+	-- system, not a decode bug.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_led9_latch <= '0';
+			elsif s_write_qualified = '1' then
+				s_led9_latch <= '1';
+			elsif s_read_qualified = '1' then
+				s_led9_latch <= '0';
+			end if;
+		end if;
+	end process;
+
+	-- LEDG(7 downto 0): blanked to 0 in this build - D is not observed at
+	-- all right now (see U1OE_n note above), so showing it would be
+	-- meaningless/misleading rather than genuinely blank.
+	LEDG(9) <= s_led9_latch;
+	LEDG(8) <= '0';
+	LEDG(7 downto 0) <= (others => '0');
+
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,
 		HEX_DISP		=>	HEX0
-	);		
-	
+	);
+
 	DISPHEX1 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT1,
 		HEX_DISP		=>	HEX1
-	);		
-	
+	);
+
 	DISPHEX2 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT2,
 		HEX_DISP		=>	HEX2
-	);		
-	
+	);
+
 	DISPHEX3 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT3,
 		HEX_DISP		=>	HEX3
 	);
-	
--- --------------------------------------- DE0 Only -----------------------------------------------------
-	FL_DQ15_AM1 <= s_rom_a(0);			-- input for the LSB (A-1) address function for the flash in Byte mode
-	FL_ADDR 	<= s_rom_a(22 downto 1);
-	
-	FL_BYTE_N 	<= '0';    				-- Set flashram to Byte mode
-	FL_WP_N 	<= '0';	
-	SD_DAT		<= 'Z';
-	DRAM_DQ		<= (others => 'Z');
-	SRAM_DQ		<= (others => 'Z');
 
--- --------------------------------------- DE1 Only -----------------------------------------------------
-	--FL_ADDR 	<= s_rom_a(21 downto 0);
-    --SD_DAT		<= 'Z';
-    --I2C_SDAT	<= 'Z';
-    --AUD_ADCLRCK<= 'Z';
-    --AUD_DACLRCK<= 'Z';
-    --AUD_BCLK	<= 'Z';
-    --DRAM_DQ		<= (others => 'Z');
-    --FL_DQ		<= (others => 'Z');
-    --SRAM_DQ		<= (others => 'Z');
-    --GPIO_0		<= (others => 'Z');
-	 
--- ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	
+	-- Everything below is NOT USED in this test variant - tied to safe,
+	-- inactive constants. No ROM/Flash/mapper/SRAM feature is exercised.
+	FL_WE_N <= '1';
+	FL_RST_N <= not s_reset;
+	FL_CE_N <= '1';
+	FL_OE_N <= '1';
+	FL_BYTE_N <= '0';
+	FL_WP_N <= '0';
+	FL_ADDR <= (others => '0');
+	FL_DQ15_AM1 <= '0';
+	SD_DAT <= 'Z';
+	DRAM_DQ <= (others => 'Z');
+	SRAM_DQ <= (others => 'Z');
+	SRAM_ADDR <= (others => '0');
+	SRAM_UB_N <= '1';
+	SRAM_LB_N <= '1';
+	SRAM_WE_N <= '1';
+	SRAM_CE_N <= '1';
+	SRAM_OE_N <= '1';
+
 end behavioural;

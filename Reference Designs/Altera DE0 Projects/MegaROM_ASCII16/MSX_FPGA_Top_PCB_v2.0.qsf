@@ -53,56 +53,49 @@ set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
 set_location_assignment PIN_G21 -to CLOCK_50
 set_location_assignment PIN_B12 -to CLOCK_50_2
 # --
-# --------------------------------------------------------------------------
-# DE0 GPIO_1 (J5) - MSX bus (IDC1 on MSX_FPGA_Hat rev 2.1b). This PCB
-# revision physically time-multiplexes the 16-bit MSX address bus onto 8
-# shared FPGA pins via two 74LVC245 level-shifters (U2/U3, confirmed real
-# hardware chips in MSX_FPGA_Hat.net) - unlike the older PCB revision this
-# project originally targeted (backed up as MSX_FPGA_Top_PCB_v2.0.qsf),
-# which apparently wired the full 16-bit address directly. Pin assignments
-# below are copied verbatim from the verified v2.1b mapping in
-# "Reference Designs/Altera DE0 Projects/SDMapper_V2.1b/SDMapper.qsf" - do
-# not derive these independently; see that file's header comment for the
-# verification history.
-# --------------------------------------------------------------------------
-set_location_assignment PIN_AB11 -to MSX_CLK
-set_location_assignment PIN_AA20 -to RESET_n
-set_location_assignment PIN_AA11 -to CS1_n
-set_location_assignment PIN_AB20 -to RD_n
-set_location_assignment PIN_AA19 -to WAIT_n
-set_location_assignment PIN_AB19 -to CS2_RFSH_n
-set_location_assignment PIN_AB18 -to SOUNDIN
-set_location_assignment PIN_AA18 -to SOUNDOUT
-set_location_assignment PIN_AA17 -to M1_n
-set_location_assignment PIN_AB17 -to U4OE_n
-set_location_assignment PIN_Y17 -to MREQ_n
-set_location_assignment PIN_W17 -to SLTSL_n
-set_location_assignment PIN_U15 -to WR_n
-set_location_assignment PIN_T15 -to IORQ_n
-set_location_assignment PIN_W15 -to A_MUX[4]
-set_location_assignment PIN_V15 -to U3OE_n
-set_location_assignment PIN_R16 -to BUSDIR_n
-set_location_assignment PIN_AB9 -to A_MUX[5]
-set_location_assignment PIN_T16 -to INT_n
-set_location_assignment PIN_AA9 -to A_MUX[2]
-set_location_assignment PIN_AA7 -to A_MUX[3]
-set_location_assignment PIN_AB7 -to U2OE_n
-set_location_assignment PIN_T14 -to A_MUX[1]
-set_location_assignment PIN_R14 -to A_MUX[0]
-set_location_assignment PIN_U12 -to A_MUX[7]
-set_location_assignment PIN_T12 -to A_MUX[6]
-set_location_assignment PIN_R11 -to D[6]
-set_location_assignment PIN_R12 -to D[7]
-set_location_assignment PIN_U10 -to D[4]
-set_location_assignment PIN_T10 -to D[5]
-set_location_assignment PIN_U9 -to D[2]
-set_location_assignment PIN_T9 -to D[3]
-set_location_assignment PIN_Y7 -to U1_DIR
-set_location_assignment PIN_U8 -to U1OE_n
-set_location_assignment PIN_V6 -to D[1]
-set_location_assignment PIN_V7 -to D[0]
+set_location_assignment	PIN_AB11 -to RESET_n
+set_location_assignment	PIN_AA20 -to M1_n
+set_location_assignment	PIN_AA11 -to CS_n
+set_location_assignment	PIN_AB20 -to SLTSL_n
+set_location_assignment	PIN_AA19 -to BUSDIR_n
+set_location_assignment	PIN_AB19 -to MREQ_n
+set_location_assignment	PIN_AB18 -to U1OE_n
+set_location_assignment	PIN_AA18 -to RD_n
+set_location_assignment	PIN_AA17 -to IORQ_n
+set_location_assignment	PIN_T16	-to	INT_n
+set_location_assignment	PIN_R16	-to	WAIT_n
+set_location_assignment	PIN_Y17	-to	WR_n
+set_location_assignment	PIN_U12	-to	A[0] 
+set_location_assignment	PIN_R11	-to	A[1]
+set_location_assignment	PIN_U10	-to	A[2] 
+set_location_assignment	PIN_U9 -to A[3] 
+set_location_assignment	PIN_Y7 -to A[4] 
+set_location_assignment	PIN_V6 -to A[5] 
+set_location_assignment	PIN_T15	-to	A[6] 
+set_location_assignment	PIN_AB9	-to	A[7] 
+set_location_assignment	PIN_W17	-to	A[8]
+set_location_assignment	PIN_U15	-to	A[9]
+set_location_assignment	PIN_V15	-to	A[10] 
+set_location_assignment	PIN_W15	-to	A[11] 
+set_location_assignment	PIN_AA9	-to	A[12] 
+set_location_assignment	PIN_AA7	-to	A[13] 
+set_location_assignment	PIN_T14	-to	A[14] 
+set_location_assignment	PIN_AB17 -to A[15] 
+set_location_assignment	PIN_AB7	-to	D[0] 
+set_location_assignment	PIN_R14	-to	D[1] 
+set_location_assignment	PIN_T12	-to	D[2] 
+set_location_assignment	PIN_R12	-to	D[3] 
+set_location_assignment	PIN_T10	-to	D[4] 
+set_location_assignment	PIN_T9 -to D[5] 
+set_location_assignment	PIN_U8 -to D[6] 
+set_location_assignment	PIN_V7 -to D[7]
 # --
-set_location_assignment	PIN_AB3	-to	SRAM_LB_n
+set_location_assignment	PIN_AB12 -to GPIO0_P1 
+set_location_assignment	PIN_AA3	-to	GPIO0_P21 
+set_location_assignment	PIN_AA4	-to	GPIO0_P22 
+set_location_assignment	PIN_U14	-to	GPIO0_P24 
+set_location_assignment	PIN_AA12 -to GPIO0_P3 
+set_location_assignment	PIN_AB3	-to	SRAM_LB_n 
 set_location_assignment	PIN_AB5	-to	SRAM_OE_n 
 set_location_assignment	PIN_AB4	-to	SRAM_UB_n
 set_location_assignment	PIN_V8	-to	SRAM_WE_n
@@ -544,42 +537,47 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SRAM_WE_n
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SRAM_OE_n
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SRAM_UB_n
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SRAM_LB_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to MSX_CLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_P1
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_P3
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_P21
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_P22
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_P24
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CS_n
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RESET_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CS1_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RD_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to WAIT_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CS2_RFSH_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SOUNDIN
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SOUNDOUT
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to M1_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to U4OE_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to MREQ_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SLTSL_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to WR_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to IORQ_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[4]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to U3OE_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BUSDIR_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to INT_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to U2OE_n
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A_MUX[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to WAIT_n
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[4]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[5]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to U1_DIR
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to U1OE_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[14]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to D[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[10]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[11]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[9]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[8]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to WR_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to A[15]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to IORQ_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RD_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to U1OE_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to MREQ_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to BUSDIR_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SLTSL_n
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to M1_n
 # --
 set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
 set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
