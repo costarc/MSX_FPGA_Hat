@@ -289,26 +289,38 @@ architecture behavioural of MSX_FPGA_Top is
 	signal s_io_read_5A_ever_q : std_logic := '0';
 
 	-- ------------------------------------------------------------------------
-	-- FLASH READ WINDOW (new): reading MSX memory 0x4000-0x4FFF (start of
-	-- page 1, the standard cartridge ROM window - moved here from an
-	-- initial 0x9000 attempt, since page 2 is BASIC's own workspace RAM,
-	-- where our SLTSL_n would never assert while BASIC is running) returns
-	-- real Flash content, linearly mapped from Flash offset 0x000000
-	-- (address - 0x4000). Unlike the Register5A test above (which used an
-	-- I/O port for its read side specifically to avoid ever contending
-	-- with real memory), this IS a memory-mapped read in a range real
-	-- system RAM/ROM also normally occupies - so it's gated on SLTSL_n
-	-- (this cartridge's slot actually selected), unlike every other test
-	-- in this file, to avoid fighting the real memory device for the bus
-	-- on every
-	-- ordinary BASIC memory access to that page.
+	-- FLASH READ VIA I/O PORT (replaces the earlier 0x4000-0x4FFF
+	-- memory-window attempt - that approach depended on SLTSL_n actually
+	-- asserting for this cartridge's slot on page 1, which turned out to
+	-- read whatever ROM/RAM the system already had mapped there instead.
+	-- An I/O port has no such dependency: real RAM/ROM chips only respond
+	-- to MREQ_n, never IORQ_n, so port 0x5A can never contend with them -
+	-- exactly why the Register5A test's read side already worked reliably
+	-- without any slot-selection concern.
+	--
+	--   - Write port 0x5A -> reset s_flash_ptr_q (the Flash address
+	--     pointer) to 0x000000.
+	--   - Read port 0x5A  -> drive Flash[s_flash_ptr_q] onto D, then
+	--     increment s_flash_ptr_q by 1 - but only AFTER the read cycle has
+	--     genuinely finished (on qualified-read's falling edge), so the
+	--     pointer can't change mid-access and hand the CPU the wrong byte
+	--     right before it samples. Repeated reads walk sequentially
+	--     through Flash from address 0.
 	-- ------------------------------------------------------------------------
-	signal s_sltsl_en : std_logic;
+	signal s_flash_ptr_q : std_logic_vector(23 downto 0) := (others => '0');
 
-	signal s_flash_read_en        : std_logic;
-	signal s_flash_read_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
-	signal s_flash_read_qualified : std_logic := '0';
-	signal s_flash_a : std_logic_vector(23 downto 0);
+	signal s_io_5A_write_en        : std_logic;
+	signal s_io_5A_write_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_io_5A_write_qualified : std_logic := '0';
+	signal s_io_read_5A_qualified_d : std_logic := '0';
+
+	-- Live displays, per user request: HEX0-3 show the pointer address
+	-- (low 16 bits - enough to see it walking forward), LEDG(7:0) shows
+	-- the last byte actually read from Flash. Replaces the earlier
+	-- DABC-pulse-width HEX display and Register5A_q's LEDG(7:0) display -
+	-- both underlying tests/latches are untouched, only what's SHOWN
+	-- changes, since this is now the test in focus.
+	signal s_flash_data_q : std_logic_vector(7 downto 0) := (others => '0');
 
 begin
 
@@ -512,10 +524,14 @@ begin
 	-- 30 cycles = 600ns). Replaces the address-hold display for this
 	-- specific quantitative diagnostic - the address decode itself is
 	-- already independently confirmed working.
-	HEXDIGIT0 <= s_read_pulse_width(3 downto 0);
-	HEXDIGIT1 <= s_read_pulse_width(7 downto 4);
-	HEXDIGIT2 <= s_write_pulse_width(3 downto 0);
-	HEXDIGIT3 <= s_write_pulse_width(7 downto 4);
+	-- Shows the Flash pointer's low 16 bits (s_flash_ptr_q) instead of the
+	-- DABC pulse-width diagnostic, per user request - the pulse-width
+	-- registers themselves are untouched, just no longer displayed, since
+	-- the Flash-pointer test is the one in focus now.
+	HEXDIGIT0 <= s_flash_ptr_q(3 downto 0);
+	HEXDIGIT1 <= s_flash_ptr_q(7 downto 4);
+	HEXDIGIT2 <= s_flash_ptr_q(11 downto 8);
+	HEXDIGIT3 <= s_flash_ptr_q(15 downto 12);
 
 	-- Toggling latch, no reset-only behavior: poke -> on, peek -> off,
 	-- unaffected otherwise. Both directions are independently proven
@@ -613,7 +629,7 @@ begin
 	end process;
 
 	-- Latched "was port 0x5A ever read" - confirms the I/O decode path
-	-- fires at all, independent of Register5A_q's actual value.
+	-- fires at all, independent of what it returns.
 	process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
@@ -626,65 +642,95 @@ begin
 	end process;
 
 	LEDG(8)          <= s_io_read_5A_ever_q;
-	LEDG(7 downto 0) <= Register5A_q;	-- live view of the latched register value
+	LEDG(7 downto 0) <= s_flash_data_q;	-- live view of the last byte read from Flash (Register5A_q's own latch is unchanged, just no longer displayed)
 
 	-- ------------------------------------------------------------------------
-	-- FLASH READ WINDOW logic - see declarations above.
+	-- FLASH READ VIA I/O PORT logic - see declarations above.
 	-- ------------------------------------------------------------------------
-	s_sltsl_en <= not SLTSL_n;
 
-	-- 0x4000-0x4FFF (start of page 1, the standard MSX cartridge ROM
-	-- window) instead of 0x9000 - page 2 is where BASIC's own workspace
-	-- RAM lives, so SLTSL_n for our slot would never assert there while
-	-- BASIC is running; page 1 is where SLTSL_n was already confirmed to
-	-- genuinely assert (the earlier "slot ever selected" diagnostic).
-	s_flash_read_en <= '1' when s_sltsl_en = '1' and RD_n = '0' and s_A >= x"4000" and s_A <= x"4FFF" else '0';
+	-- Write trigger: same port 0x5A, WR_n instead of RD_n. Any write
+	-- resets the pointer - the value written doesn't matter.
+	s_io_5A_write_en <= '1' when IORQ_n = '0' and WR_n = '0' and M1_n = '1' and s_A(7 downto 0) = x"5A" else '0';
 
 	process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
 			if s_reset = '1' then
-				s_flash_read_dur_cnt   <= (others => '0');
-				s_flash_read_qualified <= '0';
+				s_io_5A_write_dur_cnt   <= (others => '0');
+				s_io_5A_write_qualified <= '0';
 			else
-				if s_flash_read_en = '1' then
-					if s_flash_read_dur_cnt < MIN_PULSE_CYCLES then
-						s_flash_read_dur_cnt <= s_flash_read_dur_cnt + 1;
+				if s_io_5A_write_en = '1' then
+					if s_io_5A_write_dur_cnt < MIN_PULSE_CYCLES then
+						s_io_5A_write_dur_cnt <= s_io_5A_write_dur_cnt + 1;
 					end if;
-					if s_flash_read_dur_cnt >= MIN_PULSE_CYCLES then
-						s_flash_read_qualified <= '1';
+					if s_io_5A_write_dur_cnt >= MIN_PULSE_CYCLES then
+						s_io_5A_write_qualified <= '1';
 					end if;
 				else
-					s_flash_read_dur_cnt   <= (others => '0');
-					s_flash_read_qualified <= '0';
+					s_io_5A_write_dur_cnt   <= (others => '0');
+					s_io_5A_write_qualified <= '0';
 				end if;
 			end if;
 		end if;
 	end process;
 
-	-- Linear map: Flash offset = MSX address - 0x4000, so it still reads
-	-- relative to Flash address 0x000000 as requested.
-	s_flash_a <= x"000000" + ("00000000" & (s_A - x"4000")) when s_flash_read_en = '1' else (others => '0');
+	-- s_flash_ptr_q: reset to 0 on a qualified write; incremented on a
+	-- qualified READ's falling edge (i.e. once the read has genuinely
+	-- finished) so the address driving FL_ADDR/FL_DQ15_AM1 stays fixed for
+	-- the entire access - incrementing any earlier (e.g. on the rising
+	-- edge) would change the byte FL_DQ presents partway through the same
+	-- read, right before the CPU samples it.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_flash_ptr_q            <= (others => '0');
+				s_io_read_5A_qualified_d <= '0';
+			else
+				s_io_read_5A_qualified_d <= s_io_read_5A_qualified;
+				if s_io_5A_write_qualified = '1' then
+					s_flash_ptr_q <= (others => '0');
+				elsif s_io_read_5A_qualified_d = '1' and s_io_read_5A_qualified = '0' then
+					s_flash_ptr_q <= s_flash_ptr_q + 1;
+				end if;
+			end if;
+		end if;
+	end process;
 
 	-- Real Flash chip in byte mode: DQ15/A-1 becomes the extra low
 	-- address bit, FL_ADDR carries the rest - same convention used (and
 	-- independently verified pin-correct against the DE0 User Manual)
-	-- during the earlier Flash-boot attempt.
-	FL_DQ15_AM1 <= s_flash_a(0);
-	FL_ADDR     <= s_flash_a(22 downto 1);
+	-- during the earlier Flash-boot attempt. FL_CE_N/FL_OE_N are gated on
+	-- the RAW (unqualified) read enable, matching the proven DE1
+	-- reference's own Flash timing - only the decision to trust/drive the
+	-- result onto D (below) waits for qualification.
+	FL_DQ15_AM1 <= s_flash_ptr_q(0);
+	FL_ADDR     <= s_flash_ptr_q(22 downto 1);
 	FL_WE_N     <= '1';	-- never write to Flash
-	FL_CE_N     <= not s_flash_read_en;
+	FL_CE_N     <= not s_io_read_5A_en;
 	FL_OE_N     <= RD_n;
 
-	-- Drive Register5A_q OR the Flash byte back onto D, depending on
-	-- which qualified condition is active - single merged driver for D
-	-- (and for U1OE_n/U1_DIR below), since VHDL doesn't allow two
-	-- separate unconditional concurrent assignments to the same signal.
-	D      <= Register5A_q      when s_io_read_5A_qualified = '1' else
-	          FL_DQ(7 downto 0) when s_flash_read_qualified = '1' else
-	          (others => 'Z');
-	U1OE_n <= not (s_io_read_5A_qualified or s_flash_read_qualified);
-	U1_DIR <= '1' when (s_io_read_5A_qualified = '1' or s_flash_read_qualified = '1') else '0';
+	-- Drive the Flash byte back onto D during a qualified port-0x5A read -
+	-- single driver for D (and for U1OE_n/U1_DIR below), since VHDL
+	-- doesn't allow two separate unconditional concurrent assignments to
+	-- the same signal.
+	D      <= FL_DQ(7 downto 0) when s_io_read_5A_qualified = '1' else (others => 'Z');
+	U1OE_n <= not s_io_read_5A_qualified;
+	U1_DIR <= '1' when s_io_read_5A_qualified = '1' else '0';
+
+	-- s_flash_data_q: re-latches FL_DQ continuously while the qualified
+	-- read holds, same settle-during-access technique as Register5A_q -
+	-- holds the last byte actually read from Flash for display.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_flash_data_q <= (others => '0');
+			elsif s_io_read_5A_qualified = '1' then
+				s_flash_data_q <= FL_DQ(7 downto 0);
+			end if;
+		end if;
+	end process;
 
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,
