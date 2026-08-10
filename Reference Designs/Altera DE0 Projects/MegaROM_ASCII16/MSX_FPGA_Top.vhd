@@ -257,6 +257,37 @@ architecture behavioural of MSX_FPGA_Top is
 	signal s_write_width_captured : std_logic := '0';
 	signal s_read_en_d, s_write_en_d : std_logic := '0';
 
+	-- ------------------------------------------------------------------------
+	-- DATA BUS TEST (new, on top of the validated DABC tests above, which
+	-- are unchanged): a minimal register to validate read/write control
+	-- signals AND the data bus for the first time - everything above only
+	-- ever watched the bus, it never drove data back onto it.
+	--   - Write to memory address 0xD05A -> latch D onto Register5A_q.
+	--   - Read I/O port 0x5A -> drive Register5A_q back onto D (the ONLY
+	--     way Register5A_q's value can be observed from the MSX side).
+	-- Register5A_q only ever changes on a genuine 0xD05A write - reusing
+	-- the same address-mux s_A and the same glitch-filter discipline
+	-- (MIN_PULSE_CYCLES) already validated for the DABC tests, applied to
+	-- both the new write trigger and the new I/O-read trigger (the latter
+	-- is what re-enables U1 - the first live bus-drive since the earlier
+	-- U1-related RAM-corruption incident, so it gets the same qualification
+	-- discipline rather than a raw, unfiltered enable).
+	-- ------------------------------------------------------------------------
+	signal Register5A_q : std_logic_vector(7 downto 0) := (others => '0');
+
+	signal s_write_D05A_en        : std_logic;
+	signal s_write_D05A_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_write_D05A_qualified : std_logic := '0';
+
+	signal s_io_read_5A_en        : std_logic;
+	signal s_io_read_5A_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_io_read_5A_qualified : std_logic := '0';
+
+	-- Latched "was port 0x5A ever read" - same reset-only-clear technique
+	-- as the earlier "slot ever selected" diagnostic, so a brief I/O read
+	-- is visible on LEDG(8) even between glances at the board.
+	signal s_io_read_5A_ever_q : std_logic := '0';
+
 begin
 
 	s_reset <= not (KEY(0) and RESET_n);
@@ -266,22 +297,12 @@ begin
 	SOUNDOUT <= '0';
 	U4OE_n <= '0';		-- unused buffer on this variant - disabled
 
-	-- SAFETY: U1 permanently DISABLED - no D-bus observation at all in this
-	-- build. The previous attempt (U1 enabled whenever s_read_en/
-	-- s_write_en was true) demonstrably corrupted the real system (32KB
-	-- RAM detected as only 4KB), while STILL failing to react to the
-	-- user's own deliberate PEEK/POKE at 0xD000. That combination points
-	-- at s_A being stale/incorrect during much of any real bus cycle
-	-- (the address-mux capture needs ~100ns to settle, which back-to-back
-	-- real bus activity may not always allow) - s_read_en/s_write_en can
-	-- spuriously go true on a stale address, engaging U1 at the wrong
-	-- moments and interfering with whatever real access is actually
-	-- happening then, while missing the intended one. Disabling U1
-	-- entirely removes that interference risk completely so we can first
-	-- validate s_A/the address decode alone, with zero risk to the real
-	-- system, before touching D again.
-	U1OE_n <= '1';
-	U1_DIR <= '0';
+	-- U1OE_n/U1_DIR are now driven further below by the new data-bus test
+	-- (the DABC tests above never touched D at all - U1 was permanently
+	-- disabled for them, same reasoning as before: this is the first time
+	-- this build drives D, and it's gated on the narrowly-qualified 0x5A
+	-- I/O-read condition only, never on the broader/staler DABC signals
+	-- that caused the earlier RAM-corruption incident).
 
 	-- ------------------------------------------------------------------------
 	-- Address bus capture: synchronize the "new bus cycle starting" trigger
@@ -493,12 +514,110 @@ begin
 		end if;
 	end process;
 
-	-- LEDG(7 downto 0): blanked to 0 in this build - D is not observed at
-	-- all right now (see U1OE_n note above), so showing it would be
-	-- meaningless/misleading rather than genuinely blank.
 	LEDG(9) <= s_led9_latch;
-	LEDG(8) <= '0';
-	LEDG(7 downto 0) <= (others => '0');
+
+	-- ------------------------------------------------------------------------
+	-- DATA BUS TEST logic - see declarations above.
+	-- ------------------------------------------------------------------------
+
+	-- Write trigger: exact address 0xD05A, real WR_n.
+	s_write_D05A_en <= '1' when s_A = x"D05A" and WR_n = '0' else '0';
+
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_write_D05A_dur_cnt   <= (others => '0');
+				s_write_D05A_qualified <= '0';
+			else
+				if s_write_D05A_en = '1' then
+					if s_write_D05A_dur_cnt < MIN_PULSE_CYCLES then
+						s_write_D05A_dur_cnt <= s_write_D05A_dur_cnt + 1;
+					end if;
+					if s_write_D05A_dur_cnt >= MIN_PULSE_CYCLES then
+						s_write_D05A_qualified <= '1';
+					end if;
+				else
+					s_write_D05A_dur_cnt   <= (others => '0');
+					s_write_D05A_qualified <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+
+	-- Register5A_q: re-latches D continuously while the qualified write
+	-- holds, settling on the value present during the access (same fix as
+	-- the earlier Flash-diagnostic capture - never sample on a delayed
+	-- edge after the access has already ended). Reset-only-clear
+	-- otherwise: it must NOT change on anything except a genuine 0xD05A
+	-- write, per the test's whole point.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				Register5A_q <= (others => '0');
+			elsif s_write_D05A_qualified = '1' then
+				Register5A_q <= D;
+			end if;
+		end if;
+	end process;
+
+	-- Read trigger: I/O port 0x5A. M1_n='1' excludes interrupt-acknowledge
+	-- cycles, which also assert IORQ_n (see MSX Technical Data Book /
+	-- msx.org Hardware Design wiki) - same check already proven in
+	-- SDMapper_V2.1b/SDMapper_Top.vhd's own I/O decode.
+	s_io_read_5A_en <= '1' when IORQ_n = '0' and RD_n = '0' and M1_n = '1' and s_A(7 downto 0) = x"5A" else '0';
+
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_io_read_5A_dur_cnt   <= (others => '0');
+				s_io_read_5A_qualified <= '0';
+			else
+				if s_io_read_5A_en = '1' then
+					if s_io_read_5A_dur_cnt < MIN_PULSE_CYCLES then
+						s_io_read_5A_dur_cnt <= s_io_read_5A_dur_cnt + 1;
+					end if;
+					if s_io_read_5A_dur_cnt >= MIN_PULSE_CYCLES then
+						s_io_read_5A_qualified <= '1';
+					end if;
+				else
+					s_io_read_5A_dur_cnt   <= (others => '0');
+					s_io_read_5A_qualified <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+
+	-- Drive Register5A_q back onto D ONLY during a qualified 0x5A I/O
+	-- read - this is the first time this build drives the data bus at
+	-- all. U1 (74LVC245) is enabled/directed the same way as every other
+	-- proven design in this repo: U1_DIR='1' drives toward the real MSX
+	-- bus, gated on the same qualified condition so U1 can never engage
+	-- outside this one, narrowly-tested case. I/O cycles have an extra,
+	-- automatically-inserted Z80 wait state (Zilog UM0080, "Input or
+	-- Output Cycles") versus a plain memory cycle, giving comfortable
+	-- margin for the MIN_PULSE_CYCLES qualification delay before driving.
+	D      <= Register5A_q when s_io_read_5A_qualified = '1' else (others => 'Z');
+	U1OE_n <= not s_io_read_5A_qualified;
+	U1_DIR <= '1' when s_io_read_5A_qualified = '1' else '0';
+
+	-- Latched "was port 0x5A ever read" - confirms the I/O decode path
+	-- fires at all, independent of Register5A_q's actual value.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_io_read_5A_ever_q <= '0';
+			elsif s_io_read_5A_qualified = '1' then
+				s_io_read_5A_ever_q <= '1';
+			end if;
+		end if;
+	end process;
+
+	LEDG(8)          <= s_io_read_5A_ever_q;
+	LEDG(7 downto 0) <= Register5A_q;	-- live view of the latched register value
 
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,
