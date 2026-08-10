@@ -327,7 +327,11 @@ begin
 	s_reset <= not (KEY(0) and RESET_n);
 	INT_n <= '0';		-- inverted due to the Q1 open-collector stage in the interface
 	WAIT_n <= '0';		-- pure observer - never requests a wait
-	BUSDIR_n <= 'Z';	-- tri-stated: we never send data outside normal memory access (see MSX Technical Data Book 1.6.2)
+	-- BUSDIR_n is now driven further below, alongside U1OE_n/U1_DIR - see
+	-- that comment for why (MSX Technical Data Book 1.6.2: a cartridge
+	-- responding to INP must force BUSDIR_n low while sending data to the
+	-- CPU; ordinary SLTSL_n memory reads don't need it, but this design
+	-- only ever drives data back via an I/O read, so it always needs it).
 	SOUNDOUT <= '0';
 	U4OE_n <= '0';		-- unused buffer on this variant - disabled
 
@@ -524,14 +528,14 @@ begin
 	-- 30 cycles = 600ns). Replaces the address-hold display for this
 	-- specific quantitative diagnostic - the address decode itself is
 	-- already independently confirmed working.
-	-- Shows the Flash pointer's low 16 bits (s_flash_ptr_q) instead of the
-	-- DABC pulse-width diagnostic, per user request - the pulse-width
-	-- registers themselves are untouched, just no longer displayed, since
-	-- the Flash-pointer test is the one in focus now.
-	HEXDIGIT0 <= s_flash_ptr_q(3 downto 0);
-	HEXDIGIT1 <= s_flash_ptr_q(7 downto 4);
-	HEXDIGIT2 <= s_flash_ptr_q(11 downto 8);
-	HEXDIGIT3 <= s_flash_ptr_q(15 downto 12);
+	-- Per user request: HEX1:HEX0 show the Flash DATA byte (moved off
+	-- LEDG(7:0)), HEX3:HEX2 show the address's lower byte, LEDG(7:0) show
+	-- the address's higher byte (bits 15:8) - see also the LEDG(7:0)
+	-- assignment further below.
+	HEXDIGIT0 <= s_flash_data_q(3 downto 0);
+	HEXDIGIT1 <= s_flash_data_q(7 downto 4);
+	HEXDIGIT2 <= s_flash_ptr_q(3 downto 0);
+	HEXDIGIT3 <= s_flash_ptr_q(7 downto 4);
 
 	-- Toggling latch, no reset-only behavior: poke -> on, peek -> off,
 	-- unaffected otherwise. Both directions are independently proven
@@ -642,7 +646,7 @@ begin
 	end process;
 
 	LEDG(8)          <= s_io_read_5A_ever_q;
-	LEDG(7 downto 0) <= s_flash_data_q;	-- live view of the last byte read from Flash (Register5A_q's own latch is unchanged, just no longer displayed)
+	LEDG(7 downto 0) <= s_flash_ptr_q(15 downto 8);	-- address's higher byte - the data byte moved to HEX1:HEX0 above
 
 	-- ------------------------------------------------------------------------
 	-- FLASH READ VIA I/O PORT logic - see declarations above.
@@ -711,12 +715,17 @@ begin
 	FL_OE_N     <= RD_n;
 
 	-- Drive the Flash byte back onto D during a qualified port-0x5A read -
-	-- single driver for D (and for U1OE_n/U1_DIR below), since VHDL
-	-- doesn't allow two separate unconditional concurrent assignments to
-	-- the same signal.
-	D      <= FL_DQ(7 downto 0) when s_io_read_5A_qualified = '1' else (others => 'Z');
-	U1OE_n <= not s_io_read_5A_qualified;
-	U1_DIR <= '1' when s_io_read_5A_qualified = '1' else '0';
+	-- single driver for D (and for U1OE_n/U1_DIR/BUSDIR_n below), since
+	-- VHDL doesn't allow two separate unconditional concurrent assignments
+	-- to the same signal.
+	D        <= s_flash_data_q when s_io_read_5A_qualified = '1' else (others => 'Z');
+	U1OE_n   <= not s_io_read_5A_qualified;
+	U1_DIR   <= '1' when s_io_read_5A_qualified = '1' else '0';
+	-- BUSDIR_n forced low while actively sending data to the CPU on this
+	-- I/O read (MSX Technical Data Book 1.6.2 - see note above); tri-stated
+	-- otherwise, same as the SDMapper_V2.1b/SDMapper_Top.vhd reference's
+	-- own "BUSDIR_n <= not s_iorq_r_reg" pattern for its I/O reads.
+	BUSDIR_n <= '0' when s_io_read_5A_qualified = '1' else 'Z';
 
 	-- s_flash_data_q: re-latches FL_DQ continuously while the qualified
 	-- read holds, same settle-during-access technique as Register5A_q -
