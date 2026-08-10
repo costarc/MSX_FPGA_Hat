@@ -288,6 +288,17 @@ architecture behavioural of MSX_FPGA_Top is
 	-- is visible on LEDG(8) even between glances at the board.
 	signal s_io_read_5A_ever_q : std_logic := '0';
 
+	-- ISOLATION TEST: port 0x5B, added purely to answer "does U1/D still
+	-- work at all in the CURRENT build" independent of Flash - reads back
+	-- Register5A_q exactly like port 0x5A used to, before it was
+	-- repurposed for Flash. If this works but port 0x5A's Flash read
+	-- doesn't, the bug is specific to the Flash-sourced value/timing; if
+	-- this ALSO fails now, something about enabling the Flash chip
+	-- elsewhere broke U1's ability to drive at all.
+	signal s_io_read_5B_en        : std_logic;
+	signal s_io_read_5B_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_io_read_5B_qualified : std_logic := '0';
+
 	-- ------------------------------------------------------------------------
 	-- FLASH READ VIA I/O PORT (replaces the earlier 0x4000-0x4FFF
 	-- memory-window attempt - that approach depended on SLTSL_n actually
@@ -648,6 +659,31 @@ begin
 	LEDG(8)          <= s_io_read_5A_ever_q;
 	LEDG(7 downto 0) <= s_flash_ptr_q(15 downto 8);	-- address's higher byte - the data byte moved to HEX1:HEX0 above
 
+	-- Port 0x5B isolation test - see declaration above.
+	s_io_read_5B_en <= '1' when IORQ_n = '0' and RD_n = '0' and M1_n = '1' and s_A(7 downto 0) = x"5B" else '0';
+
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_io_read_5B_dur_cnt   <= (others => '0');
+				s_io_read_5B_qualified <= '0';
+			else
+				if s_io_read_5B_en = '1' then
+					if s_io_read_5B_dur_cnt < MIN_PULSE_CYCLES then
+						s_io_read_5B_dur_cnt <= s_io_read_5B_dur_cnt + 1;
+					end if;
+					if s_io_read_5B_dur_cnt >= MIN_PULSE_CYCLES then
+						s_io_read_5B_qualified <= '1';
+					end if;
+				else
+					s_io_read_5B_dur_cnt   <= (others => '0');
+					s_io_read_5B_qualified <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+
 	-- ------------------------------------------------------------------------
 	-- FLASH READ VIA I/O PORT logic - see declarations above.
 	-- ------------------------------------------------------------------------
@@ -714,13 +750,15 @@ begin
 	FL_CE_N     <= not s_io_read_5A_en;
 	FL_OE_N     <= RD_n;
 
-	-- Drive the Flash byte back onto D during a qualified port-0x5A read -
-	-- single driver for D (and for U1OE_n/U1_DIR/BUSDIR_n below), since
-	-- VHDL doesn't allow two separate unconditional concurrent assignments
-	-- to the same signal.
-	D        <= s_flash_data_q when s_io_read_5A_qualified = '1' else (others => 'Z');
-	U1OE_n   <= not s_io_read_5A_qualified;
-	U1_DIR   <= '1' when s_io_read_5A_qualified = '1' else '0';
+	-- Drive the Flash byte (port 0x5A) or Register5A_q (port 0x5B,
+	-- isolation test) back onto D - single merged driver for D (and for
+	-- U1OE_n/U1_DIR/BUSDIR_n below), since VHDL doesn't allow two separate
+	-- unconditional concurrent assignments to the same signal.
+	D        <= s_flash_data_q when s_io_read_5A_qualified = '1' else
+	            Register5A_q   when s_io_read_5B_qualified = '1' else
+	            (others => 'Z');
+	U1OE_n   <= not (s_io_read_5A_qualified or s_io_read_5B_qualified);
+	U1_DIR   <= '1' when (s_io_read_5A_qualified = '1' or s_io_read_5B_qualified = '1') else '0';
 	-- REVERTED to tri-stated: driving BUSDIR_n low (matching the
 	-- documented spec and the SDMapper reference) made things WORSE, not
 	-- better - the internal capture (s_flash_data_q) is provably correct
