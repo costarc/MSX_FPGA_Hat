@@ -333,6 +333,41 @@ architecture behavioural of MSX_FPGA_Top is
 	-- changes, since this is now the test in focus.
 	signal s_flash_data_q : std_logic_vector(7 downto 0) := (others => '0');
 
+	-- ------------------------------------------------------------------------
+	-- MEMORY-MAPPED ROM BOOT (SLTSL_n / slot access) - the actual point of
+	-- this whole session's work: map the plain, non-banked 16KB ROM already
+	-- verified byte-for-byte at Flash offset 0x000000 (ROAD.ROM) into MSX
+	-- page 1 (0x4000-0x7FFF), the standard convention for an unbanked 16KB
+	-- ROM cartridge, so the real MSX can boot it - not just read it back
+	-- through a diagnostic I/O port.
+	--
+	-- Deliberately RAW/immediate combinational decode throughout (no
+	-- MIN_PULSE_CYCLES qualification, unlike Register5A_q/the I/O Flash
+	-- pointer above) - a real Z80 memory read is only 3 T-states with no
+	-- automatic wait state, tighter than an I/O read's 4 T-states, so the
+	-- ~160ns qualification delay used above would eat into (or blow) the
+	-- data-setup-before-RD_n-rising margin here. This exactly mirrors the
+	-- proven pattern already working on real hardware in
+	-- "SDMapper - Boots Nextor Some Times/SDMapper_Top.vhd" (its own
+	-- s_sltsl_rom_en/FL_CE_N/FL_OE_N/D/U1OE_n/U1_DIR are all raw/immediate
+	-- too - see that file's comments, cross-checked against
+	-- msx.org/wiki/Hardware_Design).
+	--
+	-- SLTSL_n alone (no separate MREQ_n check) is sufficient: the MSX's
+	-- primary slot decoder only ever asserts SLTSL_n for this slot during a
+	-- genuine memory-request cycle - same reasoning already relied on by
+	-- the proven DE1 reference. SW(9) gates cart emulation on/off (same
+	-- convention as that reference) so the boot ROM can be physically
+	-- disabled without reprogramming.
+	--
+	-- BUSDIR_n is deliberately left untouched by this new path (still only
+	-- driven for the I/O-port test below) - per the MSX Technical Data Book
+	-- and the DE1 reference's own citation, ordinary /SLTSL memory reads do
+	-- not require BUSDIR_n management, only /IORQ-based reads do.
+	-- ------------------------------------------------------------------------
+	signal s_sltsl_en  : std_logic;
+	signal s_rom_rd_en : std_logic;	-- genuine ROM read: this slot selected (SW(9)=on), page 1, real memory read
+
 begin
 
 	s_reset <= not (KEY(0) and RESET_n);
@@ -711,25 +746,45 @@ begin
 		end if;
 	end process;
 
+	-- ------------------------------------------------------------------------
+	-- MEMORY-MAPPED ROM BOOT logic - see declarations above.
+	-- ------------------------------------------------------------------------
+	s_sltsl_en  <= (not SLTSL_n) when SW(9) = '1' else '0';
+	s_rom_rd_en <= '1' when s_sltsl_en = '1' and s_A(15 downto 14) = "01" and RD_n = '0' else '0';
+
 	-- Real Flash chip in byte mode: DQ15/A-1 becomes the extra low
 	-- address bit, FL_ADDR carries the rest - same convention used (and
 	-- independently verified pin-correct against the DE0 User Manual)
 	-- during the earlier Flash-boot attempt. FL_CE_N/FL_OE_N are gated on
 	-- the RAW (unqualified) read enable, matching the proven DE1
-	-- reference's own Flash timing - only the decision to trust/drive the
-	-- result onto D (below) waits for qualification.
-	FL_DQ15_AM1 <= s_flash_ptr_q(0);
-	FL_ADDR     <= s_flash_ptr_q(22 downto 1);
+	-- reference's own Flash timing - only the I/O-pointer path's decision
+	-- to trust/drive the result onto D (below) waits for qualification;
+	-- the new ROM-boot path never does (see the timing note above).
+	--
+	-- ROM boot takes priority in each of these shared-driver expressions,
+	-- but the two paths can never actually contend for the bus: IORQ_n and
+	-- MREQ_n are mutually exclusive on a real Z80 bus cycle, and
+	-- s_io_read_5A_en/s_rom_rd_en are gated on IORQ_n='0' and SLTSL_n='0'
+	-- (a memory-request-only signal) respectively.
+	FL_DQ15_AM1 <= s_A(0)             when s_rom_rd_en = '1' else s_flash_ptr_q(0);
+	FL_ADDR     <= "000000000" & s_A(13 downto 1) when s_rom_rd_en = '1' else s_flash_ptr_q(22 downto 1);
 	FL_WE_N     <= '1';	-- never write to Flash
-	FL_CE_N     <= not s_io_read_5A_en;
+	FL_CE_N     <= '0' when s_rom_rd_en = '1' else
+	               '0' when s_io_read_5A_en = '1' else
+	               '1';
 	FL_OE_N     <= RD_n;
 
-	-- Drive the Flash byte back onto D during a qualified port-0x5A read -
-	-- single driver for D (and for U1OE_n/U1_DIR below), since VHDL
-	-- doesn't allow two separate unconditional concurrent assignments to
-	-- the same signal.
-	D      <= FL_DQ(7 downto 0) when s_io_read_5A_qualified = '1' else (others => 'Z');
-	U1OE_n <= not s_io_read_5A_qualified;
+	-- Drive the Flash byte back onto D - ROM boot uses the raw s_rom_rd_en
+	-- (see timing note above), the I/O pointer test still uses its own
+	-- qualified signal, unchanged. Single driver for D (and for
+	-- U1OE_n/U1_DIR below), since VHDL doesn't allow two separate
+	-- unconditional concurrent assignments to the same signal.
+	D <= FL_DQ(7 downto 0) when s_rom_rd_en = '1' else
+	     FL_DQ(7 downto 0) when s_io_read_5A_qualified = '1' else
+	     (others => 'Z');
+	U1OE_n <= '0' when s_rom_rd_en = '1' else
+	          '0' when s_io_read_5A_qualified = '1' else
+	          '1';
 	-- POLARITY FIX (lesson learned on megarom_databus_register_test): read
 	-- MSX_FPGA_Hat.net directly - U1's A-side (pins 2-9) wires to CONN1,
 	-- the real MSX cartridge edge connector; U1's B-side (pins 11-18)
@@ -738,11 +793,17 @@ begin
 	-- (listen), DIR=0 means FPGA->MSX (drive) - the opposite of what this
 	-- design (and every other attempt) originally assumed. Confirmed on
 	-- real hardware: OUT &H5A,170 -> INP(&H5A) = 170, a perfect round
-	-- trip, only after flipping this polarity.
-	U1_DIR <= '0' when s_io_read_5A_qualified = '1' else '1';
+	-- trip, only after flipping this polarity. Applies equally to the ROM
+	-- boot path - same chip, same direction convention.
+	U1_DIR <= '0' when s_rom_rd_en = '1' else
+	          '0' when s_io_read_5A_qualified = '1' else
+	          '1';
 	-- Never tri-stated (see note near the top) - forced low while
-	-- actively sending data to the CPU on this I/O read (MSX Technical
-	-- Data Book 1.6.2), a definite '1' otherwise.
+	-- actively sending data to the CPU on an I/O read (MSX Technical Data
+	-- Book 1.6.2), a definite '1' otherwise. Deliberately NOT extended to
+	-- the ROM boot path - ordinary /SLTSL memory reads don't need BUSDIR_n
+	-- per the MSX Technical Data Book and the proven DE1 SDMapper
+	-- reference (msx.org/wiki/Hardware_Design) - only /IORQ-based reads do.
 	BUSDIR_n <= '0' when s_io_read_5A_qualified = '1' else '1';
 
 	-- s_flash_data_q: re-latches FL_DQ continuously while the qualified
