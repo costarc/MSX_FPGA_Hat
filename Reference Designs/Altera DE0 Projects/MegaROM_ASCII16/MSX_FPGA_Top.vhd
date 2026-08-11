@@ -2,6 +2,17 @@ library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
+-- ==============================================================================
+-- MILESTONE (2026-08-11): real Flash content read into the MSX end-to-end via
+-- I/O port 0x5A, confirmed on real hardware byte-for-byte against the
+-- independently-verified ROM in Flash: OUT &H5A,0 then five INP(&H5A) reads
+-- returned 65,66,79,64,0 (0x41,0x42,0x4F,0x40,0x00). Root cause of the whole
+-- earlier "MSX always reads 0xFF" saga was U1_DIR's polarity being backwards
+-- (see project_msx_fpga_hat_v21b_bus_validation memory) - fixed here, and the
+-- data-bus/register mechanism (Register5A_q, I/O read+write, memory write)
+-- is now fully validated across every access path exercised in this file.
+-- ==============================================================================
+
 -- Updated on 23/01/2023
 -- ---------------------
 -- Structure of the FLASH for this core to work:
