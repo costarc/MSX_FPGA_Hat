@@ -605,7 +605,19 @@ begin
 	-- signals are always gated on raw enables elsewhere in this repo.
 	D        <= Register5A_q when s_io_read_5A_en = '1' else (others => 'Z');
 	U1OE_n   <= not s_io_read_5A_en;
-	U1_DIR   <= '1' when s_io_read_5A_en = '1' else '0';
+	-- POLARITY FIX: found by reading MSX_FPGA_Hat.net directly. U1's A-side
+	-- (pins 2-9) connects to CONN1 - the REAL MSX cartridge edge connector.
+	-- U1's B-side (pins 11-18) connects to IDC1 - the FPGA GPIO header.
+	-- Standard 74245 transceiver truth table: DIR=HIGH means A->B (A is
+	-- input/source, B is output/driven). So DIR=1 actually means
+	-- MSX->FPGA (FPGA listening), and DIR=0 means FPGA->MSX (FPGA
+	-- driving) - the OPPOSITE of what every earlier attempt assumed.
+	-- U1_DIR was previously '1' during a read (intending "drive toward
+	-- MSX"), which per this real wiring actually meant "listen from MSX" -
+	-- U1OE_n/U1_DIR looked electrically correct on the scope (they toggled
+	-- exactly per this - wrong - logic), the MSX just never received our
+	-- data because U1 was pointed the wrong way every single time.
+	U1_DIR   <= '0' when s_io_read_5A_en = '1' else '1';
 	-- Never tri-stated - per review of the user's MSXPi CPLD design
 	-- (proven, production, real-world working I/O interface), BUSDIR_n
 	-- there is ALWAYS actively driven ('0' or '1'), never left floating:
