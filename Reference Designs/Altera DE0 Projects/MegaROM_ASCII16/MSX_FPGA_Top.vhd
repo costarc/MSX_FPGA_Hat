@@ -621,11 +621,16 @@ begin
 	-- soon as IORQ_n/RD_n assert, matching how FL_OE_N/FL_CE_N-style
 	-- signals are always gated on raw enables elsewhere in this repo.
 	D        <= Register5A_q when s_io_read_5A_en = '1' else (others => 'Z');
-	-- Extended to also enable for a port-0x5A WRITE (not just reads), so
-	-- the FPGA can actually see D during OUT &H5A,value - matches
-	-- U1_DIR's existing default (listen from MSX) already being correct
-	-- for that case, so no change needed there.
-	U1OE_n   <= not (s_io_read_5A_en or s_io_write_5A_en);
+	-- Extended to also enable for a port-0x5A WRITE and the memory write
+	-- to 0xD05A (not just I/O reads), so the FPGA can actually see D
+	-- during OUT &H5A,value AND POKE &HD05A,value - matches U1_DIR's
+	-- existing default (listen from MSX) already being correct for both
+	-- write cases, so no change needed there. Uses the RAW
+	-- s_write_D05A_en (not the delayed/qualified version) so U1 is
+	-- enabled immediately, giving D time to settle before
+	-- s_write_D05A_qualified actually latches it - same "raw enables,
+	-- qualified latches" split already used for the I/O path.
+	U1OE_n   <= not (s_io_read_5A_en or s_io_write_5A_en or s_write_D05A_en);
 	-- POLARITY FIX: found by reading MSX_FPGA_Hat.net directly. U1's A-side
 	-- (pins 2-9) connects to CONN1 - the REAL MSX cartridge edge connector.
 	-- U1's B-side (pins 11-18) connects to IDC1 - the FPGA GPIO header.
