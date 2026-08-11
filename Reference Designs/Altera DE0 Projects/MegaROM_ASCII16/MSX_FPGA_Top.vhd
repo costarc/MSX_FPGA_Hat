@@ -11,6 +11,16 @@ use IEEE.std_logic_unsigned.all;
 -- (see project_msx_fpga_hat_v21b_bus_validation memory) - fixed here, and the
 -- data-bus/register mechanism (Register5A_q, I/O read+write, memory write)
 -- is now fully validated across every access path exercised in this file.
+-- Followed by a confirmed real-hardware SLTSL_n boot of a plain ROM from
+-- Flash - see the "MEMORY-MAPPED ROM BOOT" section further down.
+--
+-- SCOPE DECISION (2026-08-11): this file is a cartridge simulator for
+-- GAMES ONLY. SDMAPPER.ROM (Nextor) and MDOS22V3.ROM (MSX-DOS2) below are
+-- part of the historical DE1ROMs.bin layout but are deliberately never
+-- targeted by this design's ROM catalog - they need the SD-card SPI
+-- interface and RAM-based memory mapper (I/O ports FC-FF), which live
+-- separately in the SDMapper_V2.1b project, not here. See the ROM catalog
+-- comment near "MEMORY-MAPPED ROM BOOT" below for the actual game list.
 -- ==============================================================================
 
 -- Updated on 23/01/2023
@@ -335,23 +345,27 @@ architecture behavioural of MSX_FPGA_Top is
 
 	-- ------------------------------------------------------------------------
 	-- MEMORY-MAPPED ROM BOOT (SLTSL_n / slot access) - the actual point of
-	-- this whole session's work: map the plain, non-banked 16KB ROM already
-	-- verified byte-for-byte at Flash offset 0x000000 (ROAD.ROM) into MSX
-	-- page 1 (0x4000-0x7FFF), the standard convention for an unbanked 16KB
-	-- ROM cartridge, so the real MSX can boot it - not just read it back
-	-- through a diagnostic I/O port.
+	-- this whole session's work, now generalized from "one hardcoded plain
+	-- 16KB ROM" to full MegaROM support: all standard mapper types, reading
+	-- whichever real game the user has flashed into DE1ROMs.bin, selected
+	-- live via SW rather than requiring a reprogram per game.
 	--
-	-- Deliberately RAW/immediate combinational decode throughout (no
-	-- MIN_PULSE_CYCLES qualification, unlike Register5A_q/the I/O Flash
-	-- pointer above) - a real Z80 memory read is only 3 T-states with no
-	-- automatic wait state, tighter than an I/O read's 4 T-states, so the
-	-- ~160ns qualification delay used above would eat into (or blow) the
-	-- data-setup-before-RD_n-rising margin here. This exactly mirrors the
-	-- proven pattern already working on real hardware in
+	-- Deliberately RAW/immediate combinational decode throughout for
+	-- everything that drives the live bus (no MIN_PULSE_CYCLES
+	-- qualification, unlike Register5A_q/the I/O Flash pointer above) - a
+	-- real Z80 memory read is only 3 T-states with no automatic wait state,
+	-- tighter than an I/O read's 4 T-states, so the ~160ns qualification
+	-- delay used above would eat into (or blow) the data-setup-before-
+	-- RD_n-rising margin here. This exactly mirrors the proven pattern
+	-- already working on real hardware in
 	-- "SDMapper - Boots Nextor Some Times/SDMapper_Top.vhd" (its own
 	-- s_sltsl_rom_en/FL_CE_N/FL_OE_N/D/U1OE_n/U1_DIR are all raw/immediate
 	-- too - see that file's comments, cross-checked against
-	-- msx.org/wiki/Hardware_Design).
+	-- msx.org/wiki/Hardware_Design). Bank-switch REGISTER WRITES are not
+	-- bus-driving and not real-time-critical, so they DO reuse the
+	-- MIN_PULSE_CYCLES glitch-filter discipline (one shared qualifier for
+	-- all mapper types' writes, not 13 separate ones - see
+	-- s_cart_write_qualified below).
 	--
 	-- SLTSL_n alone (no separate MREQ_n check) is sufficient: the MSX's
 	-- primary slot decoder only ever asserts SLTSL_n for this slot during a
@@ -360,13 +374,82 @@ architecture behavioural of MSX_FPGA_Top is
 	-- convention as that reference) so the boot ROM can be physically
 	-- disabled without reprogramming.
 	--
-	-- BUSDIR_n is deliberately left untouched by this new path (still only
-	-- driven for the I/O-port test below) - per the MSX Technical Data Book
-	-- and the DE1 reference's own citation, ordinary /SLTSL memory reads do
-	-- not require BUSDIR_n management, only /IORQ-based reads do.
+	-- BUSDIR_n is deliberately left untouched by this whole section (still
+	-- only driven for the I/O-port test below) - per the MSX Technical
+	-- Data Book and the DE1 reference's own citation, ordinary /SLTSL
+	-- memory reads do not require BUSDIR_n management, only /IORQ-based
+	-- reads do.
+	--
+	-- ROM CATALOG: flash offsets taken directly from the header comment's
+	-- documented DE1ROMs.bin layout. Mapper-type codes:
+	--   "000" Plain 16KB (page 1 only, 0x4000-0x7FFF)      - unbanked
+	--   "001" Plain 32KB (page 1+2, 0x4000-0xBFFF)          - unbanked
+	--   "010" ASCII16    (2x16KB banks, regs @6000/@7000)
+	--   "011" ASCII8     (4x8KB banks,  regs @6000/6800/7000/7800)
+	--   "100" Konami4    (4x8KB banks, bank0 FIXED, regs anywhere in
+	--                      6000-7FFF/8000-9FFF/A000-BFFF - whole page, no
+	--                      SCC. Segment number is only D0-D3 (4 bits) -
+	--                      verified via web search, real hardware ignores
+	--                      D4-D7, and this design masks accordingly)
+	--   "101" KonamiSCC  (4x8KB banks, regs @5000/7000/9000/B000 sub-ranges
+	--                      - banking only, SCC sound chip NOT emulated.
+	--                      Segment number is only D0-D5 (6 bits) - verified
+	--                      via web search, masked accordingly; writing
+	--                      0x3F to the 9000 register enables SCC audio on
+	--                      real hardware, which isn't implemented here)
+	-- All ranges/registers verified against multiple independent web
+	-- sources (msx.org wiki MegaROM Mappers, generation-msx.nl per-game
+	-- pages, bifi.msxnet.org), not just recalled from memory - this
+	-- includes confirming NEMESIS/PENGUIN/USAS/MGEAR (the 4 catalog
+	-- entries below) are ALL plain Konami-without-SCC, not a mix as
+	-- originally guessed. SW(8)/SW(7 downto 5) below still let you
+	-- override the mapper type live on real hardware without a reprogram,
+	-- for any future catalog entry whose type turns out wrong.
 	-- ------------------------------------------------------------------------
 	signal s_sltsl_en  : std_logic;
-	signal s_rom_rd_en : std_logic;	-- genuine ROM read: this slot selected (SW(9)=on), page 1, real memory read
+	signal s_rom_rd_en : std_logic;	-- genuine ROM read: this slot selected (SW(9)=on), a page this mapper actually maps, real memory read
+	signal s_rom_active : std_logic;	-- combinational: s_A currently falls in a page this mapper type maps (read OR write)
+
+	signal s_rom_flashbase      : std_logic_vector(23 downto 0);
+	signal s_rom_mapper_default : std_logic_vector(2 downto 0);
+	signal s_rom_mapper_type    : std_logic_vector(2 downto 0);
+
+	signal s_rom_relative_addr : std_logic_vector(23 downto 0);	-- address within the selected ROM, before adding s_rom_flashbase
+	signal s_rom_byte_addr     : std_logic_vector(23 downto 0);	-- s_rom_flashbase + s_rom_relative_addr; bit0->FL_DQ15_AM1, bits(22:1)->FL_ADDR
+
+	-- Bank-switch registers - one pair/quad per mapper type (see catalog
+	-- comment above for each type's address map). Reset to 0 (segment 0),
+	-- the conventional real-hardware default.
+	signal s_a16_bank0_q  : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII16: 0x4000-0x7FFF
+	signal s_a16_bank1_q  : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII16: 0x8000-0xBFFF
+	signal s_a8_bank0_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0x4000-0x5FFF
+	signal s_a8_bank1_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0x6000-0x7FFF
+	signal s_a8_bank2_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0x8000-0x9FFF
+	signal s_a8_bank3_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0xA000-0xBFFF
+	signal s_k4_bank1_q   : std_logic_vector(7 downto 0) := (others => '0');	-- Konami4: 0x6000-0x7FFF (bank0 fixed=0)
+	signal s_k4_bank2_q   : std_logic_vector(7 downto 0) := (others => '0');	-- Konami4: 0x8000-0x9FFF
+	signal s_k4_bank3_q   : std_logic_vector(7 downto 0) := (others => '0');	-- Konami4: 0xA000-0xBFFF
+	signal s_kscc_bank0_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0x4000-0x5FFF
+	signal s_kscc_bank1_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0x6000-0x7FFF
+	signal s_kscc_bank2_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0x8000-0x9FFF
+	signal s_kscc_bank3_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0xA000-0xBFFF
+
+	-- Shared bank-register write qualifier (see comment above): ANY write
+	-- while this cart slot is selected, glitch-filtered the same way as
+	-- every other write trigger in this file. The target address (s_A) is
+	-- still fully valid/stable throughout the qualified window - a real
+	-- Z80 write cycle holds the address stable for the whole WR_n pulse -
+	-- so one shared qualifier safely serves every mapper type's registers.
+	-- D is re-latched continuously WHILE qualified='1' (see the process
+	-- below for why - this is what was actually buggy on real hardware).
+	signal s_cart_write_en        : std_logic;
+	signal s_cart_write_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
+	signal s_cart_write_qualified : std_logic := '0';
+
+	-- Live debug display (temporary, ASCII16-focused): confirms on real
+	-- hardware whether bank-register writes are landing at all, and with
+	-- what value, instead of guessing further from code review alone.
+	signal s_cart_write_ever_q : std_logic := '0';
 
 begin
 
@@ -573,35 +656,40 @@ begin
 	-- 30 cycles = 600ns). Replaces the address-hold display for this
 	-- specific quantitative diagnostic - the address decode itself is
 	-- already independently confirmed working.
-	-- Shows the Flash pointer's low 16 bits (s_flash_ptr_q) instead of the
-	-- DABC pulse-width diagnostic, per user request - the pulse-width
-	-- registers themselves are untouched, just no longer displayed, since
-	-- the Flash-pointer test is the one in focus now.
-	HEXDIGIT0 <= s_flash_ptr_q(3 downto 0);
-	HEXDIGIT1 <= s_flash_ptr_q(7 downto 4);
-	HEXDIGIT2 <= s_flash_ptr_q(11 downto 8);
-	HEXDIGIT3 <= s_flash_ptr_q(15 downto 12);
+	-- SUPERSEDED for this debug pass: shows the live ASCII16 bank register
+	-- values instead of the Flash I/O-pointer test (that mechanism is
+	-- unchanged, just not displayed right now) - HEX1:HEX0 = s_a16_bank0_q
+	-- (segment currently mapped at 0x4000-0x7FFF), HEX3:HEX2 =
+	-- s_a16_bank1_q (segment at 0x8000-0xBFFF). Directly answers "is the
+	-- write path landing at all, and with what value" on real hardware,
+	-- rather than guessing further from code review. If these never move
+	-- off "00" while Xevious runs, the write path is still broken; if they
+	-- show a plausible-looking segment number (small, changing) but the
+	-- screen is still garbage, the bug is in the READ-side bank-to-
+	-- flash-address math instead.
+	HEXDIGIT0 <= s_a16_bank0_q(3 downto 0);
+	HEXDIGIT1 <= s_a16_bank0_q(7 downto 4);
+	HEXDIGIT2 <= s_a16_bank1_q(3 downto 0);
+	HEXDIGIT3 <= s_a16_bank1_q(7 downto 4);
 
-	-- Toggling latch, no reset-only behavior: poke -> on, peek -> off,
-	-- unaffected otherwise. Both directions are independently proven
-	-- reliable now (via the earlier reset-only-clear diagnostic) - if this
-	-- still appears to "go off" shortly after a poke with no explicit
-	-- PEEK, that's a genuine read of DABC happening elsewhere in the real
-	-- system, not a decode bug.
+	-- s_led9_latch/the DABC poke-vs-peek test is superseded by the above -
+	-- left computing (harmless) but no longer displayed.
+
+	-- Latched "was a cart bank-register write ever qualified" - same
+	-- reset-only-clear technique as s_io_read_5A_ever_q above, so a brief
+	-- write is visible on LEDG(9) even between glances at the board.
 	process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
 			if s_reset = '1' then
-				s_led9_latch <= '0';
-			elsif s_write_qualified = '1' then
-				s_led9_latch <= '1';
-			elsif s_read_qualified = '1' then
-				s_led9_latch <= '0';
+				s_cart_write_ever_q <= '0';
+			elsif s_cart_write_qualified = '1' then
+				s_cart_write_ever_q <= '1';
 			end if;
 		end if;
 	end process;
 
-	LEDG(9) <= s_led9_latch;
+	LEDG(9) <= s_cart_write_ever_q;
 
 	-- ------------------------------------------------------------------------
 	-- DATA BUS TEST logic - see declarations above.
@@ -750,7 +838,266 @@ begin
 	-- MEMORY-MAPPED ROM BOOT logic - see declarations above.
 	-- ------------------------------------------------------------------------
 	s_sltsl_en  <= (not SLTSL_n) when SW(9) = '1' else '0';
-	s_rom_rd_en <= '1' when s_sltsl_en = '1' and s_A(15 downto 14) = "01" and RD_n = '0' else '0';
+	s_rom_rd_en <= '1' when s_sltsl_en = '1' and s_rom_active = '1' and RD_n = '0' else '0';
+
+	-- ROM catalog: cartridge-simulator, GAMES ONLY - SDMAPPER.ROM (Nextor)
+	-- and MDOS22V3.ROM (MSX-DOS2) at Flash 0x00000/0x20000 are deliberately
+	-- never pointed at by any entry here (per user direction: this design
+	-- ignores them entirely - they need the SD-card SPI + RAM-mapper
+	-- hardware implemented separately in the SDMapper_V2.1b project, not
+	-- this Flash-only cartridge simulator).
+	--
+	-- Flat, gap-free binary index (0-19), NOT the confusing one-hot-ish
+	-- scheme in the original DE1ROMs_Guide.txt readme - all 20 flash
+	-- offsets below were independently VERIFIED (not guessed) by scanning
+	-- the real Reference Designs/DE1ROMs.bin for MSX ROM header
+	-- signatures (0x41,0x42) - every one lands exactly on a real header at
+	-- the round-number "reserved slot" offset. Exception: entries 18/19
+	-- (AVALANCH/FROGGER) are absent from the CURRENT DE1ROMs.bin (it's
+	-- only 0x1FE000 bytes - ends mid-way through slot 17/HRALLY) - they'll
+	-- read blank Flash until that file is rebuilt with those two appended.
+	--
+	-- SW(4 downto 0) selects the game, SW(8)/SW(7 downto 5) optionally
+	-- override the guessed mapper type live - see the big comment above
+	-- for the mapper-type code table.
+	process(SW)
+	begin
+		case SW(4 downto 0) is
+			when "00000" => s_rom_flashbase <= x"030000"; s_rom_mapper_default <= "010"; -- [0] XEVIOUS (ASCII16)
+			when "00001" => s_rom_flashbase <= x"070000"; s_rom_mapper_default <= "010"; -- [1] FANZONE2 / Fan Zone (ASCII16)
+			when "00010" => s_rom_flashbase <= x"0B0000"; s_rom_mapper_default <= "010"; -- [2] ISHTAR (ASCII16)
+			when "00011" => s_rom_flashbase <= x"0F0000"; s_rom_mapper_default <= "010"; -- [3] ANDROGYN (ASCII16)
+			when "00100" => s_rom_flashbase <= x"130000"; s_rom_mapper_default <= "100"; -- [4] NEMESIS / Gradius (Konami, no SCC - confirmed via web search, not a guess)
+			when "00101" => s_rom_flashbase <= x"150000"; s_rom_mapper_default <= "100"; -- [5] PENGUIN / Penguin Adventure (Konami, no SCC - confirmed, Konami never made an SCC version of this game)
+			when "00110" => s_rom_flashbase <= x"170000"; s_rom_mapper_default <= "100"; -- [6] USAS (Konami, no SCC - confirmed)
+			when "00111" => s_rom_flashbase <= x"190000"; s_rom_mapper_default <= "100"; -- [7] MGEAR / Metal Gear (Konami, no SCC - confirmed)
+			when "01000" => s_rom_flashbase <= x"1B0000"; s_rom_mapper_default <= "001"; -- [8] CASTLE / Castle Excellent (plain 32KB)
+			when "01001" => s_rom_flashbase <= x"1B8000"; s_rom_mapper_default <= "001"; -- [9] ELEVATOR / Elevator Action (plain 32KB)
+			when "01010" => s_rom_flashbase <= x"1C0000"; s_rom_mapper_default <= "001"; -- [10] GALAGA (plain 32KB)
+			when "01011" => s_rom_flashbase <= x"1C8000"; s_rom_mapper_default <= "001"; -- [11] GOONIES / The Goonies (plain 32KB)
+			when "01100" => s_rom_flashbase <= x"1D0000"; s_rom_mapper_default <= "001"; -- [12] GULKAVE (plain 32KB)
+			when "01101" => s_rom_flashbase <= x"1D8000"; s_rom_mapper_default <= "001"; -- [13] GYRODINE (plain 32KB)
+			when "01110" => s_rom_flashbase <= x"1E0000"; s_rom_mapper_default <= "001"; -- [14] LODERUN / Lode Runner (plain 32KB)
+			when "01111" => s_rom_flashbase <= x"1E8000"; s_rom_mapper_default <= "001"; -- [15] ZANAC (plain 32KB)
+			when "10000" => s_rom_flashbase <= x"1F0000"; s_rom_mapper_default <= "001"; -- [16] ROAD / Road Fighter (plain 32KB)
+			when "10001" => s_rom_flashbase <= x"1F8000"; s_rom_mapper_default <= "001"; -- [17] HRALLY / Hyper Rally (plain 32KB, may be truncated in current DE1ROMs.bin)
+			when "10010" => s_rom_flashbase <= x"200000"; s_rom_mapper_default <= "001"; -- [18] AVALANCH / Avalanche (plain 32KB, NOT in current DE1ROMs.bin yet)
+			when "10011" => s_rom_flashbase <= x"208000"; s_rom_mapper_default <= "001"; -- [19] FROGGER (plain 32KB, NOT in current DE1ROMs.bin yet)
+			when others  => s_rom_flashbase <= x"030000"; s_rom_mapper_default <= "010"; -- unused codes 20-31: default to XEVIOUS
+		end case;
+	end process;
+
+	s_rom_mapper_type <= SW(7 downto 5) when SW(8) = '1' else s_rom_mapper_default;
+
+	-- Per-mapper-type address decode: for the page(s) this mapper type
+	-- actually maps at the CURRENT s_A, compute the ROM-relative address
+	-- (bank register, if any, concatenated with the in-page offset - safe
+	-- because every page boundary involved is aligned to its own page
+	-- size, so straight bit-slicing of s_A gives the correct in-page
+	-- offset with no subtraction needed, EXCEPT plain 32KB: 0x4000 is not
+	-- 32KB-aligned, so that branch flips s_A(14) instead - see the big
+	-- comment above for the full derivation). Combinational, no clock -
+	-- this feeds straight into FL_ADDR/FL_DQ15_AM1 below, which must stay
+	-- immediate per the timing note above.
+	process(s_rom_mapper_type, s_A, s_a16_bank0_q, s_a16_bank1_q,
+	        s_a8_bank0_q, s_a8_bank1_q, s_a8_bank2_q, s_a8_bank3_q,
+	        s_k4_bank1_q, s_k4_bank2_q, s_k4_bank3_q,
+	        s_kscc_bank0_q, s_kscc_bank1_q, s_kscc_bank2_q, s_kscc_bank3_q)
+	begin
+		s_rom_relative_addr <= (others => '0');
+		s_rom_active         <= '0';
+		case s_rom_mapper_type is
+			when "000" =>	-- Plain 16KB: page 1 only, unbanked
+				if s_A(15 downto 14) = "01" then
+					s_rom_relative_addr <= "0000000000" & s_A(13 downto 0);
+					s_rom_active         <= '1';
+				end if;
+			when "001" =>	-- Plain 32KB: page 1+2, unbanked
+				if s_A(15 downto 14) = "01" or s_A(15 downto 14) = "10" then
+					s_rom_relative_addr <= "000000000" & (not s_A(14)) & s_A(13 downto 0);
+					s_rom_active         <= '1';
+				end if;
+			when "010" =>	-- ASCII16: 2x16KB banks
+				if s_A(15 downto 14) = "01" then
+					s_rom_relative_addr <= "00" & s_a16_bank0_q & s_A(13 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A(15 downto 14) = "10" then
+					s_rom_relative_addr <= "00" & s_a16_bank1_q & s_A(13 downto 0);
+					s_rom_active         <= '1';
+				end if;
+			when "011" =>	-- ASCII8: 4x8KB banks
+				if s_A >= x"4000" and s_A <= x"5FFF" then
+					s_rom_relative_addr <= "000" & s_a8_bank0_q & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"6000" and s_A <= x"7FFF" then
+					s_rom_relative_addr <= "000" & s_a8_bank1_q & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"8000" and s_A <= x"9FFF" then
+					s_rom_relative_addr <= "000" & s_a8_bank2_q & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"A000" and s_A <= x"BFFF" then
+					s_rom_relative_addr <= "000" & s_a8_bank3_q & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				end if;
+			when "100" =>	-- Konami4: 4x8KB banks, bank0 fixed = 0, no SCC
+				-- BIT WIDTH (verified via web search, not guessed): real
+				-- Konami-without-SCC hardware only decodes D0-D3 (4 bits) of
+				-- the written byte as the segment number - bits 4-7 are
+				-- unused/ignored by the real 74LS670-based mapper. Masking
+				-- here matters even though the register itself is 8 bits
+				-- wide: if a game's write happens to leave any of the top 4
+				-- bits set (very common - real hardware silently drops
+				-- them, so games don't bother clearing them), using the
+				-- FULL unmasked byte would compute a wildly out-of-range
+				-- Flash address instead of the intended small segment
+				-- number - exactly the kind of bug that looks like garbage/
+				-- crash on real hardware.
+				if s_A >= x"4000" and s_A <= x"5FFF" then
+					s_rom_relative_addr <= "000" & x"00" & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"6000" and s_A <= x"7FFF" then
+					s_rom_relative_addr <= "000" & "0000" & s_k4_bank1_q(3 downto 0) & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"8000" and s_A <= x"9FFF" then
+					s_rom_relative_addr <= "000" & "0000" & s_k4_bank2_q(3 downto 0) & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"A000" and s_A <= x"BFFF" then
+					s_rom_relative_addr <= "000" & "0000" & s_k4_bank3_q(3 downto 0) & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				end if;
+			when "101" =>	-- KonamiSCC: 4x8KB banks, banking only (no SCC audio)
+				-- BIT WIDTH (verified via web search): real Konami-SCC
+				-- hardware only decodes D0-D5 (6 bits) as the segment
+				-- number - bits 6-7 are unused (writing 0x3F to the 0x9000
+				-- register specifically enables SCC audio mapping at
+				-- 0x9800-0x9FFF, which this design does not implement -
+				-- reads there will return whatever Flash data the masked
+				-- segment number happens to select instead of SCC chip
+				-- registers). Same masking rationale as Konami4 above.
+				if s_A >= x"4000" and s_A <= x"5FFF" then
+					s_rom_relative_addr <= "000" & "00" & s_kscc_bank0_q(5 downto 0) & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"6000" and s_A <= x"7FFF" then
+					s_rom_relative_addr <= "000" & "00" & s_kscc_bank1_q(5 downto 0) & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"8000" and s_A <= x"9FFF" then
+					s_rom_relative_addr <= "000" & "00" & s_kscc_bank2_q(5 downto 0) & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				elsif s_A >= x"A000" and s_A <= x"BFFF" then
+					s_rom_relative_addr <= "000" & "00" & s_kscc_bank3_q(5 downto 0) & s_A(12 downto 0);
+					s_rom_active         <= '1';
+				end if;
+			when others =>
+				null;
+		end case;
+	end process;
+
+	s_rom_byte_addr <= s_rom_flashbase + s_rom_relative_addr;
+
+	-- Bank-switch register writes: one shared glitch-filtered qualifier
+	-- (see declaration above) covering every mapper type's registers.
+	s_cart_write_en <= '1' when s_sltsl_en = '1' and WR_n = '0' else '0';
+
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_cart_write_dur_cnt   <= (others => '0');
+				s_cart_write_qualified <= '0';
+			else
+				if s_cart_write_en = '1' then
+					if s_cart_write_dur_cnt < MIN_PULSE_CYCLES then
+						s_cart_write_dur_cnt <= s_cart_write_dur_cnt + 1;
+					end if;
+					if s_cart_write_dur_cnt >= MIN_PULSE_CYCLES then
+						s_cart_write_qualified <= '1';
+					end if;
+				else
+					s_cart_write_dur_cnt   <= (others => '0');
+					s_cart_write_qualified <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+
+	-- BUG FIX (real hardware: MegaROM games started but showed garbage
+	-- screens once bank-switched content should have loaded, while plain
+	-- unbanked ROMs - which never write bank registers - loaded fine).
+	-- Root cause: this process originally sampled D on the FALLING EDGE of
+	-- s_cart_write_qualified (a "write has finished" one-shot, 1-2
+	-- CLOCK_50 cycles / 20-40ns AFTER the real WR_n rising edge). The Z80
+	-- releases the data bus very shortly after WR_n rises, so by the time
+	-- that delayed sample fired, D was likely already floating/stale -
+	-- capturing near-random noise into the bank registers instead of the
+	-- game's real segment number. Register5A_q and s_flash_data_q
+	-- elsewhere in this file never had this bug because they use the
+	-- OPPOSITE, correct technique: re-latch D CONTINUOUSLY every cycle
+	-- WHILE qualified='1' (D is guaranteed valid for the whole WR_n-low
+	-- window), letting it settle on the right value rather than sampling
+	-- once after the window has already started closing. Switched to that
+	-- same proven pattern here - s_cart_write_qualified_d/the falling-edge
+	-- check are no longer needed.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				s_a16_bank0_q  <= (others => '0');
+				s_a16_bank1_q  <= (others => '0');
+				s_a8_bank0_q   <= (others => '0');
+				s_a8_bank1_q   <= (others => '0');
+				s_a8_bank2_q   <= (others => '0');
+				s_a8_bank3_q   <= (others => '0');
+				s_k4_bank1_q   <= (others => '0');
+				s_k4_bank2_q   <= (others => '0');
+				s_k4_bank3_q   <= (others => '0');
+				s_kscc_bank0_q <= (others => '0');
+				s_kscc_bank1_q <= (others => '0');
+				s_kscc_bank2_q <= (others => '0');
+				s_kscc_bank3_q <= (others => '0');
+			else
+				if s_cart_write_qualified = '1' then
+					case s_rom_mapper_type is
+						when "010" =>	-- ASCII16
+							if s_A >= x"6000" and s_A <= x"67FF" then
+								s_a16_bank0_q <= D;
+							elsif s_A >= x"7000" and s_A <= x"77FF" then
+								s_a16_bank1_q <= D;
+							end if;
+						when "011" =>	-- ASCII8
+							if s_A >= x"6000" and s_A <= x"67FF" then
+								s_a8_bank0_q <= D;
+							elsif s_A >= x"6800" and s_A <= x"6FFF" then
+								s_a8_bank1_q <= D;
+							elsif s_A >= x"7000" and s_A <= x"77FF" then
+								s_a8_bank2_q <= D;
+							elsif s_A >= x"7800" and s_A <= x"7FFF" then
+								s_a8_bank3_q <= D;
+							end if;
+						when "100" =>	-- Konami4 (bank0 fixed, no register)
+							if s_A >= x"6000" and s_A <= x"7FFF" then
+								s_k4_bank1_q <= D;
+							elsif s_A >= x"8000" and s_A <= x"9FFF" then
+								s_k4_bank2_q <= D;
+							elsif s_A >= x"A000" and s_A <= x"BFFF" then
+								s_k4_bank3_q <= D;
+							end if;
+						when "101" =>	-- KonamiSCC
+							if s_A >= x"5000" and s_A <= x"57FF" then
+								s_kscc_bank0_q <= D;
+							elsif s_A >= x"7000" and s_A <= x"77FF" then
+								s_kscc_bank1_q <= D;
+							elsif s_A >= x"9000" and s_A <= x"97FF" then
+								s_kscc_bank2_q <= D;
+							elsif s_A >= x"B000" and s_A <= x"B7FF" then
+								s_kscc_bank3_q <= D;
+							end if;
+						when others =>
+							null;	-- plain 16KB/32KB: no bank registers
+					end case;
+				end if;
+			end if;
+		end if;
+	end process;
 
 	-- Real Flash chip in byte mode: DQ15/A-1 becomes the extra low
 	-- address bit, FL_ADDR carries the rest - same convention used (and
@@ -759,15 +1106,15 @@ begin
 	-- the RAW (unqualified) read enable, matching the proven DE1
 	-- reference's own Flash timing - only the I/O-pointer path's decision
 	-- to trust/drive the result onto D (below) waits for qualification;
-	-- the new ROM-boot path never does (see the timing note above).
+	-- the ROM-boot path never does (see the timing note above).
 	--
 	-- ROM boot takes priority in each of these shared-driver expressions,
 	-- but the two paths can never actually contend for the bus: IORQ_n and
 	-- MREQ_n are mutually exclusive on a real Z80 bus cycle, and
 	-- s_io_read_5A_en/s_rom_rd_en are gated on IORQ_n='0' and SLTSL_n='0'
 	-- (a memory-request-only signal) respectively.
-	FL_DQ15_AM1 <= s_A(0)             when s_rom_rd_en = '1' else s_flash_ptr_q(0);
-	FL_ADDR     <= "000000000" & s_A(13 downto 1) when s_rom_rd_en = '1' else s_flash_ptr_q(22 downto 1);
+	FL_DQ15_AM1 <= s_rom_byte_addr(0)          when s_rom_rd_en = '1' else s_flash_ptr_q(0);
+	FL_ADDR     <= s_rom_byte_addr(22 downto 1) when s_rom_rd_en = '1' else s_flash_ptr_q(22 downto 1);
 	FL_WE_N     <= '1';	-- never write to Flash
 	FL_CE_N     <= '0' when s_rom_rd_en = '1' else
 	               '0' when s_io_read_5A_en = '1' else
@@ -782,8 +1129,25 @@ begin
 	D <= FL_DQ(7 downto 0) when s_rom_rd_en = '1' else
 	     FL_DQ(7 downto 0) when s_io_read_5A_qualified = '1' else
 	     (others => 'Z');
+	-- BUG FIX (real hardware: bank registers were latching floating/garbage
+	-- values - e.g. 0x5E/0xDF, then 0x00/0x70 on a subsequent reset - never
+	-- anything traceable to a real intended segment number). Root cause:
+	-- this chain only ever enabled U1 for READS. It never had a branch for
+	-- s_cart_write_en, so U1 stayed disabled (both sides isolated, per the
+	-- 74245 truth table) during every single MegaROM bank-switch WRITE -
+	-- D was completely floating whenever the bank-register capture process
+	-- sampled it. This is the exact same class of bug already found once
+	-- this session for Register5A_q's memory-write path ("each access path
+	-- needs its own explicit U1 enable, the fix doesn't propagate
+	-- automatically" - see project_msx_fpga_hat_v21b_bus_validation memory)
+	-- - just not re-applied here when this new write path was added.
+	-- Raw/immediate s_cart_write_en (not the glitch-filtered qualified
+	-- version) is used here, matching every other real-time bus-driving
+	-- enable in this file - U1 must be listening for the FULL WR_n-low
+	-- window, not just the part after the glitch filter has settled.
 	U1OE_n <= '0' when s_rom_rd_en = '1' else
 	          '0' when s_io_read_5A_qualified = '1' else
+	          '0' when s_cart_write_en = '1' else
 	          '1';
 	-- POLARITY FIX (lesson learned on megarom_databus_register_test): read
 	-- MSX_FPGA_Hat.net directly - U1's A-side (pins 2-9) wires to CONN1,
