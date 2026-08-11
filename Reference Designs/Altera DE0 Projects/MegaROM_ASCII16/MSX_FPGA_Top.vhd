@@ -288,6 +288,17 @@ architecture behavioural of MSX_FPGA_Top is
 	-- is visible on LEDG(8) even between glances at the board.
 	signal s_io_read_5A_ever_q : std_logic := '0';
 
+	-- ------------------------------------------------------------------------
+	-- Port 0x5A WRITE (new): OUT &H5A,value now ALSO latches Register5A_q,
+	-- in addition to the existing memory-write path (0xD05A) - so both
+	-- read and write can go through the same clean I/O mechanism, with no
+	-- memory-decode involved at all. U1OE_n is extended below to enable
+	-- for this too (previously only reacted to reads), with U1_DIR's
+	-- existing default (listen from MSX) already correct for a write -
+	-- no change needed there.
+	-- ------------------------------------------------------------------------
+	signal s_io_write_5A_en : std_logic;
+
 begin
 
 	s_reset <= not (KEY(0) and RESET_n);
@@ -546,18 +557,24 @@ begin
 		end if;
 	end process;
 
-	-- Register5A_q: re-latches D continuously while the qualified write
-	-- holds, settling on the value present during the access (same fix as
-	-- the earlier Flash-diagnostic capture - never sample on a delayed
-	-- edge after the access has already ended). Reset-only-clear
-	-- otherwise: it must NOT change on anything except a genuine 0xD05A
-	-- write, per the test's whole point.
+	-- Write trigger: I/O port 0x5A. Same M1_n check as the read trigger,
+	-- for the same reason.
+	s_io_write_5A_en <= '1' when IORQ_n = '0' and WR_n = '0' and M1_n = '1' and s_A(7 downto 0) = x"5A" else '0';
+
+	-- Register5A_q: re-latches D continuously while EITHER qualified write
+	-- (memory, 0xD05A) or raw I/O write (port 0x5A) holds, settling on the
+	-- value present during the access (same fix as the earlier
+	-- Flash-diagnostic capture - never sample on a delayed edge after the
+	-- access has already ended). Reset-only-clear otherwise. The I/O path
+	-- uses the raw (unqualified) signal, matching the read side's timing
+	-- discipline, since it also needs U1 enabled/directed correctly in
+	-- real time (see U1OE_n below) rather than after a filtering delay.
 	process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
 			if s_reset = '1' then
 				Register5A_q <= (others => '0');
-			elsif s_write_D05A_qualified = '1' then
+			elsif s_write_D05A_qualified = '1' or s_io_write_5A_en = '1' then
 				Register5A_q <= D;
 			end if;
 		end if;
@@ -604,7 +621,11 @@ begin
 	-- soon as IORQ_n/RD_n assert, matching how FL_OE_N/FL_CE_N-style
 	-- signals are always gated on raw enables elsewhere in this repo.
 	D        <= Register5A_q when s_io_read_5A_en = '1' else (others => 'Z');
-	U1OE_n   <= not s_io_read_5A_en;
+	-- Extended to also enable for a port-0x5A WRITE (not just reads), so
+	-- the FPGA can actually see D during OUT &H5A,value - matches
+	-- U1_DIR's existing default (listen from MSX) already being correct
+	-- for that case, so no change needed there.
+	U1OE_n   <= not (s_io_read_5A_en or s_io_write_5A_en);
 	-- POLARITY FIX: found by reading MSX_FPGA_Hat.net directly. U1's A-side
 	-- (pins 2-9) connects to CONN1 - the REAL MSX cartridge edge connector.
 	-- U1's B-side (pins 11-18) connects to IDC1 - the FPGA GPIO header.
