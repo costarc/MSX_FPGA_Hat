@@ -288,61 +288,13 @@ architecture behavioural of MSX_FPGA_Top is
 	-- is visible on LEDG(8) even between glances at the board.
 	signal s_io_read_5A_ever_q : std_logic := '0';
 
-	-- ISOLATION TEST: port 0x5B, added purely to answer "does U1/D still
-	-- work at all in the CURRENT build" independent of Flash - reads back
-	-- Register5A_q exactly like port 0x5A used to, before it was
-	-- repurposed for Flash. If this works but port 0x5A's Flash read
-	-- doesn't, the bug is specific to the Flash-sourced value/timing; if
-	-- this ALSO fails now, something about enabling the Flash chip
-	-- elsewhere broke U1's ability to drive at all.
-	signal s_io_read_5B_en        : std_logic;
-	signal s_io_read_5B_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
-	signal s_io_read_5B_qualified : std_logic := '0';
-
-	-- ------------------------------------------------------------------------
-	-- FLASH READ VIA I/O PORT (replaces the earlier 0x4000-0x4FFF
-	-- memory-window attempt - that approach depended on SLTSL_n actually
-	-- asserting for this cartridge's slot on page 1, which turned out to
-	-- read whatever ROM/RAM the system already had mapped there instead.
-	-- An I/O port has no such dependency: real RAM/ROM chips only respond
-	-- to MREQ_n, never IORQ_n, so port 0x5A can never contend with them -
-	-- exactly why the Register5A test's read side already worked reliably
-	-- without any slot-selection concern.
-	--
-	--   - Write port 0x5A -> reset s_flash_ptr_q (the Flash address
-	--     pointer) to 0x000000.
-	--   - Read port 0x5A  -> drive Flash[s_flash_ptr_q] onto D, then
-	--     increment s_flash_ptr_q by 1 - but only AFTER the read cycle has
-	--     genuinely finished (on qualified-read's falling edge), so the
-	--     pointer can't change mid-access and hand the CPU the wrong byte
-	--     right before it samples. Repeated reads walk sequentially
-	--     through Flash from address 0.
-	-- ------------------------------------------------------------------------
-	signal s_flash_ptr_q : std_logic_vector(23 downto 0) := (others => '0');
-
-	signal s_io_5A_write_en        : std_logic;
-	signal s_io_5A_write_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
-	signal s_io_5A_write_qualified : std_logic := '0';
-	signal s_io_read_5A_qualified_d : std_logic := '0';
-
-	-- Live displays, per user request: HEX0-3 show the pointer address
-	-- (low 16 bits - enough to see it walking forward), LEDG(7:0) shows
-	-- the last byte actually read from Flash. Replaces the earlier
-	-- DABC-pulse-width HEX display and Register5A_q's LEDG(7:0) display -
-	-- both underlying tests/latches are untouched, only what's SHOWN
-	-- changes, since this is now the test in focus.
-	signal s_flash_data_q : std_logic_vector(7 downto 0) := (others => '0');
-
 begin
 
 	s_reset <= not (KEY(0) and RESET_n);
 	INT_n <= '0';		-- inverted due to the Q1 open-collector stage in the interface
 	WAIT_n <= '0';		-- pure observer - never requests a wait
-	-- BUSDIR_n is now driven further below, alongside U1OE_n/U1_DIR - see
-	-- that comment for why (MSX Technical Data Book 1.6.2: a cartridge
-	-- responding to INP must force BUSDIR_n low while sending data to the
-	-- CPU; ordinary SLTSL_n memory reads don't need it, but this design
-	-- only ever drives data back via an I/O read, so it always needs it).
+	-- BUSDIR_n is now driven further below, on the raw I/O-read enable -
+	-- see that comment for why.
 	SOUNDOUT <= '0';
 	U4OE_n <= '0';		-- unused buffer on this variant - disabled
 
@@ -539,14 +491,10 @@ begin
 	-- 30 cycles = 600ns). Replaces the address-hold display for this
 	-- specific quantitative diagnostic - the address decode itself is
 	-- already independently confirmed working.
-	-- Per user request: HEX1:HEX0 show the Flash DATA byte (moved off
-	-- LEDG(7:0)), HEX3:HEX2 show the address's lower byte, LEDG(7:0) show
-	-- the address's higher byte (bits 15:8) - see also the LEDG(7:0)
-	-- assignment further below.
-	HEXDIGIT0 <= s_flash_data_q(3 downto 0);
-	HEXDIGIT1 <= s_flash_data_q(7 downto 4);
-	HEXDIGIT2 <= s_flash_ptr_q(3 downto 0);
-	HEXDIGIT3 <= s_flash_ptr_q(7 downto 4);
+	HEXDIGIT0 <= s_read_pulse_width(3 downto 0);
+	HEXDIGIT1 <= s_read_pulse_width(7 downto 4);
+	HEXDIGIT2 <= s_write_pulse_width(3 downto 0);
+	HEXDIGIT3 <= s_write_pulse_width(7 downto 4);
 
 	-- Toggling latch, no reset-only behavior: poke -> on, peek -> off,
 	-- unaffected otherwise. Both directions are independently proven
@@ -643,8 +591,34 @@ begin
 		end if;
 	end process;
 
+	-- SEQUENCING FIX, per user direction: assert D, U1OE_n/U1_DIR, AND
+	-- BUSDIR_n all together, immediately, on the RAW s_io_read_5A_en
+	-- (IORQ_n low AND RD_n low AND M1_n high AND address match) - not the
+	-- MIN_PULSE_CYCLES-delayed qualified version. The qualification delay
+	-- was appropriate for a passive diagnostic capture, but for actually
+	-- steering the MSX motherboard's own internal bus buffer direction
+	-- (BUSDIR_n) and driving the bus (U1/D), waiting ~160ns before
+	-- reacting was itself the bug - real memory reads never need this
+	-- because slot-select logic handles direction automatically (MSX
+	-- Technical Data Book 1.6.2), but for I/O the cartridge must react as
+	-- soon as IORQ_n/RD_n assert, matching how FL_OE_N/FL_CE_N-style
+	-- signals are always gated on raw enables elsewhere in this repo.
+	D        <= Register5A_q when s_io_read_5A_en = '1' else (others => 'Z');
+	U1OE_n   <= not s_io_read_5A_en;
+	U1_DIR   <= '1' when s_io_read_5A_en = '1' else '0';
+	-- Never tri-stated - per review of the user's MSXPi CPLD design
+	-- (proven, production, real-world working I/O interface), BUSDIR_n
+	-- there is ALWAYS actively driven ('0' or '1'), never left floating:
+	-- "BUSDIR_n <= '0' when (readoper='1' and is_ctrl_or_data='1') else
+	-- '1';" - the deasserted state is a definite HIGH, not 'Z'. Applying
+	-- the same principle here: a floating BUSDIR_n could leave the real
+	-- motherboard's own bus buffer in an indeterminate state between
+	-- accesses, which would explain the non-deterministic wrong values
+	-- (different each attempt, not a consistent bug) seen so far.
+	BUSDIR_n <= '0' when s_io_read_5A_en = '1' else '1';
+
 	-- Latched "was port 0x5A ever read" - confirms the I/O decode path
-	-- fires at all, independent of what it returns.
+	-- fires at all, independent of Register5A_q's actual value.
 	process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
@@ -657,136 +631,7 @@ begin
 	end process;
 
 	LEDG(8)          <= s_io_read_5A_ever_q;
-	LEDG(7 downto 0) <= s_flash_ptr_q(15 downto 8);	-- address's higher byte - the data byte moved to HEX1:HEX0 above
-
-	-- Port 0x5B isolation test - see declaration above.
-	s_io_read_5B_en <= '1' when IORQ_n = '0' and RD_n = '0' and M1_n = '1' and s_A(7 downto 0) = x"5B" else '0';
-
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				s_io_read_5B_dur_cnt   <= (others => '0');
-				s_io_read_5B_qualified <= '0';
-			else
-				if s_io_read_5B_en = '1' then
-					if s_io_read_5B_dur_cnt < MIN_PULSE_CYCLES then
-						s_io_read_5B_dur_cnt <= s_io_read_5B_dur_cnt + 1;
-					end if;
-					if s_io_read_5B_dur_cnt >= MIN_PULSE_CYCLES then
-						s_io_read_5B_qualified <= '1';
-					end if;
-				else
-					s_io_read_5B_dur_cnt   <= (others => '0');
-					s_io_read_5B_qualified <= '0';
-				end if;
-			end if;
-		end if;
-	end process;
-
-	-- ------------------------------------------------------------------------
-	-- FLASH READ VIA I/O PORT logic - see declarations above.
-	-- ------------------------------------------------------------------------
-
-	-- Write trigger: same port 0x5A, WR_n instead of RD_n. Any write
-	-- resets the pointer - the value written doesn't matter.
-	s_io_5A_write_en <= '1' when IORQ_n = '0' and WR_n = '0' and M1_n = '1' and s_A(7 downto 0) = x"5A" else '0';
-
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				s_io_5A_write_dur_cnt   <= (others => '0');
-				s_io_5A_write_qualified <= '0';
-			else
-				if s_io_5A_write_en = '1' then
-					if s_io_5A_write_dur_cnt < MIN_PULSE_CYCLES then
-						s_io_5A_write_dur_cnt <= s_io_5A_write_dur_cnt + 1;
-					end if;
-					if s_io_5A_write_dur_cnt >= MIN_PULSE_CYCLES then
-						s_io_5A_write_qualified <= '1';
-					end if;
-				else
-					s_io_5A_write_dur_cnt   <= (others => '0');
-					s_io_5A_write_qualified <= '0';
-				end if;
-			end if;
-		end if;
-	end process;
-
-	-- s_flash_ptr_q: reset to 0 on a qualified write; incremented on a
-	-- qualified READ's falling edge (i.e. once the read has genuinely
-	-- finished) so the address driving FL_ADDR/FL_DQ15_AM1 stays fixed for
-	-- the entire access - incrementing any earlier (e.g. on the rising
-	-- edge) would change the byte FL_DQ presents partway through the same
-	-- read, right before the CPU samples it.
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				s_flash_ptr_q            <= (others => '0');
-				s_io_read_5A_qualified_d <= '0';
-			else
-				s_io_read_5A_qualified_d <= s_io_read_5A_qualified;
-				if s_io_5A_write_qualified = '1' then
-					s_flash_ptr_q <= (others => '0');
-				elsif s_io_read_5A_qualified_d = '1' and s_io_read_5A_qualified = '0' then
-					s_flash_ptr_q <= s_flash_ptr_q + 1;
-				end if;
-			end if;
-		end if;
-	end process;
-
-	-- TEMPORARILY DISABLED for isolation testing: port 0x5B (Register5A_q
-	-- read-back) now ALSO returns 0xFF, even though it uses the exact
-	-- mechanism that worked before Flash was wired up - so something
-	-- about actively enabling the Flash chip elsewhere may be
-	-- interfering with U1/D in general. Tying these back to the same
-	-- safe inactive constants they had before, to test that in isolation
-	-- (port 0x5A's Flash read will not work while this is disabled -
-	-- that's expected and not what's under test right now).
-	FL_DQ15_AM1 <= '0';
-	FL_ADDR     <= (others => '0');
-	FL_WE_N     <= '1';
-	FL_CE_N     <= '1';
-	FL_OE_N     <= '1';
-
-	-- TIMING TEST: port 0x5B now drives D/U1 immediately off the RAW
-	-- (unqualified) s_io_read_5B_en instead of waiting MIN_PULSE_CYCLES -
-	-- engaging as early as possible, to test whether the qualification
-	-- delay itself is why the CPU never catches valid data. Port 0x5A
-	-- (Flash, currently disabled anyway) is untouched/still qualified.
-	D        <= s_flash_data_q when s_io_read_5A_qualified = '1' else
-	            Register5A_q   when s_io_read_5B_en = '1' else
-	            (others => 'Z');
-	U1OE_n   <= not (s_io_read_5A_qualified or s_io_read_5B_en);
-	U1_DIR   <= '1' when (s_io_read_5A_qualified = '1' or s_io_read_5B_en = '1') else '0';
-	-- REVERTED to tri-stated: driving BUSDIR_n low (matching the
-	-- documented spec and the SDMapper reference) made things WORSE, not
-	-- better - the internal capture (s_flash_data_q) is provably correct
-	-- via the HEX display, yet the MSX still got 0xFF with BUSDIR_n
-	-- driven. Since D/U1OE_n/U1_DIR are structurally identical to the
-	-- earlier Register5A mechanism that worked correctly WITHOUT touching
-	-- BUSDIR_n at all, BUSDIR_n is the one real difference - isolating it
-	-- back to tri-stated to test that specifically, rather than assume
-	-- the documented spec's polarity matches this particular interface
-	-- board's actual wiring (WAIT_n/INT_n already needed an inverting
-	-- stage here that the generic spec wouldn't predict either).
-	BUSDIR_n <= 'Z';
-
-	-- s_flash_data_q: re-latches FL_DQ continuously while the qualified
-	-- read holds, same settle-during-access technique as Register5A_q -
-	-- holds the last byte actually read from Flash for display.
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				s_flash_data_q <= (others => '0');
-			elsif s_io_read_5A_qualified = '1' then
-				s_flash_data_q <= FL_DQ(7 downto 0);
-			end if;
-		end if;
-	end process;
+	LEDG(7 downto 0) <= Register5A_q;	-- live view of the latched register value
 
 	DISPHEX0 : decoder_7seg PORT MAP (
 		NUMBER		=>	HEXDIGIT0,
@@ -808,12 +653,16 @@ begin
 		HEX_DISP		=>	HEX3
 	);
 
-	-- FL_WE_N/FL_CE_N/FL_OE_N/FL_ADDR/FL_DQ15_AM1 are now driven above by
-	-- the Flash read window. Everything else below is still NOT USED in
-	-- this test variant - tied to safe, inactive constants.
+	-- Everything below is NOT USED in this test variant - tied to safe,
+	-- inactive constants. No ROM/Flash/mapper/SRAM feature is exercised.
+	FL_WE_N <= '1';
 	FL_RST_N <= not s_reset;
+	FL_CE_N <= '1';
+	FL_OE_N <= '1';
 	FL_BYTE_N <= '0';
 	FL_WP_N <= '0';
+	FL_ADDR <= (others => '0');
+	FL_DQ15_AM1 <= '0';
 	SD_DAT <= 'Z';
 	DRAM_DQ <= (others => 'Z');
 	SRAM_DQ <= (others => 'Z');
