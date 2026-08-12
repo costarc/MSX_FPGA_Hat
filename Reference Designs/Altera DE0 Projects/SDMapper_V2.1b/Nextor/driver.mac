@@ -1,0 +1,639 @@
+	; Device-based Nextor driver for SDMapper_V2.1b's XESS-core SD interface
+	;
+	; MSX_FPGA_Hat rev 2.1b (Terasic DE0). Talks to sdcard_bridge.vhd's
+	; register window, which wraps a ported XESS Corp SdCardCtrl core
+	; (github.com/xesscorp/VHDL_Lib/blob/master/SDCard.vhd) - all SD
+	; protocol (CMD0/CMD8/ACMD41/CMD17/CMD24) runs in that hardware core;
+	; this driver only ever does simple byte-level register I/O. Modeled
+	; structurally on Nextor's own SunriseIDE driver.mac (jump table,
+	; DRV_INIT flow, error-code conventions), but far simpler since there's
+	; no low-level protocol bit-banging to do here.
+
+	org 4100h
+
+DRV_START:
+
+	.print1 SDMapper V2.1b XESS SD driver
+
+;-----------------------------------------------------------------------------
+;
+; Driver configuration constants
+
+;Driver type: 0 for drive-based, 1 for device-based
+DRV_TYPE	equ	1
+
+;Hot-plug devices support: this board has no physical card-detect sensing
+;(SW(0) is a manual switch), so no real hot-plug support.
+DRV_HOTPLUG	equ	0
+
+DEBUG	equ	0
+
+;Driver version
+VER_MAIN	equ	1
+VER_SEC		equ	0
+VER_REV		equ	0
+
+;This driver has one important limitation, inherited from the underlying
+;XESS core: only single-block-at-a-time addressing is exposed at the
+;register level for the FIRST sector of a transfer, but the driver uses the
+;core's own continue_i multi-block support for the rest, so multi-sector
+;reads/writes ARE efficient (no re-issuing SD_ADDR0-3 per sector, matching
+;how the sequential SD read/write commands work in hardware).
+
+
+;-----------------------------------------------------------------------------
+;
+; SD card register window - see sdcard_bridge.vhd for the full protocol.
+; Only visible when this cartridge's ROM bank 1 is switched to segment 7,
+; which is exactly where mknexrom always places driver content (bank
+; DRIVER_BANK = the kernel's own bank count, 7 for Nextor 2.1.x) - so these
+; addresses are reachable any time this driver's own code is executing, no
+; extra bank-switch needed.
+
+SD_DATA		equ	7B00h	;R/W: next byte to/from an active block transfer (WAIT_n-gated)
+SD_ADDR0	equ	7B01h	;W: block address bits 7:0
+SD_ADDR1	equ	7B02h	;W: block address bits 15:8
+SD_ADDR2	equ	7B03h	;W: block address bits 23:16
+SD_ADDR3	equ	7B04h	;W: block address bits 31:24 (SDHC card - block number, not byte address)
+SD_CMD		equ	7B05h	;W: bit7=reset pulse, bit1=write pulse, bit0=read pulse, bit2=continue
+SD_STATUS	equ	7B06h	;R: bit0=busy, bit1=error, bit2=present, bit3=write-protect, bit4=bridge timeout
+SD_ERRLO	equ	7B07h	;R: SdCardCtrl's error_o(7:0), for diagnostics
+SD_ERRHI	equ	7B08h	;R: SdCardCtrl's error_o(15:8), for diagnostics
+
+SD_CMD_RESET	equ	80h
+SD_CMD_READ		equ	01h
+SD_CMD_WRITE	equ	02h
+SD_CMD_CONTINUE	equ	04h
+
+SDSTAT_BUSY		equ	0
+SDSTAT_ERROR	equ	1
+SDSTAT_PRESENT	equ	2
+SDSTAT_WPROT	equ	3
+SDSTAT_TIMEOUT	equ	4
+
+M_SDSTAT_BUSY		equ	(1 SHL SDSTAT_BUSY)
+M_SDSTAT_ERROR		equ	(1 SHL SDSTAT_ERROR)
+M_SDSTAT_PRESENT	equ	(1 SHL SDSTAT_PRESENT)
+M_SDSTAT_WPROT		equ	(1 SHL SDSTAT_WPROT)
+M_SDSTAT_TIMEOUT	equ	(1 SHL SDSTAT_TIMEOUT)
+M_SDSTAT_FAIL		equ	M_SDSTAT_ERROR+M_SDSTAT_TIMEOUT	;either bit means "something went wrong"
+
+
+;-----------------------------------------------------------------------------
+;
+; Standard BIOS and work area entries
+
+CHPUT	equ	00A2h	;Character output
+
+
+;-----------------------------------------------------------------------------
+;
+; Error codes for DEV_RW and DEV_FORMAT (same codes MSX-DOS uses)
+
+.NCOMP	equ	0FFh
+.WRERR	equ	0FEh
+.DISK	equ	0FDh
+.NRDY	equ	0FCh
+.DATA	equ	0FAh
+.RNF	equ	0F9h
+.WPROT	equ	0F8h
+.UFORM	equ	0F7h
+.SEEK	equ	0F3h
+.IFORM	equ	0F0h
+.IDEVL	equ	0B5h
+.IPARM	equ	08Bh
+
+
+;-----------------------------------------------------------------------------
+;
+; Routines available on kernel page 0
+
+GSLOT1	equ	402Dh
+RDBANK	equ	403Ch
+CALBAS	equ	403Fh
+CALBNK	equ	4042h
+GWORK	equ	4045h
+CALDRV	equ	4048h
+
+
+;-----------------------------------------------------------------------------
+;
+; Driver signature
+
+	db	"NEXTOR_DRIVER",0
+
+;Driver flags: bit0=1 device-based, bit1=hotplug, bit2=1 (provides DRV_CONFIG)
+	db	1+(2*DRV_HOTPLUG)+4
+
+;Reserved byte
+	db	0
+
+;Driver name
+
+DRV_NAME:
+	db	"SDMapper V2.1b (XESS SD core)"
+	ds	32-($-DRV_NAME)," "
+
+;Jump table
+
+	jp	DRV_TIMI
+	jp	DRV_VERSION
+	jp	DRV_INIT
+	jp	DRV_BASSTAT
+	jp	DRV_BASDEV
+	jp	DRV_EXTBIO
+	jp	DRV_DIRECT0
+	jp	DRV_DIRECT1
+	jp	DRV_DIRECT2
+	jp	DRV_DIRECT3
+	jp	DRV_DIRECT4
+	jp	DRV_CONFIG
+
+	ds	12
+
+	jp	DEV_RW
+	jp	DEV_INFO
+	jp	DEV_STATUS
+	jp	LUN_INFO
+	jp	DEV_FORMAT
+	jp	DEV_CMD
+
+
+;-----------------------------------------------------------------------------
+;
+; Timer interrupt routine - not used by this driver.
+
+DRV_TIMI:
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Driver initialization, called twice (see the Driver Development Guide for
+; the full first/second-execution contract) - this driver needs no work
+; area, so both executions just check/report the SD card's own state.
+; SdCardCtrl's own CMD0/CMD8/ACMD41 sequence runs automatically from power-
+; on/FPGA-configuration reset, independent of this routine - by the time
+; DRV_INIT runs, initialization has typically already completed (or
+; failed), so this mostly just reports what already happened, with a
+; software reset pulse + a bounded wait as a safety net in case it hasn't.
+
+TEMP_WORK	equ	0C000h
+
+DRV_INIT:
+	or	a
+	ld	hl,0
+	ld	a,2
+	ret	z			;first execution: no work area needed, no timer hook
+
+	ld	de,INFO_S
+	call	PRINT
+
+	;Pulse a software reset - cheap insurance so a soft MSX reset also
+	;retries card detection, not just a full power cycle.
+	ld	a,SD_CMD_RESET
+	ld	(SD_CMD),a
+
+	;Poll SD_STATUS for busy to clear. This is a genuine software polling
+	;loop (SD_STATUS is an immediate/non-WAIT_n-gated read - see
+	;sdcard_bridge.vhd) - same shape as the abandoned protocol's
+	;WAIT_RESP-style loops, just watching a different bit. ~300ms bound
+	;(256 outer * 256 inner iterations, a handful of T-states each).
+	ld	b,0
+DRV_INIT_WAIT:
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_BUSY,a
+	jr	z,DRV_INIT_WAITDONE
+	ld	c,0
+DRV_INIT_WAIT_INNER:
+	dec	c
+	jr	nz,DRV_INIT_WAIT_INNER
+	djnz	DRV_INIT_WAIT
+DRV_INIT_WAITDONE:
+
+	ld	a,(SD_STATUS)
+	ld	c,a			;save status for the checks below
+
+	bit	SDSTAT_PRESENT,c
+	jr	z,DRV_INIT_NOCARD
+
+	bit	SDSTAT_BUSY,c
+	jr	nz,DRV_INIT_FAIL	;still busy after the wait above - treat as failure
+
+	ld	a,(SD_ERRLO)
+	or	a
+	jr	nz,DRV_INIT_FAIL
+	ld	a,(SD_ERRHI)
+	or	a
+	jr	nz,DRV_INIT_FAIL
+
+	ld	de,OK_S
+	call	PRINT
+	ret
+
+DRV_INIT_NOCARD:
+	ld	de,NOCARD_S
+	call	PRINT
+	ret
+
+DRV_INIT_FAIL:
+	ld	de,FAIL_S
+	call	PRINT
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Obtain driver version
+
+DRV_VERSION:
+	ld	a,VER_MAIN
+	ld	b,VER_SEC
+	ld	c,VER_REV
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; BASIC expanded statement/device handlers - not implemented.
+
+DRV_BASSTAT:
+	scf
+	ret
+
+DRV_BASDEV:
+	scf
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Extended BIOS hook - not used.
+
+DRV_EXTBIO:
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Direct calls entry points - not used.
+
+DRV_DIRECT0:
+DRV_DIRECT1:
+DRV_DIRECT2:
+DRV_DIRECT3:
+DRV_DIRECT4:
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Get driver configuration - this driver always uses the kernel's default
+; (2 drives for a device-based driver), so it reports "not available" for
+; every index, same simplification Nextor's own SunriseIDE driver uses.
+
+DRV_CONFIG:
+	ld	a,1
+	ret
+
+
+;=====
+;=====  BEGIN of DEVICE-BASED specific routines
+;=====
+
+;-----------------------------------------------------------------------------
+;
+; Read or write logical sectors from/to a logical unit
+;
+;Input:    Cy=0 to read, 1 to write
+;          A = Device number, 1 to 7 (always 1 - this board has one SD slot)
+;          B = Number of sectors to read or write
+;          C = Logical unit number, 1 to 7 (always 1)
+;          HL = Source or destination memory address for the transfer
+;          DE = Address where the 4 byte sector number is stored
+;Output:   A = Error code (MSX-DOS codes, see equates above)
+;          B = Number of sectors actually read or written
+
+DEV_RW:
+	push	af			;save Cy(r/w) + A(device index)
+
+	ld	a,c			;LUN must be 1 (only one LUN on this device)
+	cp	1
+	jp	nz,DEV_RW_BADDEV
+
+	ld	a,b
+	or	a
+	jr	nz,DEV_RW_HASCOUNT
+	pop	af
+	xor	a
+	ld	b,0
+	ret				;0 sectors requested - trivially ok
+
+DEV_RW_HASCOUNT:
+	push	de
+	pop	ix			;ix -> 4-byte sector number
+	ld	a,(ix+0)
+	ld	(SD_ADDR0),a
+	ld	a,(ix+1)
+	ld	(SD_ADDR1),a
+	ld	a,(ix+2)
+	ld	(SD_ADDR2),a
+	ld	a,(ix+3)
+	ld	(SD_ADDR3),a
+
+	pop	af			;Cy = r/w flag again
+	jr	c,DEV_RW_DOWRITE
+
+;--- READ ---
+
+	ld	a,SD_CMD_READ
+	ld	(SD_CMD),a
+
+DEV_RW_RLOOP:
+	push	bc
+	ld	bc,512
+DEV_RW_RBYTE:
+	ld	a,(SD_DATA)
+	ld	(hl),a
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,DEV_RW_RBYTE
+	pop	bc
+
+	ld	a,(SD_STATUS)
+	and	M_SDSTAT_FAIL
+	jr	nz,DEV_RW_ERR
+
+	djnz	DEV_RW_RNEXT
+	xor	a
+	ret
+DEV_RW_RNEXT:
+	ld	a,SD_CMD_READ+SD_CMD_CONTINUE
+	ld	(SD_CMD),a
+	jr	DEV_RW_RLOOP
+
+;--- WRITE ---
+
+DEV_RW_DOWRITE:
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_WPROT,a
+	jr	nz,DEV_RW_WPROTERR
+
+	ld	a,SD_CMD_WRITE
+	ld	(SD_CMD),a
+
+DEV_RW_WLOOP:
+	push	bc
+	ld	bc,512
+DEV_RW_WBYTE:
+	ld	a,(hl)
+	ld	(SD_DATA),a
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,DEV_RW_WBYTE
+	pop	bc
+
+	ld	a,(SD_STATUS)
+	and	M_SDSTAT_FAIL
+	jr	nz,DEV_RW_ERR
+
+	djnz	DEV_RW_WNEXT
+	xor	a
+	ret
+DEV_RW_WNEXT:
+	ld	a,SD_CMD_WRITE+SD_CMD_CONTINUE
+	ld	(SD_CMD),a
+	jr	DEV_RW_WLOOP
+
+;--- Error handling ---
+
+DEV_RW_ERR:
+	push	af
+	ld	a,SD_CMD_RESET		;recover SdCardCtrl - it stalls on error until reset (its own documented behaviour)
+	ld	(SD_CMD),a
+	pop	af
+
+	bit	SDSTAT_TIMEOUT,a
+	jr	nz,DEV_RW_ERR_NRDY
+	ld	a,.DISK
+	ld	b,0
+	ret
+DEV_RW_ERR_NRDY:
+	ld	a,.NRDY
+	ld	b,0
+	ret
+
+DEV_RW_WPROTERR:
+	ld	a,.WPROT
+	ld	b,0
+	ret
+
+DEV_RW_BADDEV:
+	pop	af
+	ld	a,.IDEVL
+	ld	b,0
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Device information gathering
+;
+;Input:   A = Device index, 1 to 7
+;         B = Information to return: 0=basic, 1=manufacturer, 2=device name, 3=serial
+;         HL = Pointer to a buffer in RAM
+;Output:  A = 0 Ok, 1 device/index invalid, 2 information not available
+;         Buffer filled per the Driver Development Guide's DEV_INFO contract.
+
+DEV_INFO:
+	or	a
+	jr	z,DEV_INFO_ERR1
+	cp	2
+	jr	nc,DEV_INFO_ERR1
+
+	ld	a,b
+	or	a
+	jr	nz,DEV_INFO_STRING
+
+	ld	(hl),1			;one LUN
+	inc	hl
+	ld	(hl),0			;flags always zero
+	xor	a
+	ret
+
+DEV_INFO_STRING:
+	push	bc
+	push	hl
+	push	hl
+	pop	de
+	inc	de
+	ld	(hl)," "
+	ld	bc,64-1
+	ldir
+	pop	hl
+	pop	bc
+
+	ld	a,b
+	cp	2
+	jr	nz,DEV_INFO_ERR2	;only "device name" (index 2) is provided
+
+	ld	de,DEVNAME_S
+	ld	bc,DEVNAME_LEN
+	ldir
+	xor	a
+	ret
+
+DEV_INFO_ERR1:
+	ld	a,1
+	ret
+DEV_INFO_ERR2:
+	ld	a,2
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Obtain device status
+;
+;Input:   A = Device index, 1 to 7
+;         B = Logical unit number, 1 to 7 (0 = the device itself)
+;Output:  A = 0 not available/invalid, 1 available unchanged,
+;             2 available changed, 3 available unknown-change
+;
+; This board has no physical card-detect sensing (SW(0) is a manual
+; switch), so no real hot-plug/change tracking - always "unchanged" while
+; SW(0) reports the card present.
+
+DEV_STATUS:
+	or	a
+	jr	z,DEV_STATUS_NA
+	cp	2
+	jr	nc,DEV_STATUS_NA
+	ld	a,b
+	cp	2
+	jr	nc,DEV_STATUS_NA
+
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_PRESENT,a
+	jr	z,DEV_STATUS_NA
+
+	ld	a,1
+	ret
+DEV_STATUS_NA:
+	xor	a
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Obtain logical unit information
+;
+;Input:   A = Device index, 1 to 7
+;         B = Logical unit number, 1 to 7
+;         HL = Pointer to buffer in RAM
+;Output:  A = 0 Ok / 1 error
+;
+; Capacity is unknown (this driver doesn't parse the SD card's CSD
+; register) - reported as 0, the documented "not available" value.
+
+LUN_INFO:
+	or	a
+	jr	z,LUN_INFO_ERR
+	cp	2
+	jr	nc,LUN_INFO_ERR
+	ld	a,b
+	cp	1
+	jr	nz,LUN_INFO_ERR
+
+	push	hl
+	pop	ix
+	ld	(ix+0),0		;block device
+	ld	(ix+1),0		;sector size = 512
+	ld	(ix+2),2
+	ld	(ix+3),0		;total sectors: not available
+	ld	(ix+4),0
+	ld	(ix+5),0
+	ld	(ix+6),0
+	ld	(ix+7),0		;not removable, not read-only, not a floppy
+	ld	(ix+8),0		;cylinders = 0 (not applicable)
+	ld	(ix+9),0
+	ld	(ix+10),0		;heads = 0
+	ld	(ix+11),0		;sectors/track = 0
+	xor	a
+	ret
+
+LUN_INFO_ERR:
+	ld	a,1
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Physical format - not supported.
+
+DEV_FORMAT:
+	ld	a,.IFORM
+	ret
+
+
+;-----------------------------------------------------------------------------
+;
+; Direct device command - not supported.
+
+DEV_CMD:
+	ld	a,2
+	ret
+
+;=====
+;=====  END of DEVICE-BASED specific routines
+;=====
+
+
+;=======================
+; Subroutines
+;=======================
+
+;-----------------------------------------------------------------------------
+;
+; Print a zero-terminated string on screen
+; Input: DE = String address
+
+PRINT:
+	ld	a,(de)
+	or	a
+	ret	z
+	call	CHPUT
+	inc	de
+	jr	PRINT
+
+
+;=======================
+; Strings
+;=======================
+
+INFO_S:
+	db	"SDMapper V2.1b XESS SD driver v"
+	db	VER_MAIN+"0",".",VER_SEC+"0",".",VER_REV+"0",13,10
+	db	"(c) Ronivon Costa 2026",13,10,0
+
+OK_S:
+	db	"SD card ready",13,10,0
+NOCARD_S:
+	db	"No SD card detected",13,10,0
+FAIL_S:
+	db	"SD card initialization failed - check HEX/LEDG",13,10,0
+
+DEVNAME_S:
+	db	"SDMapper V2.1b XESS SD Card"
+DEVNAME_LEN	equ	$-DEVNAME_S
+
+
+;-----------------------------------------------------------------------------
+
+DRV_END:
+
+	end
