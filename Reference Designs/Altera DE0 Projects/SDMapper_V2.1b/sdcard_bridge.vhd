@@ -151,11 +151,25 @@ architecture rtl of sdcard_bridge is
 
 	-- Bridge-level timeout: see file header - protects against WAIT_n
 	-- getting stuck asserted forever if SdCardCtrl stalls mid-handshake.
-	-- 16 bits at 25MHz covers ~2.6ms, comfortably longer than a single
-	-- SPI byte even at the slow 400kHz init rate (~20us/byte) with a
-	-- large safety margin, but still bounded.
-	constant TIMEOUT_MAX_C : unsigned(15 downto 0) := (others => '1');
-	signal timeout_cnt_q   : unsigned(15 downto 0) := (others => '0');
+	--
+	-- WIDENED (2026-08-12, real hardware: first real success - "SD card
+	-- ready" printed, meaning CMD0/CMD8/ACMD41 genuinely completed - but
+	-- the MSX hung a few seconds later, LEDG(0)/dbg_timeout_o lit).
+	-- Root cause: 16 bits (~2.6ms) was sized only for a single SPI byte
+	-- transfer, but SdCardCtrl's own RD_BLK state polls the card
+	-- internally for a start token (0xFE) after issuing CMD17/CMD24, and
+	-- never raises hndShk_o at all while doing so (rtnData_v stays false
+	-- until the token arrives) - a real card can legitimately take longer
+	-- than 2.6ms to prepare that data. The old timeout fired mid-poll,
+	-- handed back stale data, and the byte loop kept going regardless -
+	-- 512 accumulated ~2.6ms timeouts per sector reads as "hangs after a
+	-- few seconds", not a true infinite lock, but bad either way. 24 bits
+	-- at 25MHz covers ~671ms - comfortably past realistic worst-case SD
+	-- card response latency, while staying an occasional (once per block
+	-- command, not once per byte) stall rather than the systematic
+	-- per-byte slowdown that caused the earlier SCLK-divider hang.
+	constant TIMEOUT_MAX_C : unsigned(23 downto 0) := (others => '1');
+	signal timeout_cnt_q   : unsigned(23 downto 0) := (others => '0');
 	signal timeout_flag_q  : std_logic := '0';
 
 	-- ------------------------------------------------------------------
