@@ -22,51 +22,64 @@
 -- ROM sub-slot enable never coincided with a genuine read).
 --
 -- This version re-integrates full MSX secondary-slot expansion, gluing
--- together three independently-developed and independently-tested reference
--- designs for this same MSX_FPGA_Hat rev 2.1b interface board:
+-- together independently-developed and independently-tested pieces for this
+-- same MSX_FPGA_Hat rev 2.1b interface board:
 --   -> ROM sub-slot: the ASCII16 Flash-boot logic already present in this
 --      file (itself derived from MegaROM_ASCII16/MSX_FPGA_Top.vhd, which has
---      a real-hardware-confirmed boot MILESTONE dated today), hard-locked to
---      flashbase 0x000000 (Nextor) instead of MegaROM_ASCII16's SW-selectable
---      game catalog - this board only ever boots Nextor from that offset.
+--      a real-hardware-confirmed boot MILESTONE), hard-locked to flashbase
+--      0x000000 (Nextor) instead of MegaROM_ASCII16's SW-selectable game
+--      catalog - this board only ever boots Nextor from that offset.
 --   -> RAM sub-slot: the standard MSX Memory Mapper (512KB, DE0 SRAM addon)
 --      from MemoryMapper/MSX_FPGA_Top.vhd, itself real-hardware-tested on a
---      Canon V-8/V-9 today (see project_memorymapper_hardware_test memory).
---   -> Slot expansion + SD card: exp_slot.vhd and spi.vhd (both already
---      living in this directory, both already carrying documented stability
---      fixes for the exact "combinational signal used as a clock" hazard
---      class that caused earlier hardware flakiness) + the SD status/control/
---      timer register protocol from "SDMapper - Boots Nextor Some Times",
---      trimmed from that design's 2-SD-card-slot layout down to this board's
---      single onboard microSD (SD1 only - this entity has no SD2_* ports).
+--      Canon V-8/V-9 (see project_memorymapper_hardware_test memory). This
+--      is a hard requirement (the whole point of this board is expanding
+--      MSX1 machines with only 16KB RAM, like the Canon V-8, to run DOS2) -
+--      never removed or shared with any SD-access scheme.
+--   -> Slot expansion: exp_slot.vhd, unchanged.
+--
+-- SD CARD PROTOCOL PIVOT (2026-08-12): Belavenuto's raw-SPI protocol
+-- (spi.vhd/spi2.vhd - both still in this directory, unused by this file) was
+-- extensively debugged this session: a real wait_n_s/start_s bug was found
+-- and fixed, five other real fixes landed (pull-ups, status_s polarity,
+-- timer clock domain, U1_DIR polarity, WAIT_n inversion), and a completely
+-- independent second SPI engine (spi2.vhd) was built and bit-verified via
+-- an isolated testbench - yet the SD card never responded with anything but
+-- 0xFF on real hardware, through either engine. Since two independently-
+-- verified SPI implementations produced the identical symptom, the bug was
+-- judged unlikely to be in hand-rolled SPI bit-shifting logic at all.
+--
+-- This file now uses a mature, widely-used, third-party SD SPI core instead
+-- of continuing to hand-roll one: XESS Corp's SdCardCtrl (sdcard_xess.vhd,
+-- ported from https://github.com/xesscorp/VHDL_Lib/blob/master/SDCard.vhd,
+-- LGPL v3 - see that file's header for the exact porting notes), wrapped by
+-- a new register-level bridge (sdcard_bridge.vhd) that translates its
+-- block-level handshake protocol into simple byte-level registers a Nextor
+-- driver can poke/peek, the same way spi.vhd's SPIDATA/SPICTRL registers
+-- did for the abandoned protocol. See sdcard_bridge.vhd's header for the
+-- exact register map. The ROM/RAM sub-slots above are completely unchanged -
+-- only the SD-access mechanism inside the ROM sub-slot's memory window was
+-- replaced.
 --
 -- CRITICAL FIX CARRIED FORWARD FROM MegaROM_ASCII16's MILESTONE: this file
 -- (and the DE1 "Boots Nextor Some Times" predecessor it was ported from) had
 -- U1_DIR backwards - '1' was treated as "drive toward the MSX bus". Real
--- hardware testing on MegaROM_ASCII16 today (OUT &H5A,170 -> INP(&H5A)=170,
+-- hardware testing on MegaROM_ASCII16 (OUT &H5A,170 -> INP(&H5A)=170,
 -- confirmed round-trip only after flipping the polarity) established the
 -- opposite: DIR=1 means MSX->FPGA (listen), DIR=0 means FPGA->MSX (drive).
--- Every U1_DIR expression in this file uses the CORRECTED polarity. Given
--- this same board/connector/chip (U1, a 74LVC245) is shared by all three
--- source designs, the earlier "ROM sub-slot enable never coincided with a
--- genuine read" symptom may well have been this exact bug wearing a
--- different disguise - worth keeping in mind during real-hardware bring-up
--- of this integrated version.
+-- Every U1_DIR expression in this file uses the CORRECTED polarity.
 --
 -- Also carried forward: the "continuous re-latch of D WHILE a qualified
 -- write window holds" fix (MegaROM_ASCII16's documented real-hardware bug -
 -- garbage bank registers from sampling D on a delayed edge after WR_n had
 -- already risen and the Z80 released the bus). Every register write in this
 -- file that used to sample D on a synchronized falling edge (ROM bank
--- switch, SD card slot-select, timer load) now shares one glitch-filtered
--- qualifier (s_cart_write_qualified) and re-latches continuously instead.
+-- switch) shares one glitch-filtered qualifier (s_cart_write_qualified) and
+-- re-latches continuously instead.
 --
--- STATUS: compiled against this integration's own logic only - NOT YET
--- programmed onto real hardware. The historical bug this design is meant to
--- finally resolve was never conclusively root-caused before the strip-down;
--- treat the LEDG/HEX debug bits below (in particular LEDG(9), the sticky
--- "ROM sub-slot was ever genuinely read" latch) as the first thing to check
--- on a scope/logic analyzer during bring-up.
+-- STATUS: compiled and GHDL-simulated against this integration's own logic;
+-- NOT YET tested on real hardware as of this pivot. Card presence/write-
+-- protect are still manual (SW(0)/SW(2) - this board has no physical
+-- card-detect sensing).
 -- --------------------------------------------------------------------------------------------------------------------------------------
 --
 -- HOW TO USE THIS BOARD
@@ -105,11 +118,11 @@
 --     4000-7FFF   - Bank 1 window. Flash-backed, base 0x000000 (Nextor).
 --       6000-67FF, 7000-77FF - Bank-switch registers (write-only; reads in
 --                               this range still return normal ROM data).
---       7B00-7EFF             - SD card raw SPI data register. Only visible
---                               when rom_bank1_q = 7 (bank 1 switched to
---                               segment 7 to reach the SD hardware window).
---       7FF0                  - SD card control/status register.
---       7FF1                  - Timer register.
+--       7B00-7B08             - SD card register window (see
+--                               sdcard_bridge.vhd for the exact map). Only
+--                               visible when rom_bank1_q = 7 (bank 1
+--                               switched to segment 7 to reach it), same
+--                               convention the abandoned SPI protocol used.
 --     8000-BFFF   - Bank 2 window. Only Flash-backed when rom_bank2_q >= 8.
 --   RAM sub-slot: pages 0, 2, 3 always reach RAM (no ROM ever contends for
 --   them - see s_sltsl_ram_en's comment); page 1 arbitrates between ROM
@@ -128,14 +141,16 @@
 -- CLOCK DOMAINS
 -- --------------------------------------------------------------------------------------------------------------------------------------
 -- CLOCK_50 (50MHz, raw board oscillator, no PLL) drives everything in this
--- file EXCEPT the spi.vhd instantiation: the address-bus capture state
--- machine, every synchronizer/glitch-filter, exp_slot's clock, the mapper/
--- ROM-bank/SD-select/timer registers.
+-- file EXCEPT the sdcard_bridge instantiation: the address-bus capture
+-- state machine, every synchronizer/glitch-filter, exp_slot's clock, the
+-- mapper/ROM-bank registers.
 --
 -- clock_i (25MHz, generated from CLOCK_50 via Clock_25MHz) drives ONLY the
--- spi.vhd component. spi.vhd's SPI state machine toggles SCLK once per
--- clock_i edge, so its frequency directly sets the SD card's SPI clock rate
--- (~12.5MHz here). spi.vhd already synchronizes its CPU-facing inputs
+-- sdcard_bridge component (and the ported XESS SdCardCtrl core inside it -
+-- see sdcard_xess.vhd's FREQ_G=25.0 generic). SdCardCtrl generates its own
+-- SD-spec-correct two-speed SCLK internally (~0.4MHz during CMD0/CMD8/
+-- ACMD41 identification, ~12.5MHz operational afterward) from this single
+-- master clock. sdcard_bridge already synchronizes its CPU-facing inputs
 -- internally on its own clock_i, so this split introduces no new
 -- clock-domain-crossing hazard.
 -- --------------------------------------------------------------------------------------------------------------------------------------
@@ -275,7 +290,7 @@ architecture bevioural of SDMapper_TOP is
 	-- under -fexplicit), functionally identical for synthesis either way.
 	signal s_reset_n		: std_logic;
 	signal s_sltsl_dis_n	: std_logic;
-	signal s_spi_wait_n_o	: std_logic;
+	signal s_sdbridge_wait_n_o	: std_logic;
 
 	-- ------------------------------------------------------------------------
 	-- Address bus reconstruction (see "ADDRESS BUS MULTIPLEXING" note above)
@@ -336,34 +351,34 @@ architecture bevioural of SDMapper_TOP is
 	signal s_cart_write_qualified : std_logic := '0';
 
 	-- ------------------------------------------------------------------------
-	-- SD card / SPI / status / timer registers (single physical SD card slot
-	-- on this DE0 board - see header note). Ported from "SDMapper - Boots
-	-- Nextor Some Times"/SDMapper_Top.vhd, trimmed from its 2-slot layout.
+	-- SD card register bridge (see sdcard_bridge.vhd for the full register
+	-- map and the ported XESS SdCardCtrl core it wraps). Single physical SD
+	-- card slot on this DE0 board.
 	-- ------------------------------------------------------------------------
-	signal clock_i			: std_logic := '0';	-- 25MHz, feeds ONLY spi.vhd - see "CLOCK DOMAINS" note above
-	signal regs_cs_s		: std_logic;
-	signal spi_cs_s		: std_logic;
-	signal status_s		: std_logic_vector(7 downto 0);
-	signal spi_ctrl_rd_s	: std_logic;
-	signal sd_sel_q		: std_logic_vector(1 downto 0) := (others => '0');
-	signal sd_chg_q		: std_logic := '0';
-	signal sd_chg_s		: std_logic := '0';
+	signal clock_i			: std_logic := '0';	-- 25MHz, feeds ONLY sdcard_bridge - see "CLOCK DOMAINS" note above
+	signal s_sdbridge_cs_s	: std_logic;	-- combinational CS into the bridge (bridge does its own internal sync)
 
-	signal spi_data		: std_logic_vector(7 downto 0);
-	signal spi_read		: std_logic;
+	signal sd_reg_dout		: std_logic_vector(7 downto 0);	-- SD_STATUS/SD_ERRLO/SD_ERRHI (immediate)
+	signal sd_data_dout	: std_logic_vector(7 downto 0);	-- SD_DATA (WAIT_n-gated)
+	signal sd_data_rd_en	: std_logic;
+
 	signal s_sd_clk		: std_logic;
 	signal s_sd_mosi		: std_logic;
-	signal s_sd_miso		: std_logic;
+	signal s_sd_cs			: std_logic;
 
-	signal tmr_cnt_q		: std_logic_vector(15 downto 0) := (others => '0');
-	signal tmr_wr_s		: std_logic;
-	signal tmr_rd_s		: std_logic;
+	-- Debug outputs from the bridge, for HEX/LEDG below.
+	signal dbg_sd_busy			: std_logic;
+	signal dbg_sd_error		: std_logic_vector(15 downto 0);
+	signal dbg_sd_timeout		: std_logic;
+	signal dbg_sd_last_tx		: std_logic_vector(7 downto 0);
+	signal dbg_sd_last_rx		: std_logic_vector(7 downto 0);
+	signal dbg_sd_ever_accessed: std_logic;
+	signal dbg_sd_init_done	: std_logic;
 
-	-- Synchronizer + edge detector for the SD status/control register read
-	-- strobe (spi_ctrl_rd_s): rising edge latches the "changed" flag for the
-	-- CPU to read, falling edge clears the flag once the CPU has finished.
-	signal spi_ctrl_rd_meta, spi_ctrl_rd_sync, spi_ctrl_rd_sync_d : std_logic;
-	signal spi_ctrl_rd_rising_pulse, spi_ctrl_rd_falling_pulse    : std_logic;
+	-- SD register-window read decode - not WAIT_n-gated (SD_STATUS/SD_ERRLO/
+	-- SD_ERRHI are immediate reads, matching the old spi_ctrl_rd_s's raw/
+	-- immediate style), qualifies when to mux sd_reg_dout onto D below.
+	signal s_sdbridge_reg_rd_s : std_logic;
 
 	-- ------------------------------------------------------------------------
 	-- RAM sub-slot: standard MSX Memory Mapper (512KB), ported verbatim from
@@ -390,15 +405,6 @@ architecture bevioural of SDMapper_TOP is
 
 	signal s_mapper_rdata : std_logic_vector(7 downto 0);
 
-	-- SD SPI diagnostics (2026-08-11 bring-up): mapper/ROM sub-slots are now
-	-- confirmed working on real hardware, so the debug display below is
-	-- repurposed for the still-open SD card investigation - last byte sent
-	-- to and received from the card via the raw 7B00-7EFF SPI window, plus
-	-- a sticky "was that window ever accessed at all" latch.
-	signal s_spi_last_tx_q : std_logic_vector(7 downto 0) := (others => '0');
-	signal s_spi_last_rx_q : std_logic_vector(7 downto 0) := (others => '0');
-	signal s_spi_ever_accessed_q : std_logic := '0';
-
 	-- Memory (SLTSL_n, RAM sub-slot-gated) access - raw/immediate decode,
 	-- same timing rationale as the ROM sub-slot's own memory access.
 	signal s_mem_rd_en : std_logic;
@@ -411,7 +417,7 @@ begin
 
 	-- Inverted here to compensate for the Q2 open-collector driver stage on
 	-- the MSX_FPGA_Hat board, which inverts whatever level the FPGA drives.
-	WAIT_n <= not s_spi_wait_n_o;
+	WAIT_n <= not s_sdbridge_wait_n_o;
 
 	-- Reset circuit
 	s_reset <= not (KEY(0) and RESET_n);
@@ -588,11 +594,10 @@ begin
                            s_flashbase + (rom_bank2_q(3 downto 0) & s_A(13 downto 0)) when s_sltsl_rom_en = '1' and (s_A(15 downto 14) = "10" or s_A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
 
-	-- Excludes the SD SPI data window and the SD/timer registers, both of
-	-- which live inside bank 1's address range - Flash must not drive its
-	-- outputs while those are being accessed instead.
+	-- Excludes the SD card register window, which lives inside bank 1's
+	-- address range - Flash must not drive its outputs while it's accessed.
 	FL_CE_N <=
-		'0'	when s_A(15 downto 14) = "01" and s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' and regs_cs_s = '0'	else
+		'0'	when s_A(15 downto 14) = "01" and s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0'	else
 		'0'	when s_A(15 downto 14) = "10" and s_sltsl_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
 		'1';
 
@@ -601,14 +606,14 @@ begin
 	FL_ADDR <= s_rom_a(22 downto 1);
 	FL_DQ15_AM1 <= s_rom_a(0);
 
-	regs_cs_s <= '1' when s_sltsl_rom_en = '1' and (s_A = x"7FF0" or s_A = x"7FF1") else '0';
-	spi_cs_s	<= '1'  when s_sltsl_rom_en = '1' and rom_bank1_q = "111" and	s_A >= x"7B00" and s_A < x"7F00" else
-	            '0';
+	-- SD card register window - see sdcard_bridge.vhd for the exact
+	-- register map. Same "bank 1 switched to segment 7" convention the
+	-- abandoned SPI protocol used.
+	s_sdbridge_cs_s <= '1' when s_sltsl_rom_en = '1' and rom_bank1_q = "111" and s_A >= x"7B00" and s_A <= x"7B08" else '0';
 
 	-- ------------------------------------------------------------------------
 	-- Shared glitch-filtered write qualifier for ROM sub-slot register
-	-- writes (bank switch, SD slot-select, timer load) - see declaration
-	-- above for the rationale.
+	-- writes (bank switch) - see declaration above for the rationale.
 	-- ------------------------------------------------------------------------
 	s_cart_write_en <= '1' when s_sltsl_rom_en = '1' and WR_n = '0' else '0';
 
@@ -634,189 +639,78 @@ begin
 		end if;
 	end process;
 
-	-- ROM bank-switch registers + SD card slot-select: continuously re-latch
-	-- D while s_cart_write_qualified holds (see header note on the
-	-- MegaROM_ASCII16 bug this avoids), rather than sampling once on a
-	-- delayed edge.
+	-- ROM bank-switch registers: continuously re-latch D while
+	-- s_cart_write_qualified holds (see header note on the MegaROM_ASCII16
+	-- bug this avoids), rather than sampling once on a delayed edge.
 	i_ROM_Banks: process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
 			if s_reset = '1' then
 				rom_bank1_q <= (others => '0');
 				rom_bank2_q <= (others => '0');
-				sd_sel_q    <= (others => '0');
 			elsif s_cart_write_qualified = '1' then
 				if s_A >= x"6000" and s_A <= x"67FF" then
 					rom_bank1_q <= D(2 downto 0);
 				elsif s_A >= x"7000" and s_A <= x"77FF" then
 					rom_bank2_q <= D(3 downto 0);
-				elsif s_A = x"7FF0" then
-					sd_sel_q <= D(1 downto 0);
 				end if;
 			end if;
 		end if;
 	end process;
 
-	-- Timer register: reloads every cycle while qualified (idempotent while
-	-- D is stable throughout the write window), counts down to zero otherwise.
-	--
-	-- BUG FIX (2026-08-12, real hardware: "Card Failed!" persisted even
-	-- after the WAIT_n/pull-up/status_s fixes). Root cause, found by reading
-	-- the proven Nextor driver (msxsdmapperv2/driver/DRIVER.ASM): its
-	-- WAIT_RESP_NO_FF/WAIT_RESP_FE polling loops (used while waiting for a
-	-- response during the CMD0/CMD8/ACMD41 exchange) time a single unit as
-	-- "ld a,255; ld (TIMERREG),a ; 2.6mS" - i.e. writing 255 to this
-	-- register's upper byte (auto-filling the lower byte to 0xFF, giving a
-	-- 65535-count countdown) is DOCUMENTED to take 2.6ms, which only holds
-	-- if this counter is clocked at 25MHz (65535 / 0.0026s =~ 25.2MHz) -
-	-- exactly matching the proven reference sdmapper.vhd's own timer
-	-- process, which is clocked by "clock_i" (25MHz), NOT the raw 50MHz
-	-- board oscillator. This process used CLOCK_50 instead, so every
-	-- timeout unit only took ~1.3ms in reality - the driver's already-tight
-	-- CMDTIMEOUT budget (2 units =~ 5.2ms intended) was silently cut to
-	-- ~2.6ms, which could easily be too short for some cards/adapters to
-	-- answer within, causing a premature "Card Failed!" even though the
-	-- card would have responded given the real intended time budget.
-	-- Fixed by clocking this process from clock_i (already generated
-	-- elsewhere in this file for spi.vhd) instead of CLOCK_50.
-	tmr_wr_s <= '1' when s_cart_write_qualified = '1' and s_A = x"7FF1" else '0';
-	tmr_rd_s <= '1' when s_sltsl_rom_en = '1' and RD_n = '0' and s_A = x"7FF1" else '0';
+	-- SD register-window read decode - raw/immediate, not glitch-filtered
+	-- (matches every other bus-driving read in this file). Only qualifies
+	-- SD_STATUS/SD_ERRLO/SD_ERRHI (reg index /= 0) - SD_DATA (index 0) is
+	-- WAIT_n-gated through sd_data_rd_en instead, driven by the bridge
+	-- itself.
+	s_sdbridge_reg_rd_s <= '1' when s_sdbridge_cs_s = '1' and RD_n = '0' and s_A /= x"7B00" else '0';
 
-	process (clock_i)
-	begin
-		if rising_edge(clock_i) then
-			if tmr_wr_s = '1' then
-				tmr_cnt_q(15 downto 8) <= D;
-				tmr_cnt_q( 7 downto 0) <= (others => '1');
-			elsif tmr_cnt_q /= 0 then
-				tmr_cnt_q <= tmr_cnt_q - 1;
-			end if;
-		end if;
-	end process;
-
-	-- ------------------------------------------------------------------------
-	-- SD card status/control register (raw/immediate read decode - not
-	-- glitch-filtered, matches every other bus-driving read in this file).
-	-- Status byte layout, see "HOW TO USE THIS BOARD" above:
-	--   If no SD card is selected (sd_sel_q="00"): b7-b2=0, b1-b0=switch status.
-	--   If card 1 selected (sd_sel_q="01"): b2=write-protect, b1=not present,
-	--     b0=changed-since-last-read.
-	--   If card 2 selected (sd_sel_q="10"): this board has no second SD slot -
-	--     always reports write-protected/not-present/changed.
-	-- ------------------------------------------------------------------------
-	spi_ctrl_rd_s <= '1' when s_sltsl_rom_en = '1' and RD_n = '0' and s_A = X"7FF0"	else '0';
-
-	-- BUG FIX (2026-08-12, real hardware: Nextor's boot banner reported
-	-- "Slot Expander & Mem. Mapper disabled" and "Development driver
-	-- selected" even though SDMapper mode was genuinely active). Root
-	-- cause, found in the proven reference driver
-	-- (msxsdmapperv2/driver/DRIVER.ASM): this b1:b0 pair is read directly
-	-- by Nextor's kernel at boot as SPISTATUS (#7FF0) and interpreted with
-	-- a FIXED polarity hardcoded in the driver - IF_RAM (bit0): "1 =
-	-- interface RAM/mapper enabled"; IF_DRVER (bit1): "1 = Main driver, 0 =
-	-- Dev driver". On the real Belavenuto hardware this bit pair is wired
-	-- straight from raw switches (sw_i(1:0)), where sw_i(0)='1' also
-	-- happens to be that hardware's own "cart enabled" polarity - so a
-	-- direct passthrough was correct there. Our SW(9) was later inverted
-	-- (SW(9)='0' means SDMapper mode enabled - see SW(9) header note) to
-	-- satisfy a different requirement (reserving SW(9)='1' for a future
-	-- MegaROM mode), but this status readout was never updated to match,
-	-- so it kept reporting raw SW(9) - backwards relative to what the
-	-- driver's hardcoded IF_RAM polarity expects. Fixed by reporting the
-	-- correct semantic value (not SW(9)) instead of the raw switch level.
-	-- This bit is informational only in the current driver (only feeds the
-	-- boot banner text, confirmed by inspecting every IF_M_RAM/IF_M_DRVER
-	-- use site) - fixing it corrects the misleading message but is not
-	-- expected to change SD card access behavior on its own.
-	--
-	-- SW(7) (IF_DRVER, bit1) inverted too per user direction (2026-08-12) -
-	-- SW(7)='0' now reports "Main driver", '1' reports "Development
-	-- driver" (was the other way around). Also informational-only.
-	status_s	<= "000000" & (not SW(7)) & (not SW(9))          when sd_sel_q = "00" else
-					"00000" & (not SW(2)) & (not SW(0)) & sd_chg_s  when sd_sel_q = "01" else
-					"00000" & '1' & '1' & '1'                        when sd_sel_q = "10" else
-					(others => '-');
-
-	-- ------------------------------------------------------------------------
-	-- Synchronizer + edge detector for the SD status/control read strobe.
-	-- ------------------------------------------------------------------------
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			spi_ctrl_rd_meta   <= spi_ctrl_rd_s;
-			spi_ctrl_rd_sync   <= spi_ctrl_rd_meta;
-			spi_ctrl_rd_sync_d <= spi_ctrl_rd_sync;
-		end if;
-	end process;
-
-	spi_ctrl_rd_rising_pulse  <= spi_ctrl_rd_sync and not spi_ctrl_rd_sync_d;
-	spi_ctrl_rd_falling_pulse <= spi_ctrl_rd_sync_d and not spi_ctrl_rd_sync;
-
-	-- Disk-change flip-flop (card 1 only - this board has no card 2).
-	process (CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				sd_chg_q <= '0';
-			elsif SW(0) = '0' then		-- card not present -> mark changed
-				sd_chg_q <= '1';
-			elsif spi_ctrl_rd_falling_pulse = '1' and sd_sel_q = "01" then
-				sd_chg_q <= '0';
-			end if;
-		end if;
-	end process;
-
-	process (CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				sd_chg_s <= '0';
-			elsif spi_ctrl_rd_rising_pulse = '1' then
-				sd_chg_s <= sd_chg_q;
-			end if;
-		end if;
-	end process;
-
-	-- Generate the 25MHz clock_i for the SPI component ONLY - see "CLOCK
+	-- Generate the 25MHz clock_i for the SD card bridge ONLY - see "CLOCK
 	-- DOMAINS" note at the top of this file.
 	clock_25mhz_inst : clock_25mhz PORT MAP (
 		inclk0   => CLOCK_50,
 		c0       => clock_i
 	);
 
-	-- SPI interface to the SD card
-	--
-	-- EXPERIMENT (2026-08-12): swapped from work.spi to work.spi2 - see
-	-- spi2.vhd header for full rationale. Same register protocol/driver,
-	-- different (counter-based, not flag-based) internal WAIT-generation
-	-- mechanism. If this doesn't fix "Card Failed!" either, revert this one
-	-- line back to "entity work.spi" before trying anything else - no other
-	-- part of this file needs to change either way, the two entities share
-	-- an identical port list.
-	portaspi: entity work.spi2
+	-- SD card register bridge (ported XESS SdCardCtrl core + Z80-bus
+	-- glue) - see sdcard_bridge.vhd for the full register map and design
+	-- rationale.
+	sdbridge_inst: entity work.sdcard_bridge
 	port map (
-		clock_i		=> clock_i,
-		reset_n_i	=> s_reset_n,
-		-- CPU interface
-		cs_i			=> spi_cs_s,
-		data_bus_io	=> D,
-		wr_n_i		=> WR_n,
-		rd_n_i		=> RD_n,
-		wait_n_o		=> s_spi_wait_n_o,
-		-- SD card interface
-		spi_sclk_o	=> s_sd_clk,
-		spi_mosi_o	=> s_sd_mosi,
-		spi_miso_i	=> s_sd_miso,
-		-- extra signals added for MSX_FPGA_Interface
-		spi_dout		=> spi_data,
-		spi_rd_en	=> spi_read
+		clock_i			=> clock_i,
+		reset_n_i		=> s_reset_n,
+		cs_i				=> s_sdbridge_cs_s,
+		reg_addr_i		=> s_A(3 downto 0),
+		data_bus_i		=> D,
+		wr_n_i			=> WR_n,
+		rd_n_i			=> RD_n,
+		wait_n_o			=> s_sdbridge_wait_n_o,
+		card_present_i	=> SW(0),
+		write_protect_i=> SW(2),
+		reg_dout			=> sd_reg_dout,
+		sd_dout			=> sd_data_dout,
+		sd_rd_en			=> sd_data_rd_en,
+		sd_cs_o			=> s_sd_cs,
+		sd_sclk_o		=> s_sd_clk,
+		sd_mosi_o		=> s_sd_mosi,
+		sd_miso_i		=> SD1_MISO,
+		dbg_busy_o				=> dbg_sd_busy,
+		dbg_error_o				=> dbg_sd_error,
+		dbg_timeout_o			=> dbg_sd_timeout,
+		dbg_last_tx_o			=> dbg_sd_last_tx,
+		dbg_last_rx_o			=> dbg_sd_last_rx,
+		dbg_ever_accessed_o	=> dbg_sd_ever_accessed,
+		dbg_init_done_o		=> dbg_sd_init_done
 	);
 
-	-- Onboard microSD (single physical card - see header note)
-	SD1_CS   <= '0' when sd_sel_q = "01" else '1';
+	-- Onboard microSD (single physical card - see header note). CS is now
+	-- driven directly by the ported XESS core itself (it manages
+	-- select/deselect internally as part of every command sequence),
+	-- unlike the old sd_sel_q-selected scheme which only ever had one real
+	-- card to select anyway.
+	SD1_CS   <= s_sd_cs;
 	SD1_SCK  <= s_sd_clk;
 	SD1_MOSI <= s_sd_mosi;
-	s_sd_miso <= SD1_MISO when sd_sel_q = "01" else '1';	-- idle/no-card-selected default (SPI MISO idles high)
 
 	-- ------------------------------------------------------------------------
 	-- RAM sub-slot: standard MSX Memory Mapper (512KB) - logic ported
@@ -886,30 +780,6 @@ begin
 	                   "111" & reg_page2_q when s_A(1 downto 0) = "10" else
 	                   "111" & reg_page3_q;
 
-	-- SD SPI diagnostics: latch the last byte written to / read from the
-	-- raw SPI data window, for display on HEX0-3 (see LEDG/HEXDIGIT
-	-- assignments below). Not glitch-filtered - fine for a display latch,
-	-- doesn't need to be precise to the exact cycle.
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				s_spi_last_tx_q       <= (others => '0');
-				s_spi_last_rx_q       <= (others => '0');
-				s_spi_ever_accessed_q <= '0';
-			else
-				if spi_cs_s = '1' and WR_n = '0' then
-					s_spi_last_tx_q       <= D;
-					s_spi_ever_accessed_q <= '1';
-				end if;
-				if spi_read = '1' then
-					s_spi_last_rx_q       <= spi_data;
-					s_spi_ever_accessed_q <= '1';
-				end if;
-			end if;
-		end if;
-	end process;
-
 	-- Memory (RAM sub-slot) access - raw/immediate decode.
 	s_mem_rd_en <= '1' when s_sltsl_ram_en = '1' and RD_n = '0' else '0';
 	s_mem_wr_en <= '1' when s_sltsl_ram_en = '1' and WR_n = '0' else '0';
@@ -937,19 +807,18 @@ begin
 	-- matters in practice since MREQ_n/IORQ_n are mutually exclusive on a
 	-- real Z80 bus cycle and the memory-space windows below don't overlap.
 	-- ------------------------------------------------------------------------
-	D <= status_s               when spi_ctrl_rd_s = '1' else										-- SD card status/control
-	     tmr_cnt_q(15 downto 8) when tmr_rd_s = '1' else											-- Timer
-	     s_expn_q               when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and spi_cs_s = '0' else	-- Slot expansion register
-	     FL_DQ(7 downto 0)      when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else	-- ROM / Flash
+	D <= sd_reg_dout            when s_sdbridge_reg_rd_s = '1' else							-- SD_STATUS/SD_ERRLO/SD_ERRHI
+	     s_expn_q               when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else	-- Slot expansion register
+	     FL_DQ(7 downto 0)      when s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else	-- ROM / Flash
 	     SRAM_DQ                when s_mem_rd_en = '1' else										-- RAM / Mapper
 	     s_mapper_rdata         when s_io_mapper_rd_qualified = '1' else							-- Mapper segment registers
-	     spi_data               when spi_read = '1' else											-- Raw SD SPI data
+	     sd_data_dout           when sd_data_rd_en = '1' else										-- SD_DATA
 	     (others => 'Z');
 
 	-- U1OE_n: covers every access path that reads OR writes D - see
 	-- feedback_u1oe_n_per_access_path memory (this exact class of bug has
 	-- been found twice already in this project). s_sltsl_en alone covers
-	-- every memory-space path (ROM, RAM, SD/timer registers, FFFF) since all
+	-- every memory-space path (ROM, RAM, SD register window, FFFF) since all
 	-- of them require SLTSL_n asserted with SW(9)='0' (SDMapper mode); the mapper I/O ports
 	-- use their raw (unqualified) enables so U1 is listening for the FULL
 	-- WR_n/RD_n-low window, not just the part after the glitch filter settles.
@@ -962,13 +831,12 @@ begin
 	-- (MSX->FPGA) - CORRECTED polarity, see header note (MegaROM_ASCII16's
 	-- real-hardware milestone found this backwards in every earlier version
 	-- of this file). Default '1' (listen) covers every write path and idle.
-	U1_DIR <= '0' when spi_ctrl_rd_s = '1' else
-	          '0' when tmr_rd_s = '1' else
-	          '0' when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and spi_cs_s = '0' else
-	          '0' when s_sltsl_rom_en = '1' and RD_n = '0' and spi_cs_s = '0' else
+	U1_DIR <= '0' when s_sdbridge_reg_rd_s = '1' else
+	          '0' when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else
+	          '0' when s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else
 	          '0' when s_mem_rd_en = '1' else
 	          '0' when s_io_mapper_rd_qualified = '1' else
-	          '0' when spi_read = '1' else
+	          '0' when sd_data_rd_en = '1' else
 	          '1';
 
 	-- BUSDIR_n: only /IORQ-based reads need it (MSX Technical Data Book
@@ -977,29 +845,45 @@ begin
 	BUSDIR_n <= '0' when s_io_mapper_rd_qualified = '1' else '1';
 
 	-- ------------------------------------------------------------------------
-	-- Debug display. ROM/RAM sub-slot access (previously shown on HEX) is
-	-- CONFIRMED working on real hardware as of 2026-08-11 - the display is
-	-- repurposed for the still-open SD SPI investigation:
-	--   HEX1:HEX0 = last byte RECEIVED from the SD card (spi_data/spi_dout)
-	--   HEX3:HEX2 = last byte SENT to the SD card
-	-- LEDG(9)/(8) = sticky "sub-slot was ever genuinely read" latches.
-	-- LEDG(7 downto 4) show the live slot-expander outputs (active-high here
-	-- for legibility). LEDG(3) = sticky "SD SPI window was ever accessed"
-	-- latch - confirms Nextor's kernel is at least reaching the hardware
-	-- window at all, independent of whether the card itself responds.
+	-- Debug display (2026-08-12, XESS SD core pivot). ROM/RAM sub-slot
+	-- access is CONFIRMED working on real hardware; the display now
+	-- surfaces the ported XESS SdCardCtrl core's own state, since its
+	-- init sequence (CMD0/CMD8/ACMD41) runs automatically from reset -
+	-- independent of whether the Nextor driver ever does anything - so
+	-- this is informative even before any software runs:
+	--   HEX3:HEX2:HEX1:HEX0 = SdCardCtrl's error_o (16 bits) - 0000 means
+	--     no error. Non-zero after a moment past reset means CMD0/CMD8/
+	--     ACMD41 failed - the value is the SD card's own R1/R7 response
+	--     byte (low byte = init-phase error; high byte = write-phase
+	--     error, only set once a block write is attempted).
+	-- LEDG(9)/(8) = sticky "ROM/RAM sub-slot was ever genuinely read"
+	--   latches (unchanged from before this pivot).
+	-- LEDG(7 downto 4) = live slot-expander outputs (active-high here for
+	--   legibility, unchanged from before this pivot).
+	-- LEDG(3) = sticky "SD register window was ever accessed by the CPU"
+	--   latch - confirms the driver is at least reaching the hardware.
+	-- LEDG(2) = sticky "SdCardCtrl init done" latch - lit once the core
+	--   has reached WAIT_FOR_HOST_RW at least once (CMD0/CMD8/ACMD41
+	--   succeeded). The single most important bit to check first: if this
+	--   is OFF, the card never even finished identification, independent
+	--   of anything the driver does.
+	-- LEDG(1) = SdCardCtrl busy_o, live (currently mid-operation).
+	-- LEDG(0) = bridge-level WAIT_n timeout flag (see sdcard_bridge.vhd) -
+	--   lit if a byte-level handshake with SdCardCtrl ever timed out
+	--   without the WAIT_n hang this timeout exists to prevent.
 	-- ------------------------------------------------------------------------
-	HEXDIGIT0 <= s_spi_last_rx_q(3 downto 0);
-	HEXDIGIT1 <= s_spi_last_rx_q(7 downto 4);
-	HEXDIGIT2 <= s_spi_last_tx_q(3 downto 0);
-	HEXDIGIT3 <= s_spi_last_tx_q(7 downto 4);
+	HEXDIGIT0 <= dbg_sd_error(3 downto 0);
+	HEXDIGIT1 <= dbg_sd_error(7 downto 4);
+	HEXDIGIT2 <= dbg_sd_error(11 downto 8);
+	HEXDIGIT3 <= dbg_sd_error(15 downto 12);
 
 	LEDG(9)          <= s_rom_subslot_ever_q;
 	LEDG(8)          <= s_ram_subslot_ever_q;
 	LEDG(7 downto 4) <= not slt_exp_n;
-	LEDG(3)          <= s_spi_ever_accessed_q;
-	LEDG(2)          <= s_sltsl_ram_en;
-	LEDG(1)          <= s_sltsl_rom_en;
-	LEDG(0)          <= s_sltsl_en;
+	LEDG(3)          <= dbg_sd_ever_accessed;
+	LEDG(2)          <= dbg_sd_init_done;
+	LEDG(1)          <= dbg_sd_busy;
+	LEDG(0)          <= dbg_sd_timeout;
 
 	-- Interface for the 7-segment display
 	DISPHEX0 : decoder_7seg PORT MAP (
