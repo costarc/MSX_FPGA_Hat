@@ -236,6 +236,25 @@ begin
     variable rtnData_v        : boolean;  -- When true, signal to host when a data byte arrives from SD card.
     variable doDeselect_v     : boolean;  -- When true, de-select SD card after a command is issued.
 
+    -- BUG FIX (2026-08-12, real hardware + explicit design requirement:
+    -- this board has no physical card-detect sensing, so "no card
+    -- present" is a normal, expected, common state - not an exception -
+    -- and the MSX must still boot to BASIC in that case, not hang
+    -- forever). The upstream CHK_CMD0_RESPONSE loop had NO retry bound:
+    -- if the card never answers CMD0 correctly (MISO idles at 0xFF with
+    -- no card attached, which never equals IDLE_NO_ERRORS_C), it retries
+    -- SEND_CMD0 indefinitely, leaving busy_o permanently high. Bounded to
+    -- CMD0_MAX_RETRIES_C attempts (matching the retry count convention
+    -- Belavenuto's own proven driver uses for the same command), after
+    -- which it now falls through to REPORT_ERROR like any other init
+    -- failure - error_o ends up holding the last (failed) response byte
+    -- (0xFF with no card attached at all), busy_o drops, and the driver's
+    -- own bounded software poll (see driver.mac's DRV_INIT) sees a clean
+    -- "not busy, has an error" result immediately instead of only
+    -- recovering via its own timeout while the hardware kept spinning.
+    constant CMD0_MAX_RETRIES_C : natural := 8;
+    variable cmd0_retries_v     : natural range 0 to CMD0_MAX_RETRIES_C;
+
   begin
     if rising_edge(clk_i) then
 
@@ -283,6 +302,7 @@ begin
             addr_v           := (others => ZERO);  -- Initialize address.
             rtnData_v        := false;  -- No data is returned to host during initialization.
             bitCnt_v         := NUM_INIT_CLKS_C;  -- Generate this many clock pulses.
+            cmd0_retries_v   := 0;  -- see CMD0_MAX_RETRIES_C note above
             state_v          := DESELECT;  -- De-select the SD card and pulse SCLK.
             rtnState_v       := SEND_CMD0;  -- Then go to this state after the clock pulses are done.
 
@@ -298,7 +318,10 @@ begin
           when CHK_CMD0_RESPONSE =>  -- Check card's R1 response to the CMD0.
             if rx_v = IDLE_NO_ERRORS_C then
               state_v := SEND_CMD8;  -- Continue init if SD card is in IDLE state with no errors
+            elsif cmd0_retries_v = CMD0_MAX_RETRIES_C then
+              state_v := REPORT_ERROR;  -- Give up - no card responded after CMD0_MAX_RETRIES_C tries (see note above)
             else
+              cmd0_retries_v := cmd0_retries_v + 1;
               state_v := SEND_CMD0;     -- Otherwise, try CMD0 again.
             end if;
 
