@@ -341,7 +341,29 @@ begin
             -- The CMD55, CMD41 sequence should cause the SD card to leave the IDLE state
             -- and become ready for SPI read/write operations. If still IDLE, then repeat the CMD55, CMD41 sequence.
             -- If one of the R1 error flags is set, then report the error and stall.
+            --
+            -- BUG FIX (2026-08-12, real hardware via sdcard_bridge.vhd:
+            -- "SD card ready" printed - CMD0/CMD8/ACMD41 genuinely
+            -- succeeded - but the very first real DEV_RW hung with no
+            -- error reported). Root cause: doDeselect_v is a variable
+            -- shared across every state and is never reset before
+            -- WAIT_FOR_HOST_RW starts a new top-level command; SEND_CMD41
+            -- (the last init step) explicitly sets it true, and nothing
+            -- between here and the first CMD17/CMD24 clears it. RX_BITS
+            -- then deselects the card (cs_bo<=HI) right after that first
+            -- command's R1 response, before ever reading the actual data
+            -- block - with the card deselected it stops driving MISO
+            -- validly, so RD_BLK's "wait for start token" loop polls for a
+            -- token that can never arrive, hndShk_o never rises again, and
+            -- no host-side timeout duration fixes that (confirmed: 2.6ms
+            -- and 671ms bridge timeouts both hit identically). Every
+            -- SUBSEQUENT command in the same session self-heals, because a
+            -- completed transfer's own DESELECT state resets the flag for
+            -- next time - only the very first one after init is affected.
+            -- Fixed by explicitly clearing it here, matching the state
+            -- every later command actually starts from.
             if rx_v = ACTIVE_NO_ERRORS_C then   -- Not IDLE, no errors.
+              doDeselect_v := false;
               state_v := WAIT_FOR_HOST_RW;  -- Start processing R/W commands from the host.
             elsif rx_v = IDLE_NO_ERRORS_C then  -- Still IDLE but no errors.
               state_v := SEND_CMD55;    -- Repeat the CMD55, CMD41 sequence.
