@@ -785,7 +785,15 @@ begin
 	);
 
 	-- SPI interface to the SD card
-	portaspi: entity work.spi
+	--
+	-- EXPERIMENT (2026-08-12): swapped from work.spi to work.spi2 - see
+	-- spi2.vhd header for full rationale. Same register protocol/driver,
+	-- different (counter-based, not flag-based) internal WAIT-generation
+	-- mechanism. If this doesn't fix "Card Failed!" either, revert this one
+	-- line back to "entity work.spi" before trying anything else - no other
+	-- part of this file needs to change either way, the two entities share
+	-- an identical port list.
+	portaspi: entity work.spi2
 	port map (
 		clock_i		=> clock_i,
 		reset_n_i	=> s_reset_n,
