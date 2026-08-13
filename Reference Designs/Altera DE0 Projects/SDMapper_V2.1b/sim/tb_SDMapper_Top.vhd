@@ -10,12 +10,21 @@
 -- clock_25mhz.vhd. Analyze order into a fresh work library (GHDL, --std=08
 -- required for the std.env.stop call at the end; -fsynopsys required since
 -- every DUT file uses ieee.std_logic_unsigned):
---   decoder_7seg.vhd, exp_slot.vhd, spi.vhd, sim/clock_25mhz_sim.vhd,
---   SDMapper_Top.vhd, sim/tb_SDMapper_Top.vhd
--- Verified 2026-08-11 against the re-integrated SDMapper_Top.vhd (ROM+RAM
--- sub-slots via exp_slot, restored from the earlier "simplified test
--- variant" - see that file's header) with `ghdl -r --std=08 -fsynopsys
--- tb_SDMapper_Top`: 12/12 checks pass.
+--   decoder_7seg.vhd, exp_slot.vhd, sdcard_xess.vhd, sdcard_bridge.vhd,
+--   sim/clock_25mhz_sim.vhd, SDMapper_Top.vhd, sim/tb_SDMapper_Top.vhd
+--
+-- UPDATED (2026-08-12, XESS SD core pivot): CHECKS 1-5 predate the SD
+-- protocol swap (spi.vhd/spi2.vhd -> sdcard_bridge.vhd wrapping a ported
+-- XESS Corp SdCardCtrl core) and are unaffected by it - ROM/RAM sub-slot
+-- and mapper I/O behavior are unchanged. CHECK 6+ is new: it drives the
+-- real SD register window (0x7B00-7B08) through this same real-bus-timing
+-- harness, including WAIT_n-extended reads of SD_DATA, against a mock SPI
+-- SD card - the same isolated-core (tb_sdcard_xess.vhd) and isolated-
+-- bridge (tb_sdcard_bridge.vhd) testbenches both already pass 7/7 driven
+-- directly; this is the first check of the FULL chain including the
+-- top-level's own address-capture FSM and D-bus arbitration, which real
+-- hardware still hangs on even with both lower layers verified correct -
+-- built specifically to find what the isolated testbenches can't see.
 --
 -- What is modeled:
 --   - CLOCK_50: free-running 50MHz clock (20ns period).
@@ -77,6 +86,7 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 entity tb_SDMapper_Top is
 end entity;
@@ -171,6 +181,26 @@ architecture sim of tb_SDMapper_Top is
 		end if;
 	end procedure;
 
+	-- ------------------------------------------------------------------
+	-- Mock SD card model (identical behavior to tb_sdcard_xess.vhd/
+	-- tb_sdcard_bridge.vhd - see tb_sdcard_xess.vhd for detailed comments),
+	-- wired to the DUT's real SD1_CS/SD1_SCK/SD1_MOSI/SD1_MISO pins.
+	-- ------------------------------------------------------------------
+	signal mock_sclk_prev      : std_logic := '0';
+	signal mock_cs_prev        : std_logic := '1';
+	signal mock_rx_shift       : std_logic_vector(7 downto 0) := (others => '0');
+	signal mock_rx_bit_cnt     : integer range 0 to 7 := 0;
+	signal mock_frame_byte_idx : integer range 0 to 7 := 0;
+	signal mock_cmd_count      : integer := 0;
+
+	signal mock_resp_byte    : std_logic_vector(7 downto 0) := x"FF";
+	signal mock_resp_bit_cnt : integer range 0 to 7 := 0;
+	signal mock_resp_active  : boolean := false;
+	signal mock_resp_step    : integer := 0;
+
+	constant MOCK_CMD17_NOTREADY_BYTES : integer := 3;
+	signal mock_cmd17_data_byte : unsigned(7 downto 0) := (others => '0');
+
 begin
 
 	-- ------------------------------------------------------------------
@@ -253,11 +283,119 @@ begin
 	FL_DQ <= "0000000" & x"A5" when (FL_CE_N = '0' and FL_OE_N = '0') else (others => 'Z');
 
 	-- ------------------------------------------------------------------
+	-- Mock SD card: receives command bytes off SD1_MOSI (MSB-first,
+	-- sampled on SD1_SCK rising edge, mode 0), tracks how many 6-byte
+	-- command frames have gone by, and drives SD1_MISO accordingly on
+	-- SD1_SCK falling edges. Resyncs on SD1_CS falling edge (see
+	-- tb_sdcard_xess.vhd for why that's needed). Responds to CMD0/CMD8/
+	-- CMD55/CMD41/CMD17 - the same init+first-read sequence both lower
+	-- testbenches already verified in isolation.
+	-- ------------------------------------------------------------------
+	process(CLOCK_50)
+		variable new_byte_v : std_logic_vector(7 downto 0);
+	begin
+		if rising_edge(CLOCK_50) then
+			mock_sclk_prev <= SD1_SCK;
+			mock_cs_prev   <= SD1_CS;
+
+			if mock_cs_prev = '1' and SD1_CS = '0' then
+				mock_rx_bit_cnt     <= 0;
+				mock_frame_byte_idx <= 0;
+				mock_resp_bit_cnt   <= 7;
+			end if;
+
+			if mock_sclk_prev = '0' and SD1_SCK = '1' then
+				new_byte_v    := mock_rx_shift(6 downto 0) & SD1_MOSI;
+				mock_rx_shift <= new_byte_v;
+				if mock_rx_bit_cnt = 7 then
+					mock_rx_bit_cnt <= 0;
+					if mock_frame_byte_idx = 0 and new_byte_v(7 downto 6) = "01" then
+						mock_frame_byte_idx <= 1;
+					elsif mock_frame_byte_idx > 0 and mock_frame_byte_idx < 5 then
+						mock_frame_byte_idx <= mock_frame_byte_idx + 1;
+					elsif mock_frame_byte_idx = 5 then
+						mock_frame_byte_idx <= 0;
+						mock_cmd_count      <= mock_cmd_count + 1;
+						mock_resp_active    <= true;
+						mock_resp_step      <= 0;
+					end if;
+				else
+					mock_rx_bit_cnt <= mock_rx_bit_cnt + 1;
+				end if;
+			end if;
+
+			if mock_sclk_prev = '1' and SD1_SCK = '0' then
+				if mock_resp_bit_cnt = 0 then
+					mock_resp_bit_cnt <= 7;
+				else
+					mock_resp_bit_cnt <= mock_resp_bit_cnt - 1;
+				end if;
+				if mock_resp_bit_cnt = 0 and mock_resp_active then
+					case mock_cmd_count is
+						when 1 =>
+							mock_resp_byte   <= x"01";
+							mock_resp_active <= false;
+						when 2 =>
+							case mock_resp_step is
+								when 0 => mock_resp_byte <= x"01"; mock_resp_step <= 1;
+								when 1 => mock_resp_byte <= x"00"; mock_resp_step <= 2;
+								when 2 => mock_resp_byte <= x"00"; mock_resp_step <= 3;
+								when 3 => mock_resp_byte <= x"01"; mock_resp_step <= 4;
+								when others =>
+									mock_resp_byte   <= x"AA";
+									mock_resp_active <= false;
+							end case;
+						when 3 =>
+							mock_resp_byte   <= x"01";
+							mock_resp_active <= false;
+						when 4 =>
+							mock_resp_byte   <= x"00";
+							mock_resp_active <= false;
+						when 5 =>
+							if mock_resp_step = 0 then
+								mock_resp_byte <= x"00";
+								mock_resp_step <= 1;
+							elsif mock_resp_step <= MOCK_CMD17_NOTREADY_BYTES then
+								mock_resp_byte <= x"FF";
+								mock_resp_step <= mock_resp_step + 1;
+							elsif mock_resp_step = MOCK_CMD17_NOTREADY_BYTES + 1 then
+								mock_resp_byte        <= x"FE";
+								mock_resp_step         <= mock_resp_step + 1;
+								mock_cmd17_data_byte   <= (others => '0');
+							elsif mock_resp_step <= MOCK_CMD17_NOTREADY_BYTES + 1 + 512 then
+								mock_resp_byte       <= std_logic_vector(mock_cmd17_data_byte);
+								mock_cmd17_data_byte <= mock_cmd17_data_byte + 1;
+								mock_resp_step       <= mock_resp_step + 1;
+							elsif mock_resp_step <= MOCK_CMD17_NOTREADY_BYTES + 1 + 512 + 2 then
+								mock_resp_byte <= x"AA";
+								mock_resp_step <= mock_resp_step + 1;
+								if mock_resp_step = MOCK_CMD17_NOTREADY_BYTES + 1 + 512 + 2 then
+									mock_resp_active <= false;
+								end if;
+							end if;
+						when others =>
+							mock_resp_byte <= x"FF";
+					end case;
+				elsif mock_resp_bit_cnt = 0 and not mock_resp_active then
+					mock_resp_byte <= x"FF";
+				end if;
+			end if;
+		end if;
+	end process;
+
+	SD1_MISO <= mock_resp_byte(mock_resp_bit_cnt);
+
+	-- ------------------------------------------------------------------
 	-- Main stimulus / checks process
 	-- ------------------------------------------------------------------
 	stimulus : process
 		variable pass_count : integer := 0;
 		variable fail_count : integer := 0;
+
+		-- Used only by CHECK6c's SD_DATA read loop.
+		variable sd_byte_v  : std_logic_vector(7 downto 0);
+		variable sd_data_ok : boolean := true;
+		variable sd_expect  : unsigned(7 downto 0) := (others => '0');
 
 		-- Drives a full MSX bus cycle: sets up msx_addr, pulses the
 		-- request strobes long enough for the DUT's address-capture state
@@ -347,6 +485,65 @@ begin
 			SLTSL_n <= '1';
 			wait for 4 * CLK50_PERIOD;
 			D <= (others => 'Z');
+		end procedure;
+
+		-- WAIT_n-extended memory read - models a real Z80 bus cycle under
+		-- hardware WAIT stall: asserts the read exactly like do_mem_read,
+		-- but then holds RD_n/SLTSL_n/MREQ_n asserted until WAIT_n
+		-- deasserts (bounded by a generous timeout) before sampling D,
+		-- instead of a fixed short settle delay. Needed for SD_DATA reads,
+		-- the only WAIT_n-gated register in this design (see
+		-- sdcard_bridge.vhd) - do_mem_read's fixed 6-cycle settle is
+		-- nowhere near enough for a real handshake-gated access.
+		procedure do_mem_read_wait(addr : std_logic_vector(15 downto 0); result : out std_logic_vector(7 downto 0)) is
+		begin
+			msx_addr <= addr;
+			wait until rising_edge(CLOCK_50);
+			MREQ_n  <= '0';
+			SLTSL_n <= '0';
+			M1_n    <= '1';
+			wait for 4 * CLK50_PERIOD;
+			RD_n <= '0';
+			wait for 2 * CLK50_PERIOD;   -- let WAIT_n have a chance to assert before checking
+			-- Bridge-level tb_sdcard_bridge.vhd measured ~823 CLOCK_50-
+			-- equivalent cycles per successfully-completed byte - 8000
+			-- gives ~10x margin without letting a genuine hang burn
+			-- excessive simulated (and real) time across all 512 bytes.
+			--
+			-- POLARITY (2026-08-12, root cause of the CHECK6c "got=ZZ /
+			-- stale byte" failures): SDMapper_Top.WAIT_n is NOT the real
+			-- MSX bus level - it is the FPGA's raw pin, deliberately
+			-- pre-inverted (`WAIT_n <= not s_sdbridge_wait_n_o;`) to
+			-- compensate for the board's Q2 open-collector inverter stage
+			-- between the FPGA and the real bus. This testbench wires
+			-- WAIT_n straight to the DUT port with no Q2 model, so it sees
+			-- the inverted level: idle = '0', wait-asserted = '1'. Waiting
+			-- for '1' was catching the IDLE->BUSY edge (the wait being
+			-- asserted), not its release, so the CPU model released RD_n
+			-- almost immediately instead of waiting for the real transfer.
+			wait until WAIT_n = '0' for 8000 * CLK50_PERIOD;
+			wait for 2 * CLK50_PERIOD;   -- settle after WAIT_n releases, before sampling D
+			result := D;
+			RD_n    <= '1';
+			MREQ_n  <= '1';
+			SLTSL_n <= '1';
+			-- Widened from 4 to 40 cycles (2026-08-12, found via CHECK6c
+			-- debug trace: byte i=1 came back identical to byte i=0 - a
+			-- stale read, not corrupted data). Root cause: 4 CLK50_PERIOD
+			-- (80ns) is far shorter than the bridge's own 3-stage clock_i
+			-- (40ns period) cs_i synchronizer needs to fully propagate a
+			-- LOW value through all 3 stages before the NEXT access's
+			-- rising edge can be correctly detected - too short a gap
+			-- meant the second read's cs_rising_pulse silently never
+			-- fired, so wait_n_s never dropped, and "wait until WAIT_n='1'
+			-- for ..." (which only wakes on an EVENT, not on an
+			-- already-true condition) just sat out the full timeout
+			-- without ever seeing a fresh transfer happen. A real Z80
+			-- driver loop has several full instructions (each several
+			-- ~280ns T-states) between successive SD_DATA reads - this
+			-- testbench's tight back-to-back timing was unrealistic
+			-- compared to that, not a real hardware bug.
+			wait for 40 * CLK50_PERIOD;
 		end procedure;
 
 	begin
@@ -451,6 +648,55 @@ begin
 		      FL_ADDR = "00" & x"0A000", pass_count, fail_count);
 		check("CHECK5b: FL_DQ15_AM1 carries the address LSB dropped by the byte-mode shift (0 for this bank)",
 		      FL_DQ15_AM1 = '0', pass_count, fail_count);
+		end_mem_cycle;
+
+		-- ----------------------------------------------------------------
+		-- CHECK 6: SD register window (0x7B00-7B08), reached through the
+		-- REAL top-level address-capture FSM and D-bus arbitration - the
+		-- first check of the full chain both tb_sdcard_xess.vhd (core
+		-- alone) and tb_sdcard_bridge.vhd (bridge alone, driven directly)
+		-- already pass 7/7 for, but real hardware still fails on even with
+		-- both those layers verified. Switch bank 1 to segment 7 first
+		-- (0x6000 bank-switch register) to reach the SD window, matching
+		-- the same convention the real driver uses.
+		-- ----------------------------------------------------------------
+		do_mem_write(x"6000", "00000111");
+		wait for 2 * CLK50_PERIOD;
+
+		report "==== Waiting for SdCardCtrl init (through the real top-level) ====";
+		wait until mock_cmd_count = 4 for 100000 * CLK50_PERIOD;
+		check("CHECK6a: all 4 init commands reached the mock card via the real SD1_* pins",
+		      mock_cmd_count = 4, pass_count, fail_count);
+		wait for 2000 * CLK50_PERIOD;   -- let SdCardCtrl's busy_o actually drop after ACMD41 completes
+
+		report "==== SD_STATUS poll (0x7B06), exactly like driver.mac's DRV_INIT ====";
+		do_mem_read(x"7B06");
+		check("CHECK6b: SD_STATUS reports not busy, present, no error",
+		      D(0) = '0' and D(1) = '0', pass_count, fail_count);
+		end_mem_cycle;
+
+		report "==== DEV_RW-style single-block read (sector 0) through the real bus ====";
+		do_mem_write(x"7B01", x"00");   -- SD_ADDR0
+		do_mem_write(x"7B02", x"00");   -- SD_ADDR1
+		do_mem_write(x"7B03", x"00");   -- SD_ADDR2
+		do_mem_write(x"7B04", x"00");   -- SD_ADDR3
+		do_mem_write(x"7B05", x"01");   -- SD_CMD = SD_CMD_READ
+
+		for i in 0 to 511 loop
+			do_mem_read_wait(x"7B00", sd_byte_v);
+			if sd_byte_v /= std_logic_vector(sd_expect) then
+				report "DEBUG: mismatch at byte i=" & integer'image(i) &
+				       " expected=" & to_hstring(std_logic_vector(sd_expect)) &
+				       " got=" & to_hstring(sd_byte_v);
+				sd_data_ok := false;
+			end if;
+			sd_expect := sd_expect + 1;
+		end loop;
+		check("CHECK6c: all 512 bytes read via the real bus match the expected pattern", sd_data_ok, pass_count, fail_count);
+
+		do_mem_read(x"7B06");
+		check("CHECK6d: SD_STATUS shows no error/timeout after the read (bit1=error, bit4=timeout)",
+		      D(1) = '0' and D(4) = '0', pass_count, fail_count);
 		end_mem_cycle;
 
 		-- ----------------------------------------------------------------

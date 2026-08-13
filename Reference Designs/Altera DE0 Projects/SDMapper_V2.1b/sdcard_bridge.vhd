@@ -126,11 +126,28 @@ architecture rtl of sdcard_bridge is
 	-- "STABILITY FIX" - cs_i is combinationally derived from async MSX
 	-- bus signals at the top level, so it's synchronized here rather than
 	-- used directly as an edge source).
+	--
+	-- BUG FIX (2026-08-12, found by tb_SDMapper_Top.vhd's full-chain
+	-- CHECK6c, debugged down to "byte i=1 came back identical to byte
+	-- i=0"): cs_i on its own is PURE ADDRESS DECODE (no rd_n_i/wr_n_i
+	-- component) - for repeated accesses to the SAME address, exactly
+	-- what a 512-byte SD_DATA read loop does, cs_i never actually toggles
+	-- between accesses, only rd_n_i does. Edge-detecting on cs_i alone
+	-- (as originally written) meant cs_rising_pulse only ever fired once,
+	-- for the very first byte - every subsequent read silently found
+	-- wait_n_s already at '1' (nothing new triggered) and returned the
+	-- stale data_o_reg from the first byte, with no error or timeout
+	-- (wait_n_s never asserted, so there was nothing TO time out). This
+	-- exists even with a synchronizer-settle-time margin of hundreds of
+	-- ns between accesses - it's a logic gap, not a timing margin issue.
+	-- spi.vhd's OWN proven design avoids exactly this by combining the
+	-- address decode WITH rd_n_i/wr_n_i before edge-detecting
+	-- ("spi_cs_s <= cs_i AND (rd_n_i='0' OR wr_n_i='0')") - cs_active_s
+	-- below applies that same combination, and is what actually gets
+	-- synchronized/edge-detected now, not raw cs_i.
 	-- ------------------------------------------------------------------
+	signal cs_active_s                 : std_logic;
 	signal cs_meta, cs_sync, cs_sync_d : std_logic;
-	signal rd_n_meta, rd_n_sync        : std_logic;
-	signal wr_n_meta, wr_n_sync        : std_logic;
-	signal reg_addr_meta, reg_addr_sync : std_logic_vector(3 downto 0);
 	signal cs_rising_pulse              : std_logic;
 
 	-- ------------------------------------------------------------------
@@ -146,8 +163,23 @@ architecture rtl of sdcard_bridge is
 
 	signal wait_n_s        : std_logic := '1';
 	signal is_write_access : std_logic := '0';	-- latched direction of the CPU access that triggered this handshake
+
+	-- BUG FIX (2026-08-12, found by tb_SDMapper_Top.vhd's full-chain
+	-- CHECK6c): sd_rd_en was gated on "wait_n_s='1'" alone, which is ALSO
+	-- true simply because the bridge is idle from the PREVIOUS access -
+	-- for the first cycle or two of a brand new access (cs_i/rd_n_i just
+	-- asserted, handshake_state hasn't left S_IDLE yet), wait_n_s is STILL
+	-- '1' from before, so sd_rd_en briefly went true showing STALE
+	-- data_o_reg left over from the previous byte, before the real
+	-- handshake even started and wait_n_s genuinely dropped. This
+	-- momentary glitch was enough to confuse the CPU-side wait logic
+	-- (real hardware/testbench alike) into treating the access as already
+	-- complete. data_ready_q instead only goes high once THIS access's own
+	-- handshake has genuinely finished (S_WAIT_LOW's completion), and is
+	-- cleared as soon as a NEW access starts or the current one ends - no
+	-- level-based ambiguity with the idle-from-before state.
+	signal data_ready_q    : std_logic := '0';
 	signal data_o_reg      : std_logic_vector(7 downto 0) := (others => '0');	-- byte captured from the card, presented to the CPU on read
-	signal sd_rd_en_s      : std_logic := '0';
 
 	-- Bridge-level timeout: see file header - protects against WAIT_n
 	-- getting stuck asserted forever if SdCardCtrl stalls mid-handshake.
@@ -206,7 +238,7 @@ begin
 		if rising_edge(clock_i) then
 			if reset_n_i = '0' then
 				sw_reset_pulse_s <= '0';
-			elsif cs_rising_pulse = '1' and wr_n_sync = '0' and reg_addr_sync = "0101" and data_bus_i(7) = '1' then
+			elsif cs_rising_pulse = '1' and wr_n_i = '0' and reg_addr_i = "0101" and data_bus_i(7) = '1' then
 				sw_reset_pulse_s <= '1';
 			else
 				sw_reset_pulse_s <= '0';
@@ -245,23 +277,24 @@ begin
 	xess_data_i_s <= data_bus_i;	-- read-only usage - only ever sampled by SdCardCtrl on its own handshake edge
 
 	-- ------------------------------------------------------------------
-	-- Synchronize CPU interface into clock_i, exactly as spi.vhd does.
+	-- Synchronize CPU interface into clock_i, exactly as spi.vhd does -
+	-- cs_active_s (address decode combined with rd_n_i/wr_n_i, see the
+	-- BUG FIX note on its declaration above), not raw cs_i, is what
+	-- actually gets edge-detected.
 	-- ------------------------------------------------------------------
+	cs_active_s <= '1' when cs_i = '1' and (rd_n_i = '0' or wr_n_i = '0') else '0';
+
+	-- Only cs_active_s (genuinely async, derived from combinational MSX
+	-- bus signals) needs metastability synchronization. reg_addr_i/rd_n_i/
+	-- wr_n_i are used directly everywhere below instead of through their
+	-- own independent synchronizer chains - see the S_IDLE bug-fix note
+	-- further down for why re-syncing them separately was itself the bug.
 	process(clock_i)
 	begin
 		if rising_edge(clock_i) then
-			cs_meta   <= cs_i;
+			cs_meta   <= cs_active_s;
 			cs_sync   <= cs_meta;
 			cs_sync_d <= cs_sync;
-
-			rd_n_meta <= rd_n_i;
-			rd_n_sync <= rd_n_meta;
-
-			wr_n_meta <= wr_n_i;
-			wr_n_sync <= wr_n_meta;
-
-			reg_addr_meta <= reg_addr_i;
-			reg_addr_sync <= reg_addr_meta;
 		end if;
 	end process;
 
@@ -270,11 +303,11 @@ begin
 	-- ------------------------------------------------------------------
 	-- Register writes: address/command registers, and triggering rd_i/
 	-- wr_i/reset_i pulses. All single-cycle pulses derived from
-	-- cs_rising_pulse, qualified by wr_n_sync='0' (a genuine write access)
+	-- cs_rising_pulse, qualified by wr_n_i='0' (a genuine write access)
 	-- and the register index.
 	-- ------------------------------------------------------------------
-	xess_rd_s       <= '1' when cs_rising_pulse = '1' and wr_n_sync = '0' and reg_addr_sync = "0101" and data_bus_i(7) = '0' and data_bus_i(1) = '0' and data_bus_i(0) = '1' else '0';
-	xess_wr_s       <= '1' when cs_rising_pulse = '1' and wr_n_sync = '0' and reg_addr_sync = "0101" and data_bus_i(7) = '0' and data_bus_i(1) = '1' else '0';
+	xess_rd_s       <= '1' when cs_rising_pulse = '1' and wr_n_i = '0' and reg_addr_i = "0101" and data_bus_i(7) = '0' and data_bus_i(1) = '0' and data_bus_i(0) = '1' else '0';
+	xess_wr_s       <= '1' when cs_rising_pulse = '1' and wr_n_i = '0' and reg_addr_i = "0101" and data_bus_i(7) = '0' and data_bus_i(1) = '1' else '0';
 	xess_continue_s <= data_bus_i(2);
 
 	process(clock_i)
@@ -286,16 +319,16 @@ begin
 				sd_addr2_q <= (others => '0');
 				sd_addr3_q <= (others => '0');
 				ever_accessed_q <= '0';
-			elsif cs_rising_pulse = '1' and wr_n_sync = '0' then
+			elsif cs_rising_pulse = '1' and wr_n_i = '0' then
 				ever_accessed_q <= '1';
-				case reg_addr_sync is
+				case reg_addr_i is
 					when "0001" => sd_addr0_q <= data_bus_i;
 					when "0010" => sd_addr1_q <= data_bus_i;
 					when "0011" => sd_addr2_q <= data_bus_i;
 					when "0100" => sd_addr3_q <= data_bus_i;
 					when others => null;	-- SD_DATA/SD_CMD handled by their own dedicated logic below
 				end case;
-			elsif cs_rising_pulse = '1' and rd_n_sync = '0' then
+			elsif cs_rising_pulse = '1' and rd_n_i = '0' then
 				ever_accessed_q <= '1';
 			end if;
 		end if;
@@ -318,17 +351,16 @@ begin
 				timeout_flag_q   <= '0';
 				is_write_access  <= '0';
 				data_o_reg       <= (others => '0');
-				sd_rd_en_s       <= '0';
+				data_ready_q     <= '0';
 				last_tx_q        <= (others => '0');
 				last_rx_q        <= (others => '0');
 				init_done_q      <= '0';
 			else
-				sd_rd_en_s <= '0';	-- default: pulse only for exactly the cycle the CPU read completes
 
 				-- Clear the sticky timeout flag whenever a new command is
 				-- issued (SD_CMD write) - matches "you have to reset to
 				-- unfreeze" but lets the driver observe the flag first.
-				if cs_rising_pulse = '1' and wr_n_sync = '0' and reg_addr_sync = "0101" then
+				if cs_rising_pulse = '1' and wr_n_i = '0' and reg_addr_i = "0101" then
 					timeout_flag_q <= '0';
 				end if;
 
@@ -339,19 +371,45 @@ begin
 				case handshake_state is
 
 					when S_IDLE =>
+						-- BUG FIX (2026-08-12, found by tb_SDMapper_Top.vhd's
+						-- full-chain CHECK6c, traced to a real race): using
+						-- reg_addr_sync/rd_n_sync/wr_n_sync here required
+						-- cs_rising_pulse (from cs_active_s's 3-stage sync)
+						-- and reg_addr_sync (its OWN, independent 2-stage
+						-- sync) to land on the EXACT SAME clock_i cycle -
+						-- but both derive from signals that changed at the
+						-- same instant, so their DIFFERENT-length
+						-- synchronizer chains settle on DIFFERENT cycles.
+						-- Traced live: cs_rising_pulse fired one cycle
+						-- before reg_addr_sync caught up to the new
+						-- address, so the trigger was silently missed for
+						-- the very first SD_DATA access following an
+						-- SD_CMD write to a different register - wait_n_s
+						-- never asserted, and the CPU read stale/undriven
+						-- data with no error. Fixed by using the raw
+						-- reg_addr_i/rd_n_i/wr_n_i here instead: by the time
+						-- cs_active_s (and therefore cs_rising_pulse)
+						-- reflects a genuine access, those raw signals were
+						-- ALREADY stable and combinationally folded into
+						-- cs_active_s several cycles ago - re-synchronizing
+						-- them independently was both unnecessary and the
+						-- actual source of the race.
 						wait_n_s <= '1';
-						if cs_rising_pulse = '1' and reg_addr_sync = "0000" and (rd_n_sync = '0' or wr_n_sync = '0') then
+						if cs_rising_pulse = '1' and reg_addr_i = "0000" and (rd_n_i = '0' or wr_n_i = '0') then
 							wait_n_s        <= '0';
+							data_ready_q    <= '0';	-- new access starting - previous byte's data no longer valid to re-present
 							timeout_cnt_q   <= (others => '0');
-							if wr_n_sync = '0' and rd_n_sync /= '0' then
+							if wr_n_i = '0' and rd_n_i /= '0' then
 								is_write_access <= '1';
 							else
 								is_write_access <= '0';
 							end if;
-							if wr_n_sync = '0' then
+							if wr_n_i = '0' then
 								last_tx_q <= data_bus_i;
 							end if;
 							handshake_state <= S_WAIT_HNDSHK;
+						elsif cs_i = '0' or reg_addr_i /= "0000" or (rd_n_i = '1' and wr_n_i = '1') then
+							data_ready_q <= '0';	-- CPU released SD_DATA (or moved elsewhere) - clear for next time
 						end if;
 
 					when S_WAIT_HNDSHK =>
@@ -377,9 +435,7 @@ begin
 						if xess_hndshk_o_s = '0' then
 							xess_hndshk_i_s <= '0';
 							wait_n_s        <= '1';
-							if is_write_access = '0' then
-								sd_rd_en_s <= '1';	-- one-cycle pulse marking data_o_reg valid for the D-bus mux
-							end if;
+							data_ready_q    <= '1';	-- THIS access's own transfer genuinely completed
 							handshake_state <= S_IDLE;
 						end if;
 
@@ -391,20 +447,36 @@ begin
 		end if;
 	end process;
 
+	-- BUG FIX (2026-08-12, found by tb_SDMapper_Top.vhd's full-chain
+	-- CHECK6c): sd_rd_en used to be a single clock_i-cycle pulse marking
+	-- "data_o_reg valid for exactly the cycle the CPU read completes" -
+	-- that assumed the CPU would sample D within that exact one-cycle
+	-- (40ns) window, but nothing guarantees that (and nothing else in this
+	-- project works that way - spi.vhd's own spi_dout/spi_rd_en and this
+	-- bridge's own reg_dout are both LEVEL signals that stay valid for the
+	-- whole CPU access). The isolated bridge testbench sampled data_o_reg
+	-- one cycle earlier than the full top-level testbench's real-bus-timed
+	-- read procedure does, so it never caught this - the full-chain test,
+	-- driven through the real address-capture FSM and D-bus mux (closer to
+	-- how a real Z80/driver actually samples data), did. Fixed by making
+	-- sd_rd_en combinational instead: asserted for as long as the CPU is
+	-- still actively holding an SD_DATA read access after the handshake
+	-- has completed (wait_n_s='1'), matching every other readable
+	-- register's "stays valid for the whole access" guarantee.
 	sd_dout  <= data_o_reg;
-	sd_rd_en <= sd_rd_en_s;
+	sd_rd_en <= '1' when cs_i = '1' and rd_n_i = '0' and reg_addr_i = "0000" and data_ready_q = '1' and is_write_access = '0' else '0';
 
 	-- ------------------------------------------------------------------
 	-- Register reads: SD_STATUS/SD_ERRLO/SD_ERRHI. SD_DATA reads are
 	-- handled by sd_dout/sd_rd_en above (through the top-level's D-bus
 	-- mux, same convention spi.vhd already used).
 	--
-	-- Uses reg_addr_i directly (not the synchronized reg_addr_sync used
-	-- by the write-trigger logic above): unlike cs_i (genuinely
-	-- glitch-prone, combinationally derived from independent async MSX
-	-- bus signals), reg_addr_i is just address bits already registered/
-	-- settled by the top-level's address-capture FSM well before SLTSL_n/
-	-- RD_n assert - matches how every other raw combinational read decode
+	-- Uses reg_addr_i directly (the write-trigger logic above does too now,
+	-- see the S_IDLE bug-fix note): unlike cs_i (genuinely glitch-prone,
+	-- combinationally derived from independent async MSX bus signals),
+	-- reg_addr_i is just address bits already registered/settled by the
+	-- top-level's address-capture FSM well before SLTSL_n/RD_n assert -
+	-- matches how every other raw combinational read decode
 	-- in this project treats s_A (no extra resync stage needed).
 	-- ------------------------------------------------------------------
 	error_flag_s <= '1' when xess_error_s /= x"0000" else '0';
