@@ -305,6 +305,38 @@ architecture bevioural of SDMapper_TOP is
 	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_CAP, S_GUARD, S_HIGH_EN, S_HIGH_CAP);
 	signal addr_capture_state : addr_capture_state_t := S_IDLE;
 
+	-- ------------------------------------------------------------------------
+	-- s_addr_valid: '1' only while s_A holds a COMPLETE, self-consistent
+	-- address (both bytes captured from the same bus cycle).
+	--
+	-- BUG FIX (2026-08-13, real hardware - this is the bug behind the
+	-- "SD+mapper together hang, either one alone is fine" behaviour seen on
+	-- both the Canon V-8 and V-25):
+	-- s_A(7 downto 0) is captured at S_LOW_CAP but s_A(15 downto 8) only 3
+	-- cycles later at S_HIGH_CAP, so for ~80ns in between s_A is a CHIMERA -
+	-- the new cycle's low byte paired with the PREVIOUS cycle's high byte.
+	-- Every combinational decode of s_A saw that chimera as if it were a real
+	-- address. The pre-existing note above already flags this hazard for
+	-- s_ffff_slt (a change was reverted once because of it), but the SD
+	-- register window decode was never protected.
+	--
+	-- Concretely: DEV_RW's inner loop alternates a read of SD_DATA (0x7B00,
+	-- page 1) with a write of that byte into the sector buffer. When the
+	-- buffer lives in the CART's own mapper RAM (which only happens when the
+	-- mapper is enabled - hence SD-alone and mapper-alone both testing clean),
+	-- a write to e.g. 0xC100 transiently presents s_A = 0x7B00: the new low
+	-- byte 0x00 against the stale high byte 0x7B. That is exactly SD_DATA,
+	-- with WR_n asserted - so the bridge saw a spurious SD write access,
+	-- asserted WAIT_n and started a handshake nobody asked for. Sector
+	-- buffers are 512-byte aligned, so every sector transfer walks low bytes
+	-- 0x00-0x08 and is GUARANTEED to hit the 0x7B00-0x7B08 window on the very
+	-- first boot-sector read - matching the hang on the Nextor splash.
+	--
+	-- The same chimera also reached SRAM_WE_N/the SRAM address, so an
+	-- in-progress write pulse could strobe a WRONG SRAM cell before the
+	-- address settled - silent memory corruption on every mapper write.
+	signal s_addr_valid : std_logic := '0';
+
 	-- Glitch filter threshold shared by every register-write qualifier below
 	-- (mapper I/O ports, ROM bank switch, SD slot-select, timer load) - see
 	-- MegaROM_ASCII16/MSX_FPGA_Top.vhd for the real-hardware measurement
@@ -372,6 +404,8 @@ architecture bevioural of SDMapper_TOP is
 	signal dbg_sd_timeout		: std_logic;
 	signal dbg_sd_last_tx		: std_logic_vector(7 downto 0);
 	signal dbg_sd_last_rx		: std_logic_vector(7 downto 0);
+	signal dbg_sd_data_cnt		: std_logic_vector(7 downto 0);
+	signal dbg_sd_marker		: std_logic_vector(7 downto 0);
 	signal dbg_sd_ever_accessed: std_logic;
 	signal dbg_sd_init_done	: std_logic;
 
@@ -409,6 +443,31 @@ architecture bevioural of SDMapper_TOP is
 	-- same timing rationale as the ROM sub-slot's own memory access.
 	signal s_mem_rd_en : std_logic;
 	signal s_mem_wr_en : std_logic;
+
+	-- ------------------------------------------------------------------------
+	-- s_rom_rd_en: "the Flash is genuinely selected AND driving for this read".
+	--
+	-- BUG FIX (2026-08-13, real hardware: 000 still unstable after the
+	-- s_addr_valid fix, while 010 - same design with the mapper switched off -
+	-- stayed clean). The D-bus mux and U1_DIR selected FL_DQ on nothing more
+	-- than "s_sltsl_rom_en = '1' and RD_n = '0'", with NO page restriction -
+	-- but FL_CE_N only actually asserts for page 1, or page 2 when
+	-- rom_bank2_q >= 8. So for a read in page 0, page 3, or page 2 with
+	-- bank < 8, the mux happily drove the MSX bus from FL_DQ while the Flash
+	-- chip was DESELECTED and not driving anything: floating garbage.
+	--
+	-- That collides head-on with the mapper: s_sltsl_ram_en is deliberately
+	-- unconditional for pages 0/2/3 (see its own note), and exp_slot's
+	-- reset-default subslot is 0 = ROM, so in those pages s_sltsl_rom_en and
+	-- s_sltsl_ram_en are BOTH true. ROM won by mux priority, so every read of
+	-- the cart's mapper RAM in pages 0/2/3 returned floating Flash data
+	-- instead of the SRAM byte. With the mapper disabled there is no cart RAM
+	-- to read and the conflict cannot arise - exactly why 010 tested clean and
+	-- 000 did not.
+	--
+	-- Mirrors FL_CE_N's own conditions exactly, so the mux can never select
+	-- FL_DQ unless the Flash is actually enabled and driving.
+	signal s_rom_rd_en : std_logic;
 
 	signal s_mem_page_seg  : std_logic_vector(4 downto 0);
 	signal s_sram_full_addr : std_logic_vector(18 downto 0);	-- segment(4:0) & s_A(13:0) = 19 bits = 512K
@@ -470,6 +529,7 @@ begin
 				addr_capture_state <= S_IDLE;
 				U2OE_n <= '1';
 				U3OE_n <= '1';
+				s_addr_valid <= '0';
 			elsif addr_capture_trigger = '1' then
 				-- Preemption always disables both OEs explicitly first,
 				-- guaranteeing at least one dead cycle before S_LOW_EN's own
@@ -478,6 +538,11 @@ begin
 				addr_capture_state <= S_LOW_EN;
 				U2OE_n <= '1';
 				U3OE_n <= '1';
+				-- A new bus cycle invalidates the previous address IMMEDIATELY:
+				-- from here until S_HIGH_CAP completes, s_A is a mix of old and
+				-- new bytes and must not be decoded by anything (see the
+				-- s_addr_valid declaration for the failure this caused).
+				s_addr_valid <= '0';
 			else
 				case addr_capture_state is
 					when S_IDLE =>
@@ -500,6 +565,7 @@ begin
 						addr_capture_state <= S_HIGH_CAP;
 					when S_HIGH_CAP =>
 						s_A(15 downto 8) <= A_MUX;
+						s_addr_valid <= '1';	-- both bytes now from the same cycle: s_A is safe to decode
 						addr_capture_state <= S_IDLE;
 					when others =>
 						addr_capture_state <= S_IDLE;
@@ -512,7 +578,12 @@ begin
 	-- Slot expansion
 	-- ------------------------------------------------------------------------
 	s_sltsl_en    <= (not SLTSL_n) when SW(9) = '0' else '0';		-- SDMapper (Nextor+Mapper) enabled only when SW(9)='0' - see SW(9) note above
-	s_ffff_slt    <= '1' when s_A = x"FFFF" else '0';
+	-- s_addr_valid gate: see its declaration. The pre-existing note in the
+	-- address-capture section already identified s_ffff_slt as vulnerable to
+	-- a transient mismatched byte pairing reading as 0xFFFF and spuriously
+	-- triggering exp_slot's subslot-select write ("a hang, not a clean
+	-- failure"); this makes that impossible rather than order-dependent.
+	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' else '0';
 	s_sltsl_rom_en <= (not slt_exp_n(0)) when SW(9) = '0' else '0';
 
 	-- RAM sub-slot arbitration: real sub-slot arbitration (via exp_slot,
@@ -534,12 +605,46 @@ begin
 	-- routing only ever reaches this cartridge via page 2, exactly the page
 	-- this fix stops gating behind a sub-slot switch nothing was issuing).
 	--
-	-- No separate SW(8) gate: RAM/mapper is gated by SW(9) only, same as ROM
-	-- and SD (all three are one "SDMapper mode" enable - see SW(9) note
-	-- above). SW(8) is unused/free by this design.
-	s_sltsl_ram_en <= '1' when s_sltsl_en = '1' and
-	                       (s_A(15 downto 14) /= "01" or slt_exp_n(1) = '0')
-	                  else '0';
+	-- DIAGNOSTIC GATE (2026-08-13): SW(8)='1' disables the RAM mapper
+	-- entirely, same bisection purpose as the SD gate below (see
+	-- s_sdbridge_cs_s) - SW(9)='1' proved the machine is stable with
+	-- ROM+RAM+SD all off together, but not which one is at fault. Paired
+	-- with SW(7) (SD) this covers every combination in one build:
+	--   SW(9)=1            -> everything off (known-stable baseline)
+	--   SW(9)=0,SW(8)=1     -> ROM+SD only, mapper off
+	--   SW(9)=0,SW(7)=1     -> ROM+RAM only, SD off
+	--   SW(9)=0,SW(8)=SW(7)=0 -> normal operation (unchanged from before)
+	-- SUBSLOT COMPLIANCE (2026-08-15, real hardware on a Canon V-25).
+	--
+	-- Evidence: SW(9)='1' (cart silent) gives a CLEAN boot logo; SW(9)='0'
+	-- corrupts it, before the driver has done anything. The V-25's own 64KB
+	-- lives in slot 3-2 and it has no mapper, so nothing is contending for the
+	-- FC-FF ports (an earlier theory of mine, now disproven).
+	--
+	-- What DOES contend is the BIOS's boot-time RAM search across slots. The
+	-- legacy behaviour below answered as RAM in pages 0/2/3 REGARDLESS of the
+	-- selected subslot - i.e. our cart claimed RAM while its own reset-default
+	-- subslot 0 (ROM) was selected. During the RAM search the BIOS can then
+	-- latch onto this cartridge as the main RAM slot instead of 3-2, and every
+	-- subsequent thing - including the workspace the logo routine uses - runs
+	-- out of our SRAM behind an expanded slot and a mapper. That matches the
+	-- corrupted logo, the absurd free-RAM figures and the Syntax Error loops,
+	-- and matches SW(9)='1' being clean.
+	--
+	-- That unconditional behaviour was a workaround for the Canon V-8, where
+	-- nothing ever wrote FFFF to select subslot 1 so the mapper was otherwise
+	-- unreachable. It is NOT standard: a compliant cartridge only presents its
+	-- RAM when its own subslot is selected.
+	--
+	-- SW(6) selects between them, so this can be tested rather than assumed:
+	--   SW(6)='0' -> STANDARD: RAM only when subslot 1 is actually selected,
+	--                in every page. Does not compete in the BIOS RAM search.
+	--   SW(6)='1' -> LEGACY V-8 workaround: RAM visible in pages 0/2/3 with no
+	--                subslot check (what this design did until now).
+	s_sltsl_ram_en <= '0' when s_sltsl_en = '0' or SW(8) = '1'                        else
+	                  '1' when slt_exp_n(1) = '0'                                     else	-- RAM subslot genuinely selected
+	                  '1' when SW(6) = '1' and s_A(15 downto 14) /= "01"              else	-- legacy V-8 workaround
+	                  '0';
 
 	s_reset_n     <= not s_reset;
 	s_sltsl_dis_n <= not s_sltsl_en;
@@ -601,6 +706,35 @@ begin
 		'0'	when s_A(15 downto 14) = "10" and s_sltsl_rom_en = '1' and rom_bank2_q(3) = '1'					else		-- Only if bank > 7
 		'1';
 
+	-- "Flash is genuinely enabled AND driving for this read" - mirrors
+	-- FL_CE_N's conditions above (plus RD_n for the page-2 branch, which
+	-- FL_CE_N leaves to FL_OE_N). Used by the D-bus mux and U1_DIR so neither
+	-- can ever source a byte from a deselected Flash chip. See the
+	-- s_rom_rd_en declaration for the bug this fixes.
+	--s_rom_rd_en <=
+	--	'1'	when s_A(15 downto 14) = "01" and s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' and s_addr_valid = '1'	else
+	--	'1'	when s_A(15 downto 14) = "10" and s_sltsl_rom_en = '1' and RD_n = '0' and rom_bank2_q(3) = '1' and s_addr_valid = '1'	else
+	--	'0';
+	-- Added manually to avoid bus contention between Flash and Mapper
+	-- In SDMapper_TOP.vhd
+	-- CRITICAL (2026-08-15): the "s_sdbridge_cs_s = '0'" term below is NOT
+	-- optional. Without it, a read of the SD register window (0x7B00-0x7B0F,
+	-- page 01, ROM subslot) also satisfies s_rom_rd_en - and in the D-bus mux
+	-- the FL_DQ entry sits ABOVE the sd_data_dout entry, so SD_DATA reads get
+	-- muxed from Flash instead of from the card. Worse, FL_CE_N (above) still
+	-- excludes the SD window, so the Flash chip is DESELECTED and not driving:
+	-- the CPU reads floating 'Z'. The bridge meanwhile captures the correct
+	-- byte internally, so the diagnostic display shows perfect data (HEX=AA
+	-- after a sector read) while Nextor receives garbage and can never mount.
+	-- Keeping this term costs nothing and preserves the manual fix's intent
+	-- (no Flash/Mapper contention).
+	s_rom_rd_en <= '1' when s_addr_valid = '1'
+                    and s_sltsl_rom_en = '1'
+                    and RD_n = '0'
+                    and s_sdbridge_cs_s = '0'
+                    and (s_A(15 downto 14) = "01" or (s_A(15 downto 14) = "10" and rom_bank2_q >= 8))
+               else '0';
+	
 	-- FL_ADDR carries address bits [22:1] of the flash's byte-mode address
 	-- space; bit 0 (A-1) goes out on FL_DQ15_AM1 instead (see entity comment).
 	FL_ADDR <= s_rom_a(22 downto 1);
@@ -609,8 +743,36 @@ begin
 	-- SD card register window - see sdcard_bridge.vhd for the exact
 	-- register map. Same "bank 1 switched to segment 7" convention the
 	-- abandoned SPI protocol used.
-	s_sdbridge_cs_s <= '1' when s_sltsl_rom_en = '1' and rom_bank1_q = "111" and s_A >= x"7B00" and s_A <= x"7B08" else '0';
+	-- DIAGNOSTIC GATE (2026-08-13): SW(7)='1' disables the SD register window
+	-- entirely, leaving ROM boot and the RAM mapper fully live. Purpose: the
+	-- machine is stable with SW(9)='1', but that gates ROM, RAM and SD
+	-- together, so it does not say WHICH subsystem destabilizes the bus.
+	-- Paired with SW(8) (mapper, see s_sltsl_ram_en above) this covers every
+	-- combination in one build without needing the mapper switched off on
+	-- the V-8 (only 16KB onboard RAM - Nextor genuinely needs the cart's
+	-- mapper there):
+	--   SW(9)=1              -> everything off (known-stable baseline)
+	--   SW(9)=0,SW(8)=1       -> ROM+SD only, mapper off
+	--   SW(9)=0,SW(7)=1       -> ROM+RAM only, SD off
+	--   SW(9)=0,SW(8)=SW(7)=0 -> normal operation (unchanged from before)
+	-- With SW(7)='1': no WAIT_n can ever be asserted, and 7B00-7B08 stops
+	-- aliasing over ROM space (those addresses fall through to Flash like
+	-- any other ROM byte).
+	-- s_addr_valid gate (2026-08-13): THE fix for the SD+mapper hang - see the
+	-- s_addr_valid declaration for the full trace. Without it, a mapper-RAM
+	-- write to any address whose low byte is 0x00-0x08 transiently looks like
+	-- an SD register access while the high byte is still the previous cycle's
+	-- 0x7B, spuriously asserting WAIT_n and starting an unrequested transfer.
+	--- s_sdbridge_cs_s <= '1' when s_sltsl_rom_en = '1' and SW(7) = '0' and s_addr_valid = '1' and rom_bank1_q = "111" and s_A >= x"7B00" and s_A <= x"7B08" else '0';
 
+   -- Added manually - to workaround address multiplexing "chimera" glitches 
+	-- In SDMapper_TOP.vhd
+	s_sdbridge_cs_s <= '1' when s_addr_valid = '1'
+                        and s_sltsl_rom_en = '1' 
+                        and rom_bank1_q = "111" 
+                        and s_A(15 downto 8) = x"7B" 
+                        and s_A(7 downto 4) = x"0"
+                   else '0';
 	-- ------------------------------------------------------------------------
 	-- Shared glitch-filtered write qualifier for ROM sub-slot register
 	-- writes (bank switch) - see declaration above for the rationale.
@@ -700,7 +862,9 @@ begin
 		dbg_last_tx_o			=> dbg_sd_last_tx,
 		dbg_last_rx_o			=> dbg_sd_last_rx,
 		dbg_ever_accessed_o	=> dbg_sd_ever_accessed,
-		dbg_init_done_o		=> dbg_sd_init_done
+		dbg_init_done_o		=> dbg_sd_init_done,
+		dbg_data_cnt_o			=> dbg_sd_data_cnt,
+		dbg_marker_o			=> dbg_sd_marker
 	);
 
 	-- Onboard microSD (single physical card - see header note). CS is now
@@ -717,6 +881,7 @@ begin
 	-- verbatim from MemoryMapper/MSX_FPGA_Top.vhd (see declarations above).
 	-- ------------------------------------------------------------------------
 	s_io_mapper_en    <= '1' when SW(9) = '0' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
+
 	s_io_mapper_rd_en <= '1' when s_io_mapper_en = '1' and RD_n = '0' else '0';
 	s_io_mapper_wr_en <= '1' when s_io_mapper_en = '1' and WR_n = '0' else '0';
 
@@ -781,8 +946,29 @@ begin
 	                   "111" & reg_page3_q;
 
 	-- Memory (RAM sub-slot) access - raw/immediate decode.
-	s_mem_rd_en <= '1' when s_sltsl_ram_en = '1' and RD_n = '0' else '0';
-	s_mem_wr_en <= '1' when s_sltsl_ram_en = '1' and WR_n = '0' else '0';
+	-- s_addr_valid gate (2026-08-13): the mid-capture chimera address also
+	-- reached SRAM_WE_N and the SRAM address bus, so a write pulse could
+	-- strobe a WRONG cell for the ~80ns before the high byte settled - silent
+	-- corruption on every mapper write, not just the SD-window aliasing.
+	-- BUG FIX (2026-08-15, real hardware: NEXTOR.SYS loads from SD and prints
+	-- its banner, then the machine hangs - with the SD core idle, no error and
+	-- no timeout, i.e. not a bus stall but corrupted memory).
+	--
+	-- 0xFFFF must be EXCLUDED from the RAM path. In a real expanded slot that
+	-- address IS the subslot-select register and the RAM byte behind it is
+	-- simply not accessible. Here s_sltsl_ram_en is unconditional for pages
+	-- 0/2/3 (see its own note), so every write to 0xFFFF also asserted
+	-- SRAM_WE_N and clobbered one byte of the currently-mapped mapper segment.
+	-- Reads were already safe by mux priority (s_expn_q outranks SRAM_DQ), but
+	-- writes were not gated anywhere.
+	--
+	-- Harmless while nothing important lived in mapper RAM - which is why this
+	-- only began to bite at exactly this point: once NEXTOR.SYS is loaded and
+	-- the kernel starts running from mapper RAM, it performs inter-slot calls
+	-- constantly, and every one writes 0xFFFF and silently destroys a byte of
+	-- its own working memory.
+	s_mem_rd_en <= '1' when s_sltsl_ram_en = '1' and RD_n = '0' and s_addr_valid = '1' and s_ffff_slt = '0' else '0';
+	s_mem_wr_en <= '1' when s_sltsl_ram_en = '1' and WR_n = '0' and s_addr_valid = '1' and s_ffff_slt = '0' else '0';
 
 	s_mem_page_seg <= reg_page0_q when s_A(15 downto 14) = "00" else
 	                   reg_page1_q when s_A(15 downto 14) = "01" else
@@ -794,9 +980,17 @@ begin
 	SRAM_ADDR <= s_sram_full_addr(17 downto 0);
 	SRAM_UB_N <= not s_sram_full_addr(18);
 	SRAM_LB_N <= s_sram_full_addr(18);
-	SRAM_CE_N <= not s_sltsl_ram_en;
+	-- s_addr_valid gate (2026-08-13): SRAM_WE_N used to be driven straight
+	-- from WR_n, so the write strobe reached the chip while s_A was still the
+	-- mid-capture chimera (new low byte + previous cycle's high byte, see the
+	-- s_addr_valid declaration) - writing the byte into the WRONG cell before
+	-- the address settled, on every single mapper write. CE_N is gated too so
+	-- the chip is not even selected with an unsettled address.
+	-- 0xFFFF excluded here too (see s_mem_rd_en/s_mem_wr_en above): the chip is
+	-- not even selected for the subslot register's address.
+	SRAM_CE_N <= not (s_sltsl_ram_en and s_addr_valid and not s_ffff_slt);
 	SRAM_OE_N <= RD_n;
-	SRAM_WE_N <= WR_n;
+	SRAM_WE_N <= '0' when s_mem_wr_en = '1' else '1';
 
 	SRAM_DQ <= D when s_mem_wr_en = '1' else (others => 'Z');
 
@@ -809,7 +1003,7 @@ begin
 	-- ------------------------------------------------------------------------
 	D <= sd_reg_dout            when s_sdbridge_reg_rd_s = '1' else							-- SD_STATUS/SD_ERRLO/SD_ERRHI
 	     s_expn_q               when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else	-- Slot expansion register
-	     FL_DQ(7 downto 0)      when s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else	-- ROM / Flash
+	     FL_DQ(7 downto 0)      when s_rom_rd_en = '1' else										-- ROM / Flash (only when actually selected+driving - see s_rom_rd_en)
 	     SRAM_DQ                when s_mem_rd_en = '1' else										-- RAM / Mapper
 	     s_mapper_rdata         when s_io_mapper_rd_qualified = '1' else							-- Mapper segment registers
 	     sd_data_dout           when sd_data_rd_en = '1' else										-- SD_DATA
@@ -833,7 +1027,7 @@ begin
 	-- of this file). Default '1' (listen) covers every write path and idle.
 	U1_DIR <= '0' when s_sdbridge_reg_rd_s = '1' else
 	          '0' when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else
-	          '0' when s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else
+	          '0' when s_rom_rd_en = '1' else
 	          '0' when s_mem_rd_en = '1' else
 	          '0' when s_io_mapper_rd_qualified = '1' else
 	          '0' when sd_data_rd_en = '1' else
@@ -872,10 +1066,37 @@ begin
 	--   lit if a byte-level handshake with SdCardCtrl ever timed out
 	--   without the WAIT_n hang this timeout exists to prevent.
 	-- ------------------------------------------------------------------------
-	HEXDIGIT0 <= dbg_sd_error(3 downto 0);
-	HEXDIGIT1 <= dbg_sd_error(7 downto 4);
-	HEXDIGIT2 <= dbg_sd_error(11 downto 8);
-	HEXDIGIT3 <= dbg_sd_error(15 downto 12);
+	-- DIAGNOSTIC REPURPOSE (2026-08-13): the error code has read 0000 on every
+	-- real-hardware test, so it is spending 4 digits to say nothing. The open
+	-- question now is whether DEV_RW's sector-read loop runs at all, and if so
+	-- what the card actually returns - dbg_sd_ever_accessed cannot answer that
+	-- (it is sticky and already set by DRV_INIT's own SD_CMD write).
+	--   HEX3:HEX2 = last byte received from the card (dbg_sd_last_rx)
+	--   HEX1:HEX0 = count of COMPLETED SD_DATA byte transfers, wrapping
+	-- Reading HEX1:HEX0 = 00 means the byte loop never ran (DEV_RW was never
+	-- called, or bailed at its health check) - a driver/kernel problem.
+	-- Anything else means bytes genuinely moved, and HEX3:HEX2 shows the last
+	-- one: after a successful sector-0 read that should be AA, the second half
+	-- of the 55 AA boot signature at offsets 510/511.
+	-- Error/timeout are still visible on LEDG(1)/LEDG(0).
+	-- DIAGNOSTIC (2026-08-15): show SdCardCtrl's ERROR CODE next to transfer
+	-- progress. Real hardware is now returning last_rx = 0xFF, and the bridge
+	-- only ever produces 0xFF deliberately in one place: the never-stall guard,
+	-- which fires when the core has LATCHED AN ERROR. So the core is telling us
+	-- why it failed and nothing was displaying it.
+	--   HEX3:HEX2 = error_o(7 downto 0) - non-zero means the core faulted
+	--   HEX1:HEX0 = completed SD_DATA byte transfers (wraps at 256)
+	-- error_o(15 downto 8) is still readable by software at SD_ERRHI.
+	HEXDIGIT0 <= dbg_sd_data_cnt(3 downto 0);
+	HEXDIGIT1 <= dbg_sd_data_cnt(7 downto 4);
+	-- HEX3:HEX2 now shows SD_DEBUG (register 9) - the last trace marker the
+	-- driver wrote. The error code has read 00 on every recent run, whereas
+	-- the open question is which driver entry point Nextor reaches, and a
+	-- print-based trace cannot answer that safely (CHPUT is only valid while
+	-- page 0 holds the BIOS). Error/timeout remain on LEDG(1)/LEDG(0), and
+	-- the full error word is still readable at SD_ERRLO/SD_ERRHI.
+	HEXDIGIT2 <= dbg_sd_marker(3 downto 0);
+	HEXDIGIT3 <= dbg_sd_marker(7 downto 4);
 
 	LEDG(9)          <= s_rom_subslot_ever_q;
 	LEDG(8)          <= s_ram_subslot_ever_q;

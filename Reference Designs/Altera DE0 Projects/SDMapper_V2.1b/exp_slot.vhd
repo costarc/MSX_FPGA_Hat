@@ -106,19 +106,45 @@ begin
 	exp_wr_falling_pulse <= exp_wr_sync_d and not exp_wr_sync;
 
 	-- Expansion register - now fully synchronous
+	-- process(clock_i)
+	-- begin
+	-- 	if rising_edge(clock_i) then
+	-- 		if reset_n = '0' then				-- Zerar registrador do expansor em um reset
+	-- 			exp_reg <= X"00";
+	-- 		elsif exp_wr_falling_pulse = '1' then	-- Escrita no endereco &HFFFF
+	-- 			exp_reg <= cpu_d;
+	-- 		end if;
+	-- 	end if;
+	-- end process;
+
+	-- Added this delayed pulse sampling manually - to avoid avoid delayed write pulse
 	process(clock_i)
 	begin
 		if rising_edge(clock_i) then
-			if reset_n = '0' then				-- Zerar registrador do expansor em um reset
-				exp_reg <= X"00";
-			elsif exp_wr_falling_pulse = '1' then	-- Escrita no endereco &HFFFF
-				exp_reg <= cpu_d;
+			if reset_n = '0' then
+					exp_reg <= X"00";
+			elsif sltsl_n = '0' and cpu_wr_n = '0' and ffff = '1' then
+					exp_reg <= cpu_d; -- Latch continuously while write cycle is active
 			end if;
 		end if;
 	end process;
 
 	-- Leitura dos registros
-	cpu_q <= (not exp_reg) when exp_rd = '1';
+	-- CLEANUP (2026-08-15): this used to be
+	--     cpu_q <= (not exp_reg) when exp_rd = '1';
+	-- with no else branch, which infers a TRANSPARENT LATCH whose enable is
+	-- derived from cpu_rd_n. TimeQuest then treats RD_n as a clock ("Warning
+	-- 332060: Node RD_n was determined to be a clock but was found without an
+	-- associated clock assignment") and analyses hold against an async bus
+	-- signal - which is where the marginal/negative hold slack seen on some
+	-- builds came from.
+	--
+	-- The latch was never needed: the top level only ever muxes s_expn_q onto
+	-- D while its own read conditions hold (SLTSL_n low, A=FFFF, RD_n low),
+	-- so gating here was redundant with that. Driving it unconditionally is
+	-- functionally identical at every point where the value is actually used,
+	-- and removes both the latch and the phantom RD_n clock domain.
+	cpu_q <= not exp_reg;
 
 	-- Seleciona qual subslot acionar de acordo com endereco do barramento e registros
 	with cpu_a(15 downto 14) select exp_sel <=

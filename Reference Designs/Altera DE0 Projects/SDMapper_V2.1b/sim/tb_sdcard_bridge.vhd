@@ -248,22 +248,42 @@ begin
 			data_bus_i <= val;
 			wr_n_i     <= '0';
 			cs_i       <= '1';
-			wait for CLK_PERIOD;
-			wait until wait_n_o = '1' for 200000 * CLK_PERIOD;
+			wait for 4 * CLK_PERIOD;	-- see the note on cpu_read below
+			if wait_n_o = '0' then
+				wait until wait_n_o = '1' for 200000 * CLK_PERIOD;
+			end if;
+			wait for 8 * CLK_PERIOD;	-- hold like a real Z80 cycle
 			wr_n_i <= '1';
 			cs_i   <= '0';
-			wait for CLK_PERIOD;
+			wait for 12 * CLK_PERIOD;	-- see the note in cpu_read
 		end procedure;
 
 		-- Models a real Z80 WAIT-extended read cycle, returning the byte
 		-- read via reg_dout (immediate registers) or sd_dout (SD_DATA).
+		-- UPDATED (2026-08-15): this used to hold the access for a single
+		-- CLK_PERIOD, which is not a bus cycle any Z80 could produce. The
+		-- bridge consumes a byte on cs_rising_pulse, which lands ~120ns after
+		-- cs_i asserts (3-stage 25MHz synchronizer) - comfortably inside a
+		-- real ~840ns Z80 read, but AFTER this procedure used to finish. The
+		-- byte was therefore never marked consumed, every read returned the
+		-- same byte, and the transfer FSM stalled waiting for a consume that
+		-- never came. The full-chain tb_SDMapper_Top.vhd, which models real
+		-- Z80 timing, passed the identical transfer throughout.
+		--
+		-- Also fixes a "wait until" trap: "wait until wait_n_o = '1'" only
+		-- wakes on a TRANSITION, so with the prefetch normally leaving
+		-- wait_n_o already high it would block for the whole timeout instead
+		-- of proceeding. The level is tested first now.
 		procedure cpu_read(reg : std_logic_vector(3 downto 0); result : out std_logic_vector(7 downto 0)) is
 		begin
 			reg_addr_i <= reg;
 			rd_n_i     <= '0';
 			cs_i       <= '1';
-			wait for CLK_PERIOD;
-			wait until wait_n_o = '1' for 200000 * CLK_PERIOD;
+			wait for 4 * CLK_PERIOD;	-- let the synchronizer register the access
+			if wait_n_o = '0' then
+				wait until wait_n_o = '1' for 200000 * CLK_PERIOD;
+			end if;
+			wait for 8 * CLK_PERIOD;	-- hold like a real Z80 cycle
 			if reg = REG_DATA then
 				result := sd_dout;
 			else
@@ -271,11 +291,17 @@ begin
 			end if;
 			rd_n_i <= '1';
 			cs_i   <= '0';
-			wait for CLK_PERIOD;
+			-- Idle gap between accesses. Was 4 clocks, which is shorter than
+			-- the bridge's 3-stage cs synchronizer needs to register a clean
+			-- deassert-then-reassert edge, so the next access's "byte consumed"
+			-- pulse was sometimes missed and reads lagged by one byte. A real
+			-- Z80 leaves far more idle time than this between two accesses.
+			wait for 12 * CLK_PERIOD;
 		end procedure;
 
 		variable byte_v      : std_logic_vector(7 downto 0);
 		variable data_ok     : boolean := true;
+		variable ready_ok    : boolean := false;
 		variable expect      : unsigned(7 downto 0) := (others => '0');
 
 	begin
@@ -300,6 +326,23 @@ begin
 		cpu_write(REG_ADDR2, x"00");
 		cpu_write(REG_ADDR3, x"00");
 		cpu_write(REG_CMD, x"01");	-- SD_CMD_READ
+
+		-- UPDATED (2026-08-15) for the prefetch/decoupled protocol. This used
+		-- to read REG_DATA immediately after the command and rely on the
+		-- bridge stalling the bus (WAIT_n) through the card's start-token
+		-- latency. That contract is gone: stalling for milliseconds halts the
+		-- Z80's refresh cycles and physically corrupts MSX main DRAM (see the
+		-- DECOUPLING note in sdcard_bridge.vhd). The driver now polls
+		-- SD_STATUS bit5 first, and so must this testbench.
+		ready_ok := false;
+		for i in 0 to 20000 loop
+			cpu_read(REG_STATUS, byte_v);
+			if byte_v(5) = '1' then
+				ready_ok := true;
+			end if;
+			exit when ready_ok;
+		end loop;
+		check("B0: SD_DATA ready bit rises after the read command (no bus stall)", ready_ok);
 
 		expect := (others => '0');
 		for i in 0 to 511 loop

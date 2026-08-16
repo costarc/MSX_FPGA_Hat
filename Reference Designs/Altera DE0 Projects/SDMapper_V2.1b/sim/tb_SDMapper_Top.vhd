@@ -99,7 +99,16 @@ architecture sim of tb_SDMapper_Top is
 	signal CLOCK_50     : std_logic := '0';
 
 	signal KEY          : std_logic_vector(2 downto 0) := (others => '1');	-- DE0 has only 3 buttons
-	signal SW           : std_logic_vector(9 downto 0) := (others => '0');
+	-- SW(0) = card-present (wired to the bridge's card_present_i), SW(9)='0'
+	-- selects SDMapper mode. BUG FIX (2026-08-13): this was (others => '0'),
+	-- so every SD test below ran with the bridge told "no card inserted" -
+	-- harmless while the bridge ignored card_present_i for SD_DATA accesses,
+	-- but it meant the mock-card tests never exercised the realistic wiring.
+	-- The never-stall guard in sdcard_bridge.vhd (which correctly refuses to
+	-- assert WAIT_n for an absent card) made this latent bug visible: all 512
+	-- bytes came back 0xFF. SW(0) now reflects the card the mock model is
+	-- actually emulating.
+	signal SW           : std_logic_vector(9 downto 0) := (0 => '1', others => '0');
 
 	signal HEX0, HEX1, HEX2, HEX3 : std_logic_vector(6 downto 0);
 	signal LEDG         : std_logic_vector(9 downto 0);	-- DE0 has 10 green LEDs, no red ones
@@ -191,6 +200,12 @@ architecture sim of tb_SDMapper_Top is
 	signal mock_rx_shift       : std_logic_vector(7 downto 0) := (others => '0');
 	signal mock_rx_bit_cnt     : integer range 0 to 7 := 0;
 	signal mock_frame_byte_idx : integer range 0 to 7 := 0;
+
+	-- CHECK9 monitor: watches whether /WAIT is ever asserted while armed.
+	-- (Port polarity: pre-inverted for the board's Q2 stage, so '1' = wait
+	-- ASSERTED, '0' = idle.)
+	signal mon_arm       : boolean := false;
+	signal mon_wait_seen : boolean := false;
 	signal mock_cmd_count      : integer := 0;
 
 	signal mock_resp_byte    : std_logic_vector(7 downto 0) := x"FF";
@@ -281,6 +296,21 @@ begin
 	-- bits of this 15-bit byte-mode data bus are unused by any check below.
 	-- ------------------------------------------------------------------
 	FL_DQ <= "0000000" & x"A5" when (FL_CE_N = '0' and FL_OE_N = '0') else (others => 'Z');
+
+	-- ------------------------------------------------------------------
+	-- SRAM model (added 2026-08-13): a fixed test byte, driven only while
+	-- the DUT genuinely selects the chip for a read - same output-enable
+	-- gating as the Flash model above, high-Z otherwise.
+	--
+	-- There was NO SRAM model before, so the mapper-RAM read path was never
+	-- actually exercised by this testbench - which is exactly how the D-bus
+	-- mux bug (ROM selected in the mux for pages 0/2/3 where the Flash is
+	-- deselected and NOT driving, beating the RAM entry on priority) survived
+	-- undetected in simulation while breaking real hardware. The byte is
+	-- deliberately different from the Flash model's 0xA5 so the two sources
+	-- can never be confused by a check.
+	-- ------------------------------------------------------------------
+	SRAM_DQ <= x"3C" when (SRAM_CE_N = '0' and SRAM_OE_N = '0') else (others => 'Z');
 
 	-- ------------------------------------------------------------------
 	-- Mock SD card: receives command bytes off SD1_MOSI (MSB-first,
@@ -388,6 +418,17 @@ begin
 	-- ------------------------------------------------------------------
 	-- Main stimulus / checks process
 	-- ------------------------------------------------------------------
+	-- Records any /WAIT assertion during the armed window. Used by CHECK9 to
+	-- prove the card's latency never reaches the bus during a real block read.
+	wait_monitor : process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if mon_arm and WAIT_n = '1' then
+				mon_wait_seen <= true;
+			end if;
+		end if;
+	end process;
+
 	stimulus : process
 		variable pass_count : integer := 0;
 		variable fail_count : integer := 0;
@@ -396,6 +437,9 @@ begin
 		variable sd_byte_v  : std_logic_vector(7 downto 0);
 		variable sd_data_ok : boolean := true;
 		variable sd_expect  : unsigned(7 downto 0) := (others => '0');
+
+		-- Used only by CHECK9's ready-bit polling.
+		variable sd_ready_ok : boolean := false;
 
 		-- Drives a full MSX bus cycle: sets up msx_addr, pulses the
 		-- request strobes long enough for the DUT's address-capture state
@@ -504,7 +548,19 @@ begin
 			M1_n    <= '1';
 			wait for 4 * CLK50_PERIOD;
 			RD_n <= '0';
-			wait for 2 * CLK50_PERIOD;   -- let WAIT_n have a chance to assert before checking
+			-- Let the top-level address-capture FSM finish (s_addr_valid) AND
+			-- give /WAIT a chance to assert, before either testing the stall or
+			-- sampling D.
+			--
+			-- UPDATED (2026-08-15): this was 2 cycles (40ns). That only ever
+			-- worked because the old design always stalled, so the subsequent
+			-- "wait until WAIT_n" pushed sampling far past address capture.
+			-- With the bridge prefetching there is normally no stall at all,
+			-- and sampling 40ns in landed BEFORE s_addr_valid asserted - cs_i
+			-- was still low, nothing drove D, and every byte read as 'Z'. A
+			-- real Z80 latches D at the end of T3, ~840ns into the cycle; this
+			-- is nowhere near that tight.
+			wait for 10 * CLK50_PERIOD;
 			-- Bridge-level tb_sdcard_bridge.vhd measured ~823 CLOCK_50-
 			-- equivalent cycles per successfully-completed byte - 8000
 			-- gives ~10x margin without letting a genuine hang burn
@@ -521,7 +577,14 @@ begin
 			-- for '1' was catching the IDLE->BUSY edge (the wait being
 			-- asserted), not its release, so the CPU model released RD_n
 			-- almost immediately instead of waiting for the real transfer.
+			-- "wait until" only wakes on a TRANSITION. With the bridge prefetching,
+		-- the normal case is that no stall ever happens and WAIT_n is ALREADY
+		-- at its idle level - waiting unconditionally then burned the full
+		-- timeout on every single byte (~160us each, 83ms for one sector).
+		-- Test the level first and only wait when genuinely stalled.
+		if WAIT_n = '1' then
 			wait until WAIT_n = '0' for 8000 * CLK50_PERIOD;
+		end if;
 			wait for 2 * CLK50_PERIOD;   -- settle after WAIT_n releases, before sampling D
 			result := D;
 			RD_n    <= '1';
@@ -558,11 +621,28 @@ begin
 
 		-- Board configuration used by every check below: SDMapper mode
 		-- (SW(9)='0' - see SDMapper_Top.vhd header; this alone gates ROM,
-		-- RAM/mapper, and SD - SW(8) is unused/free), no SD card presence
-		-- asserted.
+		-- RAM/mapper, and SD - SW(8) is unused/free).
+		--
+		-- SW(0)='1' = card present (wired to the bridge's card_present_i).
+		-- BUG FIX (2026-08-13): this used to force SW(7 downto 0) to all
+		-- zeros, i.e. "no card inserted", while the SD checks below happily
+		-- exercised a fully-responding mock card - a contradiction that only
+		-- went unnoticed because nothing depended on card_present_i and
+		-- CHECK6b's assertion never actually tested the present bit. The
+		-- never-stall guard in sdcard_bridge.vhd does depend on it (it
+		-- refuses to assert WAIT_n for a card that cannot answer), so the
+		-- stimulus now has to describe the board honestly.
 		SW(9) <= '0';
 		SW(8) <= '0';
-		SW(7 downto 0) <= (others => '0');
+		SW(6 downto 1) <= (others => '0');
+		-- SW(7)='1' = drive the mapper port read-back. CHECK2/CHECK3 below
+		-- specifically exercise that path, so they need it enabled. On real
+		-- hardware SW(7) is normally '0' (see the BUS CONTENTION FIX note in
+		-- SDMapper_Top.vhd: a machine with its own internal mapper - any 64KB+
+		-- MSX2, e.g. the Canon V-25 - already answers those reads, and two
+		-- devices driving D corrupts whatever the BIOS reads back).
+		SW(7) <= '1';
+		SW(0) <= '1';		-- card present, matching the mock SD card model below
 		wait for 2 * CLK50_PERIOD;
 
 		-- ----------------------------------------------------------------
@@ -671,8 +751,13 @@ begin
 
 		report "==== SD_STATUS poll (0x7B06), exactly like driver.mac's DRV_INIT ====";
 		do_mem_read(x"7B06");
+		-- BUG FIX (2026-08-13): this claimed to check "present" but only ever
+		-- asserted D(0)/D(1) - the present bit D(2) went unchecked, so it
+		-- passed happily even though SW(0) (card_present_i) was stuck '0'.
+		-- Now actually verifies what the message says: bit0=busy, bit1=error,
+		-- bit2=present.
 		check("CHECK6b: SD_STATUS reports not busy, present, no error",
-		      D(0) = '0' and D(1) = '0', pass_count, fail_count);
+		      D(0) = '0' and D(1) = '0' and D(2) = '1', pass_count, fail_count);
 		end_mem_cycle;
 
 		report "==== DEV_RW-style single-block read (sector 0) through the real bus ====";
@@ -682,6 +767,25 @@ begin
 		do_mem_write(x"7B04", x"00");   -- SD_ADDR3
 		do_mem_write(x"7B05", x"01");   -- SD_CMD = SD_CMD_READ
 
+		-- UPDATED (2026-08-15): poll SD_STATUS bit5 before touching SD_DATA,
+		-- exactly like driver.mac's SD_WAIT_READY. The card's start-token
+		-- latency must never be taken as a bus stall - see the DECOUPLING note
+		-- in sdcard_bridge.vhd (a multi-millisecond /WAIT halts Z80 refresh and
+		-- corrupts MSX main DRAM). Reading SD_DATA straight after the command,
+		-- as this loop used to, is precisely the pattern that is now illegal.
+		sd_ready_ok := false;
+		for i in 0 to 2000 loop
+			do_mem_read(x"7B06");
+			if D(5) = '1' then
+				sd_ready_ok := true;
+			end if;
+			end_mem_cycle;
+			exit when sd_ready_ok;
+			wait for 20 * CLK50_PERIOD;
+		end loop;
+		check("CHECK6c0: SD_DATA ready bit rises before the block is read", sd_ready_ok, pass_count, fail_count);
+
+		mon_arm <= true;
 		for i in 0 to 511 loop
 			do_mem_read_wait(x"7B00", sd_byte_v);
 			if sd_byte_v /= std_logic_vector(sd_expect) then
@@ -692,12 +796,160 @@ begin
 			end if;
 			sd_expect := sd_expect + 1;
 		end loop;
+		mon_arm <= false;
+		wait for 2 * CLK50_PERIOD;
 		check("CHECK6c: all 512 bytes read via the real bus match the expected pattern", sd_data_ok, pass_count, fail_count);
 
 		do_mem_read(x"7B06");
 		check("CHECK6d: SD_STATUS shows no error/timeout after the read (bit1=error, bit4=timeout)",
 		      D(1) = '0' and D(4) = '0', pass_count, fail_count);
 		end_mem_cycle;
+
+		-- ----------------------------------------------------------------
+		-- CHECK7: the address-capture chimera (regression test for the
+		-- SD+mapper hang found on real hardware 2026-08-13)
+		--
+		-- s_A's low byte is captured 3 cycles before its high byte, so
+		-- mid-capture s_A = <new low byte> & <PREVIOUS cycle's high byte>.
+		-- This reproduces the exact killer sequence from DEV_RW's inner loop:
+		-- an SD_DATA access at 0x7B00 (leaving 0x7B in the high-byte latch)
+		-- immediately followed by a mapper-RAM write to 0xC100 - whose low
+		-- byte 0x00 transiently pairs with the stale 0x7B to form 0x7B00,
+		-- i.e. SD_DATA, with WR_n asserted. Before the s_addr_valid gate the
+		-- bridge treated that chimera as a genuine SD write access: it
+		-- asserted WAIT_n and started a transfer nobody requested, hanging
+		-- the machine on the first boot-sector read (sector buffers are
+		-- 512-byte aligned, so low bytes 0x00-0x08 are always walked).
+		--
+		-- Passing means: no WAIT_n stall is produced by the RAM write, and
+		-- the SD bridge reports no error/timeout from a spurious transfer.
+		-- ----------------------------------------------------------------
+		report "==== CHECK7: mapper write aliasing into the SD window (chimera regression) ====";
+		do_mem_read(x"7B00");   -- leaves 0x7B in the high-byte latch
+		end_mem_cycle;
+		wait for 4 * CLK50_PERIOD;
+
+		-- Write to 0xC100: low byte 0x00 transiently pairs with stale 0x7B.
+		do_mem_write(x"C100", x"5A");
+		wait for 4 * CLK50_PERIOD;
+
+		-- WAIT_n must never have been asserted by that write. Note the
+		-- polarity: this port is pre-inverted for the board's Q2 stage, so
+		-- '0' here is the idle (not-waiting) level - see do_mem_read_wait.
+		check("CHECK7a: mapper-RAM write aliasing SD_DATA does not assert WAIT_n",
+		      WAIT_n = '0', pass_count, fail_count);
+
+		do_mem_read(x"7B06");
+		check("CHECK7b: SD_STATUS shows no error/timeout after the aliasing write",
+		      D(1) = '0' and D(4) = '0', pass_count, fail_count);
+		end_mem_cycle;
+
+		-- ----------------------------------------------------------------
+		-- CHECK8: mapper-RAM read in a page where the Flash is deselected
+		-- (regression test for the D-bus mux priority bug, real hardware
+		-- 2026-08-13 - config 000 unstable while 010 was clean).
+		--
+		-- Page 2 (0x8000-0xBFFF) with the reset-default subslot 0 selected:
+		-- s_sltsl_rom_en AND s_sltsl_ram_en are BOTH true (the RAM enable is
+		-- deliberately unconditional for pages 0/2/3), but the Flash is NOT
+		-- driving here because rom_bank2_q < 8, so FL_CE_N stays high. The mux
+		-- used to pick FL_DQ anyway on an unrestricted "rom_en and RD_n=0"
+		-- term, handing the MSX floating garbage instead of the SRAM byte on
+		-- every cart mapper-RAM read. Expect the SRAM model's 0x3C, and
+		-- specifically NOT the Flash model's 0xA5 or high-Z.
+		-- ----------------------------------------------------------------
+		report "==== CHECK8: mapper-RAM read where Flash is deselected (mux priority regression) ====";
+		-- SW(6)='1' selects the LEGACY unconditional-RAM mode. That is the only
+		-- mode in which s_sltsl_rom_en and s_sltsl_ram_en can both be true for
+		-- the same access, which is exactly the hazard this check exists to
+		-- catch (ROM winning the D-mux while the Flash is deselected and not
+		-- driving). In the STANDARD mode (SW(6)='0', the real-hardware default
+		-- since 2026-08-15) the two are mutually exclusive by construction and
+		-- the hazard cannot arise at all.
+		SW(6) <= '1';
+		wait for 4 * CLK50_PERIOD;
+		do_mem_read(x"8000");
+		check("CHECK8a: page-2 RAM read returns the SRAM byte, not floating Flash",
+		      D = x"3C", pass_count, fail_count);
+		check("CHECK8b: Flash is genuinely deselected for that read (FL_CE_N high)",
+		      FL_CE_N = '1', pass_count, fail_count);
+		end_mem_cycle;
+		SW(6) <= '0';		-- back to standard subslot-compliant behaviour
+		wait for 4 * CLK50_PERIOD;
+
+		-- ----------------------------------------------------------------
+		-- CHECK9: the card's start-token latency must NEVER land on the bus
+		-- (regression test for the DRAM-refresh corruption seen on real
+		-- hardware, 2026-08-15).
+		--
+		-- This check replaces an earlier "/WAIT must assert within 100ns"
+		-- test. That test encoded the OLD design, where the CPU access itself
+		-- waited for the card and the only question was whether the stall
+		-- arrived in time for the Z80's T2 sampling point. It is obsolete by
+		-- construction now: with the bridge prefetching, a correct design
+		-- asserts /WAIT rarely, and ideally never.
+		--
+		-- Why this matters more than latency: on MSX the Z80's refresh cycles
+		-- refresh main DRAM, so a frozen CPU means no refresh, and DRAM only
+		-- retains ~2-4ms. The first byte after CMD17 can take MILLISECONDS,
+		-- so stalling for it corrupts main memory outright - observed as a
+		-- corrupted boot logo, RAM detected as 8KB instead of 32KB, and
+		-- random restarts.
+		--
+		-- The invariant is therefore: after issuing a read command, the CPU
+		-- must be able to poll SD_STATUS bit5 freely (no stall), and once
+		-- that bit is set the SD_DATA read must complete WITHOUT asserting
+		-- /WAIT at all - the byte is already there.
+		-- NOTE ON POLARITY: this DUT port is pre-inverted for the board's Q2
+		-- open-collector stage, so '1' = wait ASSERTED, '0' = idle.
+		-- ----------------------------------------------------------------
+		report "==== CHECK9: start-token latency stays off the bus (no /WAIT stall) ====";
+		-- Asserted over CHECK6c's real 512-byte block read (see the wait_monitor
+		-- process), rather than by issuing a second block: the mock card only
+		-- serves one CMD17, and this is the stronger statement anyway - across
+		-- an entire genuine sector transfer the CPU was never stalled once.
+		check("CHECK9: /WAIT never asserted during the whole 512-byte block read",
+		      not mon_wait_seen, pass_count, fail_count);
+
+		-- ----------------------------------------------------------------
+		-- CHECK10: 0xFFFF (subslot register) must not touch mapper RAM
+		-- (regression test for the real-hardware hang right after NEXTOR.SYS
+		-- loads and the kernel starts running from mapper RAM, 2026-08-15).
+		--
+		-- In a real expanded slot 0xFFFF IS the subslot-select register and the
+		-- RAM byte behind it is inaccessible. s_sltsl_ram_en is unconditional
+		-- for pages 0/2/3, so a write to 0xFFFF used to assert SRAM_WE_N as
+		-- well and destroy one byte of the currently-mapped segment. Nextor
+		-- writes 0xFFFF on every inter-slot call, so once its kernel lived in
+		-- mapper RAM it was steadily corrupting its own memory.
+		-- ----------------------------------------------------------------
+		-- NOTE: the SRAM strobes must be sampled DURING the write cycle, while
+		-- SLTSL_n/WR_n are still asserted. A first version of this check called
+		-- do_mem_write() and then sampled, by which time SLTSL_n was already
+		-- high and SRAM_WE_N was trivially '1' - it passed even with the bug
+		-- deliberately reinstated, i.e. it tested nothing. The cycle is driven
+		-- inline here so the sample lands in the middle of it.
+		report "==== CHECK10: 0xFFFF subslot write must not reach the SRAM ====";
+		msx_addr <= x"FFFF";
+		D        <= x"80";
+		wait until rising_edge(CLOCK_50);
+		MREQ_n  <= '0';
+		SLTSL_n <= '0';
+		M1_n    <= '1';
+		wait for 8 * CLK50_PERIOD;   -- let the address-capture FSM latch s_A
+		WR_n <= '0';
+		wait for 10 * CLK50_PERIOD;  -- sample mid-write, strobes fully settled
+
+		check("CHECK10a: SRAM write strobe stays inactive for a 0xFFFF write",
+		      SRAM_WE_N = '1', pass_count, fail_count);
+		check("CHECK10b: SRAM is not even selected for 0xFFFF",
+		      SRAM_CE_N = '1', pass_count, fail_count);
+
+		WR_n    <= '1';
+		MREQ_n  <= '1';
+		SLTSL_n <= '1';
+		wait for 4 * CLK50_PERIOD;
+		D <= (others => 'Z');
 
 		-- ----------------------------------------------------------------
 		-- Summary
