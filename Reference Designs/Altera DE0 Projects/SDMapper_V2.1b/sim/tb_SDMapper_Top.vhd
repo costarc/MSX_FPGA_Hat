@@ -673,8 +673,16 @@ begin
 		-- ----------------------------------------------------------------
 		-- CHECK 2: mapper segment register FC reads back its reset default
 		-- ("00011") as D = "111" & "00011" = x"E3".
+		--
+		-- UPDATED (2026-08-16): was 0xE3 ("111" & "00011"), i.e. a 5-bit /
+		-- 32-segment / 512KB mapper. This board only wires 8 of the SRAM's 16
+		-- data lines, so segments 16-31 selected an unwired byte lane and
+		-- silently lost data - see the MAPPER SIZE FIX note in
+		-- SDMapper_Top.vhd. The mapper is now 4-bit / 16 segments / 256KB, and
+		-- the unimplemented high bits read back as 1s, which is how MSX-DOS
+		-- sizes a mapper.
 		-- ----------------------------------------------------------------
-		check("CHECK2: mapper port FC reset default reads back as 0xE3",
+		check("CHECK2: mapper port FC reset default reads back as 0xE3 (32 segments)",
 		      D = x"E3", pass_count, fail_count);
 
 		end_io_cycle;

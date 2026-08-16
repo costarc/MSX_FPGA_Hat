@@ -183,6 +183,7 @@ DRV_TIMI:
 
 TEMP_WORK	equ	0C000h
 BOOTSIG0	equ	0C000h	;one scratch byte in page-3 RAM, used only during DRV_INIT
+STRESSFAIL	equ	0C001h	;stress-test failure counter (DRV_INIT only)
 
 DRV_INIT:
 	or	a
@@ -379,7 +380,7 @@ DRV_INIT_TESTNEXT:
 	ld	(SD_CMD),a
 
 	call	SD_WAIT_READY
-	jr	c,DRV_INIT_MULTIBAD
+	jp	c,DRV_INIT_MULTIBAD	;jp: stress test below pushed this out of jr range
 
 	;Sector 1 is where the MBR says the FAT16 partition starts, so this is
 	;the partition's BOOT SECTOR. Until now this test only checked that the
@@ -449,6 +450,78 @@ DRV_INIT_MULTIOK:
 	;"DRV_INIT returned cleanly and Nextor hung afterwards" - two completely
 	;different investigations. If this line appears, the driver's init path
 	;is fully complete and the fault is in what Nextor does next.
+	;-------------------------------------------------------------------
+	; READ RELIABILITY STRESS TEST (2026-08-16).
+	;
+	; Nextor is now producing three unrelated DOS errors from one setup -
+	; "invalid partition number", "file handle not open", "write protected"
+	; - and sometimes booting fine. That is the signature of slightly wrong
+	; data being read and then breaking whatever structure it lands in, not
+	; of one broken code path. Single isolated reads (sector 0, sector 1)
+	; pass every boot, so the question is whether reads stay correct under
+	; SUSTAINED traffic, which is what Nextor actually does.
+	;
+	; Read sector 0 repeatedly and verify its 55AA signature each time.
+	; Sector 0's content is known-good (it matches the card's raw bytes read
+	; on a PC), so any mismatch here is OUR read going wrong. The failure
+	; count is printed as hex: 00 means the read path is solid under load and
+	; the corruption is elsewhere (the mapper-RAM write path being the next
+	; suspect); anything else localises it here.
+	;-------------------------------------------------------------------
+	xor	a
+	ld	(STRESSFAIL),a
+	ld	b,64
+DRV_INIT_STRESS:
+	push	bc
+	xor	a
+	ld	(SD_ADDR0),a
+	ld	(SD_ADDR1),a
+	ld	(SD_ADDR2),a
+	ld	(SD_ADDR3),a
+	ld	a,SD_CMD_READ
+	ld	(SD_CMD),a
+
+	call	SD_WAIT_READY
+	jr	c,DRV_INIT_STRESSBAD
+
+	ld	bc,512
+	ld	d,0
+	ld	e,0
+DRV_INIT_STRESSBYTE:
+	ld	a,(SD_DATA)
+	ld	d,e
+	ld	e,a
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,DRV_INIT_STRESSBYTE
+
+	ld	a,(SD_STATUS)
+	and	M_SDSTAT_FAIL
+	jr	nz,DRV_INIT_STRESSBAD
+	ld	a,d
+	cp	55h
+	jr	nz,DRV_INIT_STRESSBAD
+	ld	a,e
+	cp	0AAh
+	jr	z,DRV_INIT_STRESSNEXT
+
+DRV_INIT_STRESSBAD:
+	ld	a,(STRESSFAIL)
+	inc	a
+	ld	(STRESSFAIL),a
+
+DRV_INIT_STRESSNEXT:
+	pop	bc
+	djnz	DRV_INIT_STRESS
+
+	ld	de,STRESS_S
+	call	PRINT
+	ld	a,(STRESSFAIL)
+	call	PRINTHEX
+	ld	de,CRLF_S
+	call	PRINT
+
 	ld	de,INITDONE_S
 	call	PRINT
 	ret
@@ -1211,6 +1284,8 @@ ADDRDUMP_S:
 	db	"SD_ADDR readback: ",0
 CRLF_S:
 	db	13,10,0
+STRESS_S:
+	db	"Read stress 64x sector0, failures: ",0
 INITDONE_S:
 	db	"DRV_INIT complete - handing over to Nextor",13,10,0
 MULTIOK_S:

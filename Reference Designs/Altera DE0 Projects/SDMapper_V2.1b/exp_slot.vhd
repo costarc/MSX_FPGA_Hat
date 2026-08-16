@@ -44,7 +44,14 @@ entity exp_slot is
 		cpu_a		: in    std_logic_vector(15 downto 14);	-- Barramento de endereco da CPU (bits 15 e 14)
 		cpu_d		: inout std_logic_vector(7 downto 0);		-- Barramento de dados da CPU
 		cpu_q		: inout std_logic_vector(7 downto 0);		-- Data back for CPU
-		exp_n		: out   std_logic_vector(3 downto 0)		-- Saida 4 bits do expansor (ativo em 0)
+		exp_n		: out   std_logic_vector(3 downto 0);		-- Saida 4 bits do expansor (ativo em 0)
+		-- DIAGNOSTIC (2026-08-16): the raw subslot register, surfaced so the
+		-- top level can display it. exp_reg is rewritten on every inter-slot
+		-- call (constantly, while Nextor runs) and is latched continuously
+		-- from unsynchronized bus signals - if it ever captures a wrong value
+		-- the ROM/RAM page routing changes underneath the running code, which
+		-- would look exactly like the intermittent corruption being chased.
+		exp_reg_o	: out   std_logic_vector(7 downto 0)
 	);
 end exp_slot;
 
@@ -66,6 +73,11 @@ architecture rtl of exp_slot is
 
 	signal exp_wr_sync, exp_wr_sync_d    : std_logic;
 	signal exp_wr_falling_pulse          : std_logic;
+
+	-- Subslot-register capture pipeline - see the note on the capture process.
+	signal exp_wr_raw, exp_wr_raw_d      : std_logic;
+	signal exp_wr_len                    : std_logic_vector(3 downto 0);
+	signal exp_d_s1, exp_d_s2            : std_logic_vector(7 downto 0);
 
 begin
 
@@ -117,17 +129,82 @@ begin
 	-- 	end if;
 	-- end process;
 
-	-- Added this delayed pulse sampling manually - to avoid avoid delayed write pulse
+	-- ------------------------------------------------------------------------
+	-- Subslot register capture: sample DURING the write window, but COMMIT a
+	-- value taken safely before the window closes.
+	--
+	-- BUG (2026-08-16, real hardware): the previous version latched cpu_d
+	-- continuously while the RAW window held, so the value that stuck was the
+	-- LAST sample before the window closed - taken right at the point where
+	-- the Z80 is releasing the bus and D is going invalid, and sampled from
+	-- signals asynchronous to clock_i. A single mis-sampled bit rewrites the
+	-- page routing underneath running code.
+	--
+	-- Observed: exp_reg = 0x41 when Nextor locked up. 0x41 routes page 2 to
+	-- subslot 0 (this cart's ROM), whose page-2 window never activates for the
+	-- 128KB kernel - so page 2 had NOTHING responding and reads floated. The
+	-- value Nextor intends there is 0x51 (page 2 -> subslot 1 = mapper RAM),
+	-- which differs from 0x41 by exactly ONE BIT. This register is rewritten
+	-- on every inter-slot call, i.e. constantly, so a rare bad sample is
+	-- inevitable - and shows up as "mostly works, fails randomly, different
+	-- symptom each time".
+	--
+	-- Fix: keep a 2-deep pipeline of samples taken while the window is open
+	-- (D is valid throughout the Z80's write pulse, so mid-window samples are
+	-- sound), and commit exp_reg from the OLDER sample when the window ends.
+	-- That commits data captured >=2 clocks (80ns at 25MHz) before the window
+	-- closed, well clear of the bus release, while still never sampling after
+	-- WR_n has risen - which is what the synchronized-qualifier version got
+	-- wrong in the other direction.
+	-- ------------------------------------------------------------------------
+	exp_wr_raw <= '1' when sltsl_n = '0' and cpu_wr_n = '0' and ffff = '1' else '0';
+
 	process(clock_i)
 	begin
 		if rising_edge(clock_i) then
 			if reset_n = '0' then
-					exp_reg <= X"00";
-			elsif sltsl_n = '0' and cpu_wr_n = '0' and ffff = '1' then
-					exp_reg <= cpu_d; -- Latch continuously while write cycle is active
+				exp_reg      <= X"00";
+				exp_d_s1     <= X"00";
+				exp_d_s2     <= X"00";
+				exp_wr_raw_d <= '0';
+				exp_wr_len   <= (others => '0');
+			else
+				exp_wr_raw_d <= exp_wr_raw;
+
+				if exp_wr_raw = '1' then
+					exp_d_s1 <= cpu_d;	-- newest sample (may be near the bus release)
+					exp_d_s2 <= exp_d_s1;	-- one clock older - the one we trust
+					if exp_wr_len /= "1111" then
+						exp_wr_len <= exp_wr_len + 1;	-- how long has this window been open?
+					end if;
+				else
+					exp_wr_len <= (others => '0');
+				end if;
+
+				-- Window just closed: commit the older, safely-sampled value -
+				-- but ONLY if the window was long enough to have been a real
+				-- Z80 write.
+				--
+				-- BUG (2026-08-16): the length check was missing. exp_d_s1/s2
+				-- only update WHILE the window is open, so a spurious one- or
+				-- two-clock window committed whatever stale value those
+				-- registers happened to be holding from some earlier, unrelated
+				-- moment - i.e. a glitch wrote garbage routing. Observed on real
+				-- hardware as exp_reg flipping between 0xFD and 0x00, where 0xFD
+				-- selects subslot 3 for three pages and this cart only
+				-- implements subslots 0 and 1.
+				--
+				-- A genuine write at 3.58MHz holds this window for roughly 25
+				-- clocks of the 25MHz domain; requiring 4 rejects glitches by a
+				-- wide margin while never rejecting a real access.
+				if exp_wr_raw = '0' and exp_wr_raw_d = '1' and exp_wr_len >= "0100" then
+					exp_reg <= exp_d_s2;
+				end if;
 			end if;
 		end if;
 	end process;
+
+	exp_reg_o <= exp_reg;
 
 	-- Leitura dos registros
 	-- CLEANUP (2026-08-15): this used to be
