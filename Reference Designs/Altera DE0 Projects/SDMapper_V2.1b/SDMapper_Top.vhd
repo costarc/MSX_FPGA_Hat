@@ -328,6 +328,12 @@ architecture bevioural of SDMapper_TOP is
 	signal u1_drive    : std_logic;
 	signal u1_drive_q  : std_logic := '0';
 	signal u1_dir_hold : std_logic_vector(1 downto 0) := (others => '0');
+
+	-- Mapper segment-register capture pipeline - see the write process.
+	signal map_d_s1, map_d_s2   : std_logic_vector(4 downto 0) := (others => '0');
+	signal map_sel_q            : std_logic_vector(1 downto 0) := (others => '0');
+	signal map_wr_q             : std_logic := '0';
+	signal map_wr_len           : std_logic_vector(3 downto 0) := (others => '0');
 	signal s_sltsl_dis_n	: std_logic;
 	signal s_sdbridge_wait_n_o	: std_logic;
 
@@ -1023,13 +1029,57 @@ begin
 				reg_page1_q <= "00010";
 				reg_page2_q <= "00001";
 				reg_page3_q <= "00000";
-			elsif s_io_mapper_wr_qualified = '1' then
-				case s_A(1 downto 0) is
-					when "00"   => reg_page0_q <= D(4 downto 0);
-					when "01"   => reg_page1_q <= D(4 downto 0);
-					when "10"   => reg_page2_q <= D(4 downto 0);
-					when others => reg_page3_q <= D(4 downto 0);
-				end case;
+				map_d_s1    <= (others => '0');
+				map_d_s2    <= (others => '0');
+				map_sel_q   <= (others => '0');
+				map_wr_q    <= '0';
+				map_wr_len  <= (others => '0');
+			else
+				-- ----------------------------------------------------------
+				-- BUG FIX (2026-08-16): these registers used to latch D
+				-- CONTINUOUSLY while the write window was qualified, so the
+				-- value that stuck was the LAST sample before the window
+				-- closed - taken exactly as the Z80 releases the bus and D
+				-- goes invalid, sampled from signals asynchronous to this
+				-- clock. Same fault as exp_slot's subslot register, but far
+				-- more damaging: a corrupted SEGMENT NUMBER re-points a whole
+				-- 16KB page at the wrong block of SRAM. Nextor rewrites these
+				-- constantly, so one bad sample silently relocates memory
+				-- underneath running code - which is exactly the remaining
+				-- mapper corruption (SRAM itself is proven good by the BIST,
+				-- and the SRAM write is now self-timed).
+				--
+				-- Fix, mirroring exp_slot: keep a 2-deep pipeline of samples
+				-- taken while the window is open (D is valid throughout the
+				-- Z80's write pulse), and commit the OLDER sample when the
+				-- window closes - data captured well before the bus release.
+				-- Short/glitch windows are rejected outright, because the
+				-- pipeline only advances while the window is open and would
+				-- otherwise commit a stale value from an unrelated moment.
+				-- The port select is latched alongside the data so it cannot
+				-- drift either.
+				-- ----------------------------------------------------------
+				map_wr_q <= s_io_mapper_wr_qualified;
+
+				if s_io_mapper_wr_qualified = '1' then
+					map_d_s1  <= D(4 downto 0);
+					map_d_s2  <= map_d_s1;
+					map_sel_q <= s_A(1 downto 0);
+					if map_wr_len /= "1111" then
+						map_wr_len <= map_wr_len + 1;
+					end if;
+				else
+					map_wr_len <= (others => '0');
+				end if;
+
+				if s_io_mapper_wr_qualified = '0' and map_wr_q = '1' and map_wr_len >= "0100" then
+					case map_sel_q is
+						when "00"   => reg_page0_q <= map_d_s2;
+						when "01"   => reg_page1_q <= map_d_s2;
+						when "10"   => reg_page2_q <= map_d_s2;
+						when others => reg_page3_q <= map_d_s2;
+					end case;
+				end if;
 			end if;
 		end if;
 	end process;
