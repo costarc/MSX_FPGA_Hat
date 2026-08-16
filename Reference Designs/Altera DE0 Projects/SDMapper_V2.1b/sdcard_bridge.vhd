@@ -235,55 +235,30 @@ architecture rtl of sdcard_bridge is
 	-- level-based ambiguity with the idle-from-before state.
 	signal data_o_reg      : std_logic_vector(7 downto 0) := (others => '0');	-- byte captured from the card, presented to the CPU on read
 
-	-- Bridge-level timeout: see file header - protects against WAIT_n
-	-- getting stuck asserted forever if SdCardCtrl stalls mid-handshake.
+	-- ------------------------------------------------------------------
+	-- Bridge-level /WAIT timeout.
 	--
-	-- WIDENED (2026-08-12, real hardware: first real success - "SD card
-	-- ready" printed, meaning CMD0/CMD8/ACMD41 genuinely completed - but
-	-- the MSX hung a few seconds later, LEDG(0)/dbg_timeout_o lit).
-	-- Root cause: 16 bits (~2.6ms) was sized only for a single SPI byte
-	-- transfer, but SdCardCtrl's own RD_BLK state polls the card
-	-- internally for a start token (0xFE) after issuing CMD17/CMD24, and
-	-- never raises hndShk_o at all while doing so (rtnData_v stays false
-	-- until the token arrives) - a real card can legitimately take longer
-	-- than 2.6ms to prepare that data. The old timeout fired mid-poll,
-	-- handed back stale data, and the byte loop kept going regardless -
-	-- 512 accumulated ~2.6ms timeouts per sector reads as "hangs after a
-	-- few seconds", not a true infinite lock, but bad either way.
+	-- REWRITTEN (2026-08-16): this comment had accumulated three
+	-- contradictory layers from before the prefetch redesign - variously
+	-- claiming 671ms, "cut to ~100ms" and "10ms is a deliberate compromise" -
+	-- while the constant itself was 100us. The VALUE is right for the current
+	-- design; the rationale described the design it replaced. Reconciled here.
 	--
-	-- NARROWED BACK (2026-08-13, real hardware: DRV_INIT never exercises
-	-- this WAIT_n-gated SD_DATA path at all - CMD0/CMD8/ACMD41 run inside
-	-- SdCardCtrl automatically, and DRV_INIT only ever touches SD_CMD
-	-- (plain fast write) and SD_STATUS/SD_ERRLO/SD_ERRHI (immediate,
-	-- non-WAIT_n reads). So "SD card ready" printing reliably never
-	-- actually proved a 671ms WAIT_n hold was safe - the FIRST real
-	-- exercise of this path is DEV_RW's boot-sector read, and that is
-	-- exactly where the MSX now hangs/reboots, consistently right after
-	-- "SD card ready" clears and before BASIC. 671ms is a single,
-	-- uninterrupted Z80 bus hold (SLTSL_n/MREQ_n/RD_n all held low the
-	-- whole time by hardware WAIT) - long enough to plausibly trip
-	-- something on the real host (a bus-timeout supervisor, or similar)
-	-- that the DE0 testbench/host-free bench setup never exercised. Cut
-	-- to ~100ms (still ~38x the proven-insufficient 2.6ms) as a cheap,
-	-- reversible experiment: short enough to plausibly dodge whatever is
-	-- resetting the machine, long enough to keep covering legitimate
-	-- start-token latency for any reasonably healthy card.
-	-- CORRECTED (2026-08-15): this had been to_unsigned(2500, 24), which is
-	-- 100 MICROseconds at 25MHz, not the ~100ms the comment claimed (three
-	-- zeros were missing). 100us cannot work: the FIRST byte of a block read
-	-- has to wait for the card's start token after CMD17, which a real card
-	-- typically takes 1-2ms to produce (the SD spec allows up to 100ms). Every
-	-- sector would therefore time out on byte 0 - and because timeout_flag_q
-	-- is sticky until the next SD_CMD write, the combinational WAIT_n below
-	-- then stops asserting at all, so the remaining 511 bytes complete
-	-- instantly with stale data instead of the card's.
+	-- Since the bridge prefetches (see the DECOUPLING note), the card's
+	-- start-token latency - the millisecond-scale wait that used to justify a
+	-- large timeout - never reaches the bus at all. The driver polls
+	-- SD_STATUS bit5 for that instead. /WAIT is now only asserted in one
+	-- narrow case: the CPU reaches SD_DATA before the background transfer has
+	-- the next byte ready, which costs at most one SPI byte time (~0.6us at
+	-- 12.5MHz).
 	--
-	-- 10ms is a deliberate compromise, not a spec-derived number: ~5-10x
-	-- typical card latency, while staying under the MSX's 16.7ms (60Hz)
-	-- interrupt period so a worst-case stall can delay at most one interrupt
-	-- rather than dropping a whole frame. Raise it if a slow card proves to
-	-- need more; the driver detects the timeout and retries cleanly either way.
-	constant TIMEOUT_MAX_C : unsigned(23 downto 0) := to_unsigned(2500, 24);	-- ~100us @ 25MHz - see the DRAM-refresh note below
+	-- 100us is therefore ~150x the worst legitimate wait, while staying far
+	-- below anything that could matter for MSX DRAM refresh - the Z80's
+	-- refresh cycles stop while /WAIT is asserted and main RAM only retains
+	-- for ~2-4ms, which is what made the old millisecond-scale timeouts
+	-- actively destructive.
+	-- ------------------------------------------------------------------
+	constant TIMEOUT_MAX_C : unsigned(23 downto 0) := to_unsigned(2500, 24);	-- ~100us @ 25MHz
 	signal timeout_cnt_q   : unsigned(23 downto 0) := (others => '0');
 	signal timeout_flag_q  : std_logic := '0';
 

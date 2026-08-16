@@ -293,6 +293,7 @@ architecture bevioural of SDMapper_TOP is
 	signal s_rst_src_meta	: std_logic := '1';
 	signal s_rst_src_sync	: std_logic := '1';
 	signal s_rst_stretch	: std_logic_vector(2 downto 0) := (others => '1');
+	signal s_rst_filter	: std_logic_vector(6 downto 0) := (others => '0');
 
 	-- ------------------------------------------------------------------------
 	-- SRAM self-test (BIST), SW(4). See the BIST process near the SRAM pins.
@@ -334,6 +335,13 @@ architecture bevioural of SDMapper_TOP is
 	signal map_sel_q            : std_logic_vector(1 downto 0) := (others => '0');
 	signal map_wr_q             : std_logic := '0';
 	signal map_wr_len           : std_logic_vector(3 downto 0) := (others => '0');
+
+	-- ROM bank-switch register capture - see the bank-switch write process.
+	signal bank_d_s1, bank_d_s2 : std_logic_vector(7 downto 0) := (others => '0');
+	signal bank_d_stable        : std_logic_vector(7 downto 0) := (others => '0');
+	signal bank_have_stable     : std_logic := '0';
+	signal bank_sel1, bank_sel2 : std_logic := '0';
+	signal bank_wr_q            : std_logic := '0';
 	signal s_sltsl_dis_n	: std_logic;
 	signal s_sdbridge_wait_n_o	: std_logic;
 
@@ -570,15 +578,39 @@ begin
 			s_rst_src_meta <= not (KEY(0) and RESET_n);
 			s_rst_src_sync <= s_rst_src_meta;
 
+			-- NOISE FILTER (2026-08-16). Real hardware evidence: LEDG(8) is a
+			-- STICKY latch (s_ram_subslot_ever_q) that can only be cleared by
+			-- s_reset - and it was observed lighting during boot and then going
+			-- OUT at the moment the machine hangs. That is direct proof the
+			-- design is being RESET mid-operation, which clears exp_reg to 0x00
+			-- (matching readings seen), resets the mapper segment registers,
+			-- and zeroes the ROM bank registers - swapping the code window out
+			-- from under the running CPU. Hang with varying symptoms, exactly
+			-- as observed.
+			--
+			-- RESET_n is a long unterminated line on a ribbon cable next to
+			-- switching bus signals, so it picks up noise. A genuine MSX reset
+			-- lasts MILLISECONDS; interference lasts nanoseconds. Requiring the
+			-- source to stay asserted for 128 clocks (~2.6us at 50MHz) ignores
+			-- interference by orders of magnitude while still responding to a
+			-- real reset far faster than a human could notice.
 			if s_rst_src_sync = '1' then
-				s_rst_stretch <= (others => '1');	-- (re)arm while asserted
+				if s_rst_filter /= "1111111" then
+					s_rst_filter <= s_rst_filter + 1;
+				end if;
+			else
+				s_rst_filter <= (others => '0');
+			end if;
+
+			if s_rst_filter = "1111111" then
+				s_rst_stretch <= (others => '1');	-- genuine reset: (re)arm
 			elsif s_rst_stretch /= "000" then
 				s_rst_stretch <= s_rst_stretch - 1;	-- hold for a guaranteed minimum
 			end if;
 		end if;
 	end process;
 
-	s_reset <= '1' when s_rst_src_sync = '1' or s_rst_stretch /= "000" else '0';
+	s_reset <= '1' when s_rst_filter = "1111111" or s_rst_stretch /= "000" else '0';
 	INT_n <= '0';	-- inverted due to the Q1 open-collector stage in the interface
 	SOUNDOUT <= '0';
 	U4OE_n <= '0';	-- unused buffer on this variant - disabled
@@ -683,7 +715,22 @@ begin
 	-- triggering exp_slot's subslot-select write ("a hang, not a clean
 	-- failure"); this makes that impossible rather than order-dependent.
 	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' else '0';
-	s_sltsl_rom_en <= (not slt_exp_n(0)) when SW(9) = '0' else '0';
+	-- SYSTEMATIC s_addr_valid GATING (2026-08-16).
+	--
+	-- This board reconstructs the address from the time-multiplexed A_MUX, so
+	-- s_A is only trustworthy once BOTH bytes are captured (s_addr_valid).
+	-- Belavenuto's msxsdmapperv2 - the working reference for this same ROM+RAM
+	-- expanded-slot structure - sits directly on all 16 address lines and has
+	-- no such window, which is why its subslot logic behaves and ours has not.
+	-- The rule here is simply: decode NOTHING until the address is complete.
+	--
+	-- These two were the remaining holes found by auditing every consumer of
+	-- s_A. slt_exp_n is computed by exp_slot from RAW s_A(15 downto 14), so
+	-- during the capture window it selects the PREVIOUS cycle's page - and
+	-- s_sltsl_rom_en feeds s_cart_write_en (the ROM bank-switch qualifier),
+	-- which had no gate of its own. Gating at the source means every
+	-- downstream user inherits it rather than needing its own gate.
+	s_sltsl_rom_en <= (not slt_exp_n(0)) when SW(9) = '0' and s_addr_valid = '1' else '0';
 
 	-- RAM sub-slot arbitration: real sub-slot arbitration (via exp_slot,
 	-- gated behind an FFFF write selecting sub-slot 1) is only needed for
@@ -740,7 +787,7 @@ begin
 	--                in every page. Does not compete in the BIOS RAM search.
 	--   SW(6)='1' -> LEGACY V-8 workaround: RAM visible in pages 0/2/3 with no
 	--                subslot check (what this design did until now).
-	s_sltsl_ram_en <= '0' when s_sltsl_en = '0' or SW(8) = '1'                        else
+	s_sltsl_ram_en <= '0' when s_sltsl_en = '0' or SW(8) = '1' or s_addr_valid = '0'  else
 	                  '1' when slt_exp_n(1) = '0'                                     else	-- RAM subslot genuinely selected
 	                  '1' when SW(6) = '1' and s_A(15 downto 14) /= "01"              else	-- legacy V-8 workaround
 	                  '0';
@@ -910,11 +957,67 @@ begin
 			if s_reset = '1' then
 				rom_bank1_q <= (others => '0');
 				rom_bank2_q <= (others => '0');
-			elsif s_cart_write_qualified = '1' then
-				if s_A >= x"6000" and s_A <= x"67FF" then
-					rom_bank1_q <= D(2 downto 0);
-				elsif s_A >= x"7000" and s_A <= x"77FF" then
-					rom_bank2_q <= D(3 downto 0);
+			else
+				-- ----------------------------------------------------------
+				-- BUG FIX (2026-08-16): these latched D CONTINUOUSLY while the
+				-- write window was qualified, so the value that stuck was the
+				-- last sample before the window closed - taken as the Z80
+				-- releases the bus, from an asynchronous data bus with no
+				-- metastability protection. Same fault as exp_slot's subslot
+				-- register and the mapper segment registers, but the WORST of
+				-- the three: rom_bank1_q selects which 16KB of Flash is visible
+				-- at 4000-7FFF, which is where the kernel and this driver are
+				-- EXECUTING. A corrupted bank register swaps the code out from
+				-- under the running CPU.
+				--
+				-- Captured the same way as the others now: sample while the
+				-- window is open, keep only values seen identically on two
+				-- consecutive samples (D is stable for the whole ~1us write
+				-- pulse, so agreement means the sample is real and not
+				-- metastable), and commit when the window closes.
+				-- ----------------------------------------------------------
+				bank_wr_q <= s_cart_write_qualified;
+
+				if s_cart_write_qualified = '1' then
+					bank_d_s1 <= D;
+					bank_d_s2 <= bank_d_s1;
+					if s_A >= x"6000" and s_A <= x"67FF" then
+						bank_sel1 <= '1';
+						bank_sel2 <= '0';
+					elsif s_A >= x"7000" and s_A <= x"77FF" then
+						bank_sel1 <= '0';
+						bank_sel2 <= '1';
+					else
+						bank_sel1 <= '0';
+						bank_sel2 <= '0';
+					end if;
+					if bank_d_s1 = bank_d_s2 then
+						bank_d_stable    <= bank_d_s2;
+						bank_have_stable <= '1';
+					end if;
+				else
+					bank_have_stable <= '0';
+				end if;
+
+				-- Same correction as exp_slot: never DROP a bank switch just
+				-- because no two samples agreed - a missed bank switch leaves
+				-- the wrong 16KB of Flash mapped, which is at least as bad as a
+				-- mis-sampled one. Prefer the agreed value, fall back to the
+				-- older sample.
+				if s_cart_write_qualified = '0' and bank_wr_q = '1' then
+					if bank_sel1 = '1' then
+						if bank_have_stable = '1' then
+							rom_bank1_q <= bank_d_stable(2 downto 0);
+						else
+							rom_bank1_q <= bank_d_s2(2 downto 0);
+						end if;
+					elsif bank_sel2 = '1' then
+						if bank_have_stable = '1' then
+							rom_bank2_q <= bank_d_stable(3 downto 0);
+						else
+							rom_bank2_q <= bank_d_s2(3 downto 0);
+						end if;
+					end if;
 				end if;
 			end if;
 		end if;
@@ -980,7 +1083,24 @@ begin
 	-- RAM sub-slot: standard MSX Memory Mapper (512KB) - logic ported
 	-- verbatim from MemoryMapper/MSX_FPGA_Top.vhd (see declarations above).
 	-- ------------------------------------------------------------------------
-	s_io_mapper_en    <= '1' when SW(9) = '0' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
+	-- SW(8) gates the mapper I/O ports as well as the RAM (2026-08-16).
+	--
+	-- Taken from Belavenuto's msxsdmapperv2, which is the working reference for
+	-- this exact ROM+RAM expanded-slot structure. There, ONE switch disables
+	-- the mapper, the slot expander AND the FCh-FFh ports together:
+	--     io_cs         <= not iorq_n_i and m1_n_i and sw_i(0);
+	--     sltsl_ram_n_s <= slt_exp_n(1) when sw_i(0) = '1' else '1';
+	--
+	-- Ours gated the ports on SW(9) alone, so with SW(8)='1' the RAM was
+	-- disabled but we STILL answered FCh-FFh - advertising a memory mapper
+	-- with no memory behind it. DOS probes those ports, concludes a mapper
+	-- exists, sizes it, and then writes into nothing. That made "mapper off"
+	-- an incoherent configuration rather than a clean one, and any test run in
+	-- it was measuring a machine being told a lie.
+	-- s_addr_valid gate: the port number comes from s_A(7 downto 2), which is
+	-- part of the same reconstructed address - a chimera can transiently read
+	-- as a mapper port access. See the gating note at s_sltsl_rom_en.
+	s_io_mapper_en    <= '1' when SW(9) = '0' and SW(8) = '0' and s_addr_valid = '1' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
 
 	s_io_mapper_rd_en <= '1' when s_io_mapper_en = '1' and RD_n = '0' else '0';
 	s_io_mapper_wr_en <= '1' when s_io_mapper_en = '1' and WR_n = '0' else '0';

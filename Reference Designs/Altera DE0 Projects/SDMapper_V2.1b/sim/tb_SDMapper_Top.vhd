@@ -613,9 +613,12 @@ begin
 		-- ----------------------------------------------------------------
 		-- Reset
 		-- ----------------------------------------------------------------
-		KEY(0)  <= '0';   -- hold local reset (s_reset <= not(KEY(0) and RESET_n))
+		KEY(0)  <= '0';   -- hold local reset
 		RESET_n <= '1';
-		wait for 10 * CLK50_PERIOD;
+		-- Held long enough to pass the reset noise filter in SDMapper_Top.vhd
+		-- (128 clocks): a real reset lasts milliseconds, so this is still
+		-- vastly shorter than hardware, but it must clear the filter.
+		wait for 200 * CLK50_PERIOD;
 		KEY(0) <= '1';    -- release reset
 		wait for 10 * CLK50_PERIOD;
 

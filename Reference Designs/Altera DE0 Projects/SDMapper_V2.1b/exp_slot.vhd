@@ -78,6 +78,8 @@ architecture rtl of exp_slot is
 	signal exp_wr_raw, exp_wr_raw_d      : std_logic;
 	signal exp_wr_len                    : std_logic_vector(3 downto 0);
 	signal exp_d_s1, exp_d_s2            : std_logic_vector(7 downto 0);
+	signal exp_d_stable                  : std_logic_vector(7 downto 0);
+	signal exp_have_stable               : std_logic;
 
 begin
 
@@ -168,17 +170,40 @@ begin
 				exp_d_s2     <= X"00";
 				exp_wr_raw_d <= '0';
 				exp_wr_len   <= (others => '0');
+				exp_d_stable <= X"00";
+				exp_have_stable <= '0';
 			else
 				exp_wr_raw_d <= exp_wr_raw;
 
 				if exp_wr_raw = '1' then
-					exp_d_s1 <= cpu_d;	-- newest sample (may be near the bus release)
-					exp_d_s2 <= exp_d_s1;	-- one clock older - the one we trust
+					exp_d_s1 <= cpu_d;	-- newest sample
+					exp_d_s2 <= exp_d_s1;	-- one clock older
+
+					-- STABILITY VOTING (2026-08-16): cpu_d is the raw Z80 data
+					-- bus, asynchronous to clock_i, so any single sample can be
+					-- metastable and resolve to the wrong value on one bit -
+					-- precisely the observed 0x41-instead-of-0x51 corruption,
+					-- where the intended and captured values differ by one bit.
+					-- Taking "the older sample" avoided the bus-release edge but
+					-- did nothing about metastability, because it still trusted
+					-- a SINGLE sample.
+					--
+					-- D is held stable by the Z80 for the whole write pulse
+					-- (~1us = ~25 clocks here), so a value seen IDENTICALLY on
+					-- two consecutive samples is real; a metastable or
+					-- mid-transition sample will not repeat. Only such agreed
+					-- values are remembered as committable.
+					if exp_d_s1 = exp_d_s2 then
+						exp_d_stable    <= exp_d_s2;
+						exp_have_stable <= '1';
+					end if;
+
 					if exp_wr_len /= "1111" then
 						exp_wr_len <= exp_wr_len + 1;	-- how long has this window been open?
 					end if;
 				else
-					exp_wr_len <= (others => '0');
+					exp_wr_len      <= (others => '0');
+					exp_have_stable <= '0';
 				end if;
 
 				-- Window just closed: commit the older, safely-sampled value -
@@ -197,8 +222,21 @@ begin
 				-- A genuine write at 3.58MHz holds this window for roughly 25
 				-- clocks of the 25MHz domain; requiring 4 rejects glitches by a
 				-- wide margin while never rejecting a real access.
+				-- CORRECTION (2026-08-16): requiring exp_have_stable made the
+				-- commit CONDITIONAL, so if two samples never registered as
+				-- agreeing the write was dropped entirely and the routing was
+				-- left at its reset value - observed on hardware as exp_reg
+				-- stuck at 0x00, i.e. the mapper permanently invisible. That
+				-- is strictly worse than committing a slightly-risky value:
+				-- a dropped subslot write breaks routing outright, while a
+				-- single-bit risk only sometimes corrupts. The stable value is
+				-- preferred when available, but the write is ALWAYS committed.
 				if exp_wr_raw = '0' and exp_wr_raw_d = '1' and exp_wr_len >= "0100" then
-					exp_reg <= exp_d_s2;
+					if exp_have_stable = '1' then
+						exp_reg <= exp_d_stable;	-- agreed across two samples
+					else
+						exp_reg <= exp_d_s2;		-- fallback: older sample
+					end if;
 				end if;
 			end if;
 		end if;
