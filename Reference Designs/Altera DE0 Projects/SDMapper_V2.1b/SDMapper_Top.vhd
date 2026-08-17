@@ -914,7 +914,11 @@ begin
 
    -- Added manually - to workaround address multiplexing "chimera" glitches 
 	-- In SDMapper_TOP.vhd
-	s_sdbridge_cs_s <= '1' when s_addr_valid = '1'
+	-- SW(7)='1' disables the SD register window entirely (2026-08-16), so the
+	-- Flash ROM can host a standalone mapper test with nothing else of ours on
+	-- the bus. The window lives inside ROM address space (7B00-7B0F in bank 7),
+	-- so removing it guarantees the test ROM cannot trip over it.
+	s_sdbridge_cs_s <= '1' when SW(7) = '0' and s_addr_valid = '1'
                         and s_sltsl_rom_en = '1' 
                         and rom_bank1_q = "111" 
                         and s_A(15 downto 8) = x"7B" 

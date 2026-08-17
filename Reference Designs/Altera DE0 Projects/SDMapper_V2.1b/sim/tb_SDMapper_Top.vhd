@@ -638,13 +638,9 @@ begin
 		SW(9) <= '0';
 		SW(8) <= '0';
 		SW(6 downto 1) <= (others => '0');
-		-- SW(7)='1' = drive the mapper port read-back. CHECK2/CHECK3 below
-		-- specifically exercise that path, so they need it enabled. On real
-		-- hardware SW(7) is normally '0' (see the BUS CONTENTION FIX note in
-		-- SDMapper_Top.vhd: a machine with its own internal mapper - any 64KB+
-		-- MSX2, e.g. the Canon V-25 - already answers those reads, and two
-		-- devices driving D corrupts whatever the BIOS reads back).
-		SW(7) <= '1';
+		-- SW(7)='0' = SD register window ENABLED (SW(7)='1' disables it so the
+		-- Flash can host the standalone mapper test - see SDMapper_Top.vhd).
+		SW(7) <= '0';
 		SW(0) <= '1';		-- card present, matching the mock SD card model below
 		wait for 2 * CLK50_PERIOD;
 
