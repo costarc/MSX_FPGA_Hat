@@ -326,10 +326,9 @@ architecture bevioural of SDMapper_TOP is
 	signal wr_drive  : std_logic := '0';
 
 	-- U1 transceiver direction control - see the note at U1OE_n below.
-	signal u1_drive    : std_logic;
-	signal u1_drive_q  : std_logic := '0';
-	signal u1_drive_q2 : std_logic := '0';
-	signal u1_dir_hold : std_logic_vector(1 downto 0) := (others => '0');
+	-- (u1_drive/u1_drive_q/u1_drive_q2/u1_dir_hold were removed 2026-08-18 -
+	-- the direction no longer depends on which device won the read mux, so
+	-- there is nothing to track or hold across. See the U1_DIR note.)
 
 	-- Mapper segment-register capture pipeline - see the write process.
 	signal map_d_s1, map_d_s2   : std_logic_vector(4 downto 0) := (others => '0');
@@ -1494,98 +1493,82 @@ begin
 	     SRAM_DQ                when s_mem_rd_en = '1' else										-- RAM / Mapper
 	     s_mapper_rdata         when s_io_mapper_rd_qualified = '1' else							-- Mapper segment registers
 	     sd_data_dout           when sd_data_rd_en = '1' else										-- SD_DATA
+	     -- ------------------------------------------------------------------
+	     -- Fallback for a read of THIS slot that no device above matched
+	     -- (2026-08-18). Required by the U1_DIR change below: U1_DIR now
+	     -- follows RD_n rather than the per-device read enables, so the
+	     -- transceiver drives towards the MSX for the WHOLE read cycle. If D
+	     -- were left at 'Z' for any part of that, U1 would push a floating
+	     -- FPGA input onto the MSX data bus.
+	     --
+	     -- 0xFF is the correct value: an unpopulated area of a selected slot
+	     -- reads as FF on real hardware, and while our slot is selected
+	     -- nothing else is driving the bus. This also covers the window
+	     -- before s_addr_valid rises (address still being captured) and the
+	     -- SD_DATA case where the bridge has not yet produced a byte - in
+	     -- both, the Z80 is either still in T1/T2 or held in /WAIT, so it
+	     -- never latches the placeholder.
+	     -- ------------------------------------------------------------------
+	     x"FF"                  when s_sltsl_en = '1' and RD_n = '0' else
 	     (others => 'Z');
 
-	-- U1OE_n: covers every access path that reads OR writes D - see
-	-- feedback_u1oe_n_per_access_path memory (this exact class of bug has
-	-- been found twice already in this project). s_sltsl_en alone covers
-	-- every memory-space path (ROM, RAM, SD register window, FFFF) since all
-	-- of them require SLTSL_n asserted with SW(9)='0' (SDMapper mode); the mapper I/O ports
-	-- use their raw (unqualified) enables so U1 is listening for the FULL
-	-- WR_n/RD_n-low window, not just the part after the glitch filter settles.
 	-- ------------------------------------------------------------------------
-	-- U1 transceiver direction sequencing (2026-08-16).
+	-- U1 transceiver control.
 	--
-	-- U1OE_n was asserted for the WHOLE time this slot is selected, while
-	-- U1_DIR flips from "listen" to "drive" partway through the cycle - as soon
-	-- as s_addr_valid rises and a read qualifies. Changing a bidirectional
-	-- buffer's direction while it is still ENABLED makes both sides drive for
-	-- the switching interval, putting transient contention on the physical MSX
-	-- data bus on every read.
+	-- REDESIGNED (2026-08-18) after comparing against three working MSX FPGA
+	-- projects. Ours was the ONLY one whose data-bus DIRECTION depended on
+	-- which internal device won the read mux:
 	--
-	-- Fix: detect a direction change and hold U1OE_n INACTIVE for a couple of
-	-- clocks across it, so the buffer is always disabled while DIR moves. At
-	-- 50MHz that is 40-60ns inside a ~1us bus cycle, far too short to affect
-	-- the data the Z80 latches at the end of T3, but long enough to break the
-	-- overlap.
+	--   WonderTANG (fpga/src/top.v):
+	--     assign datadir = ((~sltsl_n_w || busdir_cs_w) && ~rd_n_w) ? 0 : 1;
+	--
+	-- i.e. "our slot is selected AND /RD is low", and nothing else. One clean
+	-- transition per bus cycle, aligned to /RD.
+	--
+	-- Ours keyed off six per-device enables, and one of them is DATA
+	-- DEPENDENT - sdcard_bridge's sd_rd_en additionally requires
+	-- (rx_ready_q = '1' or acc_served_q = '1'), so for an SD_DATA read the
+	-- direction only turned around once the bridge had produced a byte:
+	-- mid-cycle, after /WAIT released, at a different moment every access.
+	--
+	-- That is what the previous two revisions were both failing to fix. The
+	-- version before last flipped U1_DIR combinationally while the protective
+	-- u1_dir_hold/U1OE_n sequencing was registered, so the buffer was still
+	-- enabled for up to 20ns with the direction already reversed. The version
+	-- after that registered U1_DIR to cure the race - but that only DELAYED a
+	-- mid-cycle, data-dependent transition instead of removing it, and on the
+	-- SD path (where the turnaround happens late in the cycle anyway) the
+	-- extra 40ns of direction delay plus 60ns of buffer-off broke SD reads
+	-- outright: ROM still loaded, NEXTOR.SYS never did.
+	--
+	-- Now the direction simply follows /RD. It changes once per cycle, at a
+	-- predictable time, and there is no turnaround to protect - so the whole
+	-- u1_dir_hold mechanism is gone rather than being made to work.
+	--
+	-- The companion requirement is in the D mux above: because U1 now drives
+	-- towards the MSX for the WHOLE read cycle, D must never be 'Z' during
+	-- one, hence the 0xFF fallback for reads of this slot that match no
+	-- device.
 	-- ------------------------------------------------------------------------
-	u1_drive <= '1' when s_sdbridge_reg_rd_s = '1'                                                                     else
-	            '1' when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0'                 else
-	            '1' when s_rom_rd_en = '1'                                                                              else
-	            '1' when s_mem_rd_en = '1'                                                                              else
-	            '1' when s_io_mapper_rd_qualified = '1'                                                                 else
-	            '1' when sd_data_rd_en = '1'                                                                            else
-	            '0';
-
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				u1_drive_q  <= '0';
-				u1_drive_q2 <= '0';
-				u1_dir_hold <= (others => '0');
-			else
-				u1_drive_q  <= u1_drive;
-				u1_drive_q2 <= u1_drive_q;	-- drives U1_DIR, one clock behind the hold
-				if u1_drive /= u1_drive_q then
-					u1_dir_hold <= "11";	-- disable the buffer across the change
-				elsif u1_dir_hold /= "00" then
-					u1_dir_hold <= u1_dir_hold - 1;
-				end if;
-			end if;
-		end if;
-	end process;
-
-	U1OE_n <= '1' when u1_dir_hold /= "00"   else
-	          '0' when s_sltsl_en = '1'        else
+	-- U1OE_n: enable the buffer for every access path that reads OR writes D
+	-- - see the feedback_u1oe_n_per_access_path memory (this exact class of
+	-- bug has been found twice in this project). s_sltsl_en alone covers every
+	-- memory-space path (ROM, RAM, SD register window, FFFF), since all of
+	-- them require SLTSL_n asserted with SW(9)='0'; the mapper I/O ports use
+	-- their raw (unqualified) enables so U1 is listening for the FULL
+	-- RD_n/WR_n-low window, not just the part after the glitch filter settles.
+	U1OE_n <= '0' when s_sltsl_en = '1'        else
 	          '0' when s_io_mapper_rd_en = '1' else
 	          '0' when s_io_mapper_wr_en = '1' else
 	          '1';
 
 	-- U1_DIR: '0' = drive toward MSX (FPGA->MSX), '1' = listen from MSX
 	-- (MSX->FPGA) - CORRECTED polarity, see header note (MegaROM_ASCII16's
-	-- real-hardware milestone found this backwards in every earlier version
-	-- of this file). Default '1' (listen) covers every write path and idle.
-	--
-	-- ------------------------------------------------------------------------
-	-- BUG FIX (2026-08-18): this used to repeat the same six conditions as
-	-- u1_drive COMBINATIONALLY, i.e. U1_DIR = not u1_drive with no register.
-	-- That defeated the whole point of the u1_dir_hold protection above:
-	-- U1_DIR flipped the instant a read qualified, but u1_dir_hold (and hence
-	-- U1OE_n going inactive) only followed on the NEXT CLOCK_50 edge - up to
-	-- 20ns later. For that window the transceiver was still ENABLED with its
-	-- direction already reversed, so both sides drove the physical MSX data
-	-- bus on EVERY direction change. The hold could never work, because its
-	-- trigger was derived from the very signal it was meant to protect.
-	--
-	-- Fix: drive U1_DIR from the twice-registered u1_drive_q2. Sequencing on
-	-- a direction change now becomes:
-	--   edge N   : u1_dir_hold <= "11"  -> U1OE_n inactive (buffer OFF)
-	--              U1_DIR still holds the OLD direction (q2 not yet updated)
-	--   edge N+1 : U1_DIR changes, buffer still OFF (hold = "10")
-	--   edge N+3 : hold reaches "00" -> buffer back ON, direction settled
-	-- So the direction only ever moves while the buffer is disabled - about
-	-- 60ns of a ~1us bus cycle, and the data is still valid long before the
-	-- Z80 latches at the end of T3.
-	--
-	-- Why this matters more as more access paths interleave: with a single
-	-- active path (e.g. the mapper soak test) the direction changes are
-	-- uniform and periodic. Nextor interleaves ROM reads, mapper RAM
-	-- reads/writes, SD register reads, FFFF reads and mapper-port reads, so
-	-- there are far more transitions per unit time - each one previously
-	-- contending the bus.
-	-- ------------------------------------------------------------------------
-	U1_DIR <= not u1_drive_q2;
+	-- real-hardware milestone found this backwards in every earlier version of
+	-- this file). Default '1' (listen) covers every write path and idle.
+	U1_DIR <= '0' when s_sltsl_en = '1' and RD_n = '0'        else
+	          '0' when s_io_mapper_rd_en = '1'                else	-- already /RD-qualified
+	          '1';
 
 	-- BUSDIR_n: only /IORQ-based reads need it (MSX Technical Data Book
 	-- 1.6.2) - ordinary /SLTSL memory reads (ROM, RAM, SD/timer registers,
