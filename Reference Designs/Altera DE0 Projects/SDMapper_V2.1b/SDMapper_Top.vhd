@@ -459,6 +459,7 @@ architecture bevioural of SDMapper_TOP is
 	signal dbg_sd_last_rx		: std_logic_vector(7 downto 0);
 	signal dbg_sd_data_cnt		: std_logic_vector(7 downto 0);
 	signal dbg_sd_marker		: std_logic_vector(7 downto 0);
+	signal dbg_exp_rej : std_logic_vector(15 downto 0);
 	signal dbg_exp_reg		: std_logic_vector(7 downto 0);
 	signal dbg_sd_ever_accessed: std_logic;
 	signal dbg_sd_init_done	: std_logic;
@@ -807,7 +808,8 @@ begin
 		cpu_d			=> D,
 		cpu_q			=> s_expn_q,
 		exp_n			=> slt_exp_n,
-		exp_reg_o	=> dbg_exp_reg
+		exp_reg_o	=> dbg_exp_reg,
+		exp_rej_o	=> dbg_exp_rej
 	);
 
 	process(CLOCK_50)
@@ -1624,8 +1626,13 @@ begin
 	--   HEX3:HEX2 = error_o(7 downto 0) - non-zero means the core faulted
 	--   HEX1:HEX0 = completed SD_DATA byte transfers (wraps at 256)
 	-- error_o(15 downto 8) is still readable by software at SD_ERRHI.
-	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else dbg_sd_data_cnt(3 downto 0);
-	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else dbg_sd_data_cnt(7 downto 4);
+	-- SW(5)=1: show the exp_slot REJECTED-WINDOW counter (see exp_rej_o).
+	-- ffffstress.rom reports how many subslot writes were LOST; this shows
+	-- how many windows opened and were then discarded by the length filter.
+	-- Equal -> the filter is the cause. Near zero -> the window never opened,
+	-- so the fault is upstream in ffff / s_addr_valid / address capture.
+	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else dbg_exp_rej(3 downto 0)   when SW(5) = '1' else dbg_sd_data_cnt(3 downto 0);
+	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else dbg_exp_rej(7 downto 4)   when SW(5) = '1' else dbg_sd_data_cnt(7 downto 4);
 	-- HEX3:HEX2 now shows SD_DEBUG (register 9) - the last trace marker the
 	-- driver wrote. The error code has read 00 on every recent run, whereas
 	-- the open question is which driver entry point Nextor reaches, and a
@@ -1639,8 +1646,8 @@ begin
 	-- subslot routing this register controls. Expect a stable, sensible value
 	-- (each 2-bit field selects a subslot per page); garbage or a value that
 	-- changes when it should not is the fault.
-	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else dbg_exp_reg(3 downto 0);
-	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else dbg_exp_reg(7 downto 4);
+	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else dbg_exp_rej(11 downto 8)  when SW(5) = '1' else dbg_exp_reg(3 downto 0);
+	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else dbg_exp_rej(15 downto 12) when SW(5) = '1' else dbg_exp_reg(7 downto 4);
 
 	LEDG(9)          <= bist_done when SW(4) = '1' else s_rom_subslot_ever_q;
 	LEDG(8)          <= '1' when (SW(4) = '1' and bist_done = '1' and bist_errors = x"0000") else

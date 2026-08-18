@@ -51,7 +51,15 @@ entity exp_slot is
 		-- from unsynchronized bus signals - if it ever captures a wrong value
 		-- the ROM/RAM page routing changes underneath the running code, which
 		-- would look exactly like the intermittent corruption being chased.
-		exp_reg_o	: out   std_logic_vector(7 downto 0)
+		exp_reg_o	: out   std_logic_vector(7 downto 0);
+		-- DIAGNOSTIC (2026-08-18): counts FFFF write windows that OPENED but
+		-- were then discarded by the length filter. ffffstress.rom measured
+		-- ~16% of subslot writes being lost; this distinguishes the two
+		-- possible places they go:
+		--   rejected ~= lost  -> the length filter is eating them
+		--   rejected ~= 0     -> the window never opens at all, so the fault
+		--                        is in ffff / s_addr_valid / address capture
+		exp_rej_o	: out   std_logic_vector(15 downto 0)
 	);
 end exp_slot;
 
@@ -80,6 +88,7 @@ architecture rtl of exp_slot is
 	signal exp_d_s1, exp_d_s2            : std_logic_vector(7 downto 0);
 	signal exp_d_stable                  : std_logic_vector(7 downto 0);
 	signal exp_have_stable               : std_logic;
+	signal exp_rej_cnt                   : std_logic_vector(15 downto 0);
 
 begin
 
@@ -172,6 +181,7 @@ begin
 				exp_wr_len   <= (others => '0');
 				exp_d_stable <= X"00";
 				exp_have_stable <= '0';
+				exp_rej_cnt  <= (others => '0');
 			else
 				exp_wr_raw_d <= exp_wr_raw;
 
@@ -231,11 +241,17 @@ begin
 				-- a dropped subslot write breaks routing outright, while a
 				-- single-bit risk only sometimes corrupts. The stable value is
 				-- preferred when available, but the write is ALWAYS committed.
-				if exp_wr_raw = '0' and exp_wr_raw_d = '1' and exp_wr_len >= "0100" then
-					if exp_have_stable = '1' then
-						exp_reg <= exp_d_stable;	-- agreed across two samples
+				if exp_wr_raw = '0' and exp_wr_raw_d = '1' then
+					if exp_wr_len >= "0100" then
+						if exp_have_stable = '1' then
+							exp_reg <= exp_d_stable;	-- agreed across two samples
+						else
+							exp_reg <= exp_d_s2;		-- fallback: older sample
+						end if;
 					else
-						exp_reg <= exp_d_s2;		-- fallback: older sample
+						-- Window opened but was too short to trust: DISCARDED.
+						-- Count it, so a lost write can be attributed.
+						exp_rej_cnt <= exp_rej_cnt + 1;
 					end if;
 				end if;
 			end if;
@@ -243,6 +259,7 @@ begin
 	end process;
 
 	exp_reg_o <= exp_reg;
+	exp_rej_o <= exp_rej_cnt;
 
 	-- Leitura dos registros
 	-- CLEANUP (2026-08-15): this used to be
