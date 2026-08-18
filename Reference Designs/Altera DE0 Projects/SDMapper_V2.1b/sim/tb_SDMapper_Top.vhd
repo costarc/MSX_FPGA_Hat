@@ -493,7 +493,19 @@ begin
 			M1_n    <= '1';
 			wait for 4 * CLK50_PERIOD;
 			RD_n <= '0';
-			wait for 6 * CLK50_PERIOD;
+			-- UPDATED (2026-08-18): was 6 cycles (120ns), which sampled the bus
+			-- almost the instant the read qualified. That was already
+			-- unrealistic - a real Z80 at 3.58MHz latches D at the end of T3,
+			-- roughly 560ns after RD_n falls - and it became an outright false
+			-- failure once U1_DIR was correctly registered: CHECK4e read U1_DIR
+			-- before its deliberate 2-clock settle had elapsed.
+			--
+			-- 16 cycles (320ns) covers address capture, the u1_dir_hold window
+			-- (3 clocks) and the U1_DIR settle (2 clocks) with room to spare,
+			-- while still sampling well before the real Z80 would. Checks that
+			-- read steady-state decode outputs are unaffected by the longer
+			-- settle; they were simply being sampled early before.
+			wait for 16 * CLK50_PERIOD;
 		end procedure;
 
 		procedure end_mem_cycle is

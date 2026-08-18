@@ -328,6 +328,7 @@ architecture bevioural of SDMapper_TOP is
 	-- U1 transceiver direction control - see the note at U1OE_n below.
 	signal u1_drive    : std_logic;
 	signal u1_drive_q  : std_logic := '0';
+	signal u1_drive_q2 : std_logic := '0';
 	signal u1_dir_hold : std_logic_vector(1 downto 0) := (others => '0');
 
 	-- Mapper segment-register capture pipeline - see the write process.
@@ -1531,9 +1532,11 @@ begin
 		if rising_edge(CLOCK_50) then
 			if s_reset = '1' then
 				u1_drive_q  <= '0';
+				u1_drive_q2 <= '0';
 				u1_dir_hold <= (others => '0');
 			else
-				u1_drive_q <= u1_drive;
+				u1_drive_q  <= u1_drive;
+				u1_drive_q2 <= u1_drive_q;	-- drives U1_DIR, one clock behind the hold
 				if u1_drive /= u1_drive_q then
 					u1_dir_hold <= "11";	-- disable the buffer across the change
 				elsif u1_dir_hold /= "00" then
@@ -1553,13 +1556,36 @@ begin
 	-- (MSX->FPGA) - CORRECTED polarity, see header note (MegaROM_ASCII16's
 	-- real-hardware milestone found this backwards in every earlier version
 	-- of this file). Default '1' (listen) covers every write path and idle.
-	U1_DIR <= '0' when s_sdbridge_reg_rd_s = '1' else
-	          '0' when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else
-	          '0' when s_rom_rd_en = '1' else
-	          '0' when s_mem_rd_en = '1' else
-	          '0' when s_io_mapper_rd_qualified = '1' else
-	          '0' when sd_data_rd_en = '1' else
-	          '1';
+	--
+	-- ------------------------------------------------------------------------
+	-- BUG FIX (2026-08-18): this used to repeat the same six conditions as
+	-- u1_drive COMBINATIONALLY, i.e. U1_DIR = not u1_drive with no register.
+	-- That defeated the whole point of the u1_dir_hold protection above:
+	-- U1_DIR flipped the instant a read qualified, but u1_dir_hold (and hence
+	-- U1OE_n going inactive) only followed on the NEXT CLOCK_50 edge - up to
+	-- 20ns later. For that window the transceiver was still ENABLED with its
+	-- direction already reversed, so both sides drove the physical MSX data
+	-- bus on EVERY direction change. The hold could never work, because its
+	-- trigger was derived from the very signal it was meant to protect.
+	--
+	-- Fix: drive U1_DIR from the twice-registered u1_drive_q2. Sequencing on
+	-- a direction change now becomes:
+	--   edge N   : u1_dir_hold <= "11"  -> U1OE_n inactive (buffer OFF)
+	--              U1_DIR still holds the OLD direction (q2 not yet updated)
+	--   edge N+1 : U1_DIR changes, buffer still OFF (hold = "10")
+	--   edge N+3 : hold reaches "00" -> buffer back ON, direction settled
+	-- So the direction only ever moves while the buffer is disabled - about
+	-- 60ns of a ~1us bus cycle, and the data is still valid long before the
+	-- Z80 latches at the end of T3.
+	--
+	-- Why this matters more as more access paths interleave: with a single
+	-- active path (e.g. the mapper soak test) the direction changes are
+	-- uniform and periodic. Nextor interleaves ROM reads, mapper RAM
+	-- reads/writes, SD register reads, FFFF reads and mapper-port reads, so
+	-- there are far more transitions per unit time - each one previously
+	-- contending the bus.
+	-- ------------------------------------------------------------------------
+	U1_DIR <= not u1_drive_q2;
 
 	-- BUSDIR_n: only /IORQ-based reads need it (MSX Technical Data Book
 	-- 1.6.2) - ordinary /SLTSL memory reads (ROM, RAM, SD/timer registers,
