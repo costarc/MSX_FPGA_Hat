@@ -110,6 +110,14 @@ INIT:
         ld      (ERR2),a
         ld      (ERR3),a
         ld      (ERRW),a
+        ; BUG FIX (2026-08-18): these three were never zeroed, so FIRSTW held
+        ; whatever garbage page-3 RAM happened to contain and the "first bad
+        ; seg" line printed stale memory even when write/verify errs was 00.
+        ; It also made the test look reset-dependent, because a cold power-on
+        ; leaves different garbage in page 3 than a reset does.
+        ld      (FIRSTW),a
+        ld      (FIRSTSEG),a
+        ld      (FIRSTGOT),a
 
         ; ---------------------------------------------------------------
         ; PHASE 1 - hammer all four ports read-only
