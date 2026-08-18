@@ -251,10 +251,11 @@ PRF_LOOP:
         cp      b
         jp      z,PRF_END
 
-        ld      a,b                 ; hl = FAILBUF + index*5
+        ld      a,b                 ; hl = FAILBUF + index*6
         add     a,a
+        ld      c,a
         add     a,a
-        add     a,b
+        add     a,c
         ld      l,a
         ld      h,0
         ld      de,FAILBUF
@@ -292,6 +293,14 @@ PRF_LOOP:
         add     hl,de
         ld      a,(hl)              ; actual
         call    PRINTHEX
+
+        ld      de,MSG_RE
+        call    PRINT
+        ld      hl,(RECPTR)
+        ld      de,5
+        add     hl,de
+        ld      a,(hl)              ; immediate re-read
+        call    PRINTHEX
         call    CRLF
 
         ld      a,(FI)
@@ -312,6 +321,18 @@ PRF_END:
 ; On entry: A = actual, D = expected, E = segment, HL = address.
 RECERR:
         ld      (TMPACT),a
+        ; ------------------------------------------------------------------
+        ; DECISIVE (2026-08-18): re-read the SAME location immediately, with
+        ; the same segment still selected. This separates the only two
+        ; mechanisms left:
+        ;   re == expected -> SRAM holds good data; the first read was a
+        ;                     transient failure of the read path (decode,
+        ;                     U1 transceiver direction, or address capture).
+        ;   re == got      -> the memory genuinely contains the wrong byte,
+        ;                     so the WRITE went astray.
+        ; ------------------------------------------------------------------
+        ld      a,(hl)
+        ld      (TMPRE),a
         push    hl
         push    de
         push    bc
@@ -340,10 +361,11 @@ RE_1:
         ld      b,a
         inc     a
         ld      (FAILN),a
-        ld      a,b                 ; hl = FAILBUF + index*5
+        ld      a,b                 ; hl = FAILBUF + index*6
         add     a,a
+        ld      c,a
         add     a,a
-        add     a,b
+        add     a,c
         ld      l,a
         ld      h,0
         ld      de,FAILBUF
@@ -362,6 +384,9 @@ RE_1:
         ld      (hl),a
         inc     hl
         ld      a,(TMPACT)
+        ld      (hl),a
+        inc     hl
+        ld      a,(TMPRE)
         ld      (hl),a
 RE_DONE:
         pop     af
@@ -417,8 +442,9 @@ MSG_P:       db "pass ",0
 MSG_E:       db "  errors ",0
 MSG_S:       db " s=",0
 MSG_AT:      db " @",0
-MSG_EXP:     db " exp=",0
-MSG_GOT:     db " got=",0
+MSG_EXP:     db " e=",0
+MSG_GOT:     db " g=",0
+MSG_RE:      db " r=",0
 
 ; ---------------------------------------------------------------------------
 ; Scratch in page 3. Page 3 is our own mapper RAM at the segment named by
@@ -435,6 +461,7 @@ TMPSEG   equ 0C00Ch
 TMPEXP   equ 0C00Dh
 TMPACT   equ 0C00Eh
 TMPADR   equ 0C00Fh        ; 2 bytes
-FAILBUF  equ 0C020h        ; MAXFAIL x 5 bytes: seg, addrH, addrL, exp, got
+TMPRE    equ 0C011h        ; immediate re-read value
+FAILBUF  equ 0C020h        ; MAXFAIL x 6 bytes: seg, addrH, addrL, exp, got, re
 
         end
