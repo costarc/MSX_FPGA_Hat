@@ -355,7 +355,37 @@ architecture bevioural of SDMapper_TOP is
 	signal bus_req_meta, bus_req_sync, bus_req_sync_d : std_logic;
 	signal addr_capture_trigger : std_logic;
 
-	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_CAP, S_GUARD, S_HIGH_EN, S_HIGH_CAP);
+	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_WAIT, S_LOW_CAP, S_GUARD, S_HIGH_EN, S_HIGH_WAIT, S_HIGH_CAP);
+
+	-- ------------------------------------------------------------------------
+	-- A_MUX SETTLE TIME (2026-08-18) - root cause of the lost 0FFFFh writes.
+	--
+	-- The capture used to sample A_MUX exactly ONE clock (20ns) after asserting
+	-- U2OE_n/U3OE_n. A 74LVC245's output-enable time is ~6-9ns, on top of the
+	-- FPGA's own output delay on the OE pin and the settling of eight lines
+	-- through the GPIO header into the daughter board. 20ns was right at the
+	-- edge, and worst-case exactly when all eight lines have to slew HIGH
+	-- together.
+	--
+	-- That is why 0FFFFh specifically failed. It is the only address where all
+	-- 16 bits are 1, so it demands a full all-high settle TWICE in one cycle.
+	-- A single line not yet valid means s_A /= FFFF, so ffff never asserts,
+	-- exp_wr_raw never opens a window, and the subslot write vanishes with no
+	-- error and no retry.
+	--
+	-- Measured on real hardware: ffffstress.rom reported ~16% of subslot writes
+	-- lost (10,670 of 65,536), 99.6% of them as "got == previous value" - i.e.
+	-- dropped, not corrupted. The exp_slot rejected-window counter added for
+	-- this read ZERO, proving the window never opened rather than being
+	-- discarded by the length filter. Meanwhile 27MB of mapper soak was
+	-- perfectly clean, because ordinary sequential addresses never demand this
+	-- worst case.
+	--
+	-- Sampling 3 clocks (60ns) after the enable gives 3x the previous margin,
+	-- and still completes the whole capture well before /WR falls.
+	-- ------------------------------------------------------------------------
+	constant AMUX_SETTLE : integer := 2;	-- extra wait states; sample at SETTLE+1 clocks
+	signal capture_wait  : integer range 0 to 7 := 0;
 	signal addr_capture_state : addr_capture_state_t := S_IDLE;
 
 	-- ------------------------------------------------------------------------
@@ -670,6 +700,7 @@ begin
 				addr_capture_state <= S_LOW_EN;
 				U2OE_n <= '1';
 				U3OE_n <= '1';
+				capture_wait <= 0;
 				-- A new bus cycle invalidates the previous address IMMEDIATELY:
 				-- from here until S_HIGH_CAP completes, s_A is a mix of old and
 				-- new bytes and must not be decoded by anything (see the
