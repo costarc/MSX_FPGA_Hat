@@ -25,9 +25,11 @@
 ;
 ; WHAT THIS DOES DIFFERENTLY
 ;   - Full 16KB of every segment, not 256 bytes: ~496KB written and ~496KB
-;     verified per pass, roughly 1MB of bus traffic, about 7s at 3.58MHz.
+;     verified per pass, roughly 1MB of bus traffic, about 16s at 3.58MHz.
 ;   - Runs forever, accumulating a 32-BIT total error count across all passes.
-;   - Reports pass number and cumulative errors on one self-overwriting line.
+;   - Reports pass number and cumulative errors on a new line per pass, then
+;     dumps segment / address / expected / actual for the first MAXFAIL
+;     mismatches of that pass so the failures can be LOCATED, not just counted.
 ;
 ; Leave it running for a few minutes and the error total is a real measurement:
 ;   E stays 00000000 over tens of MB -> the mapper is genuinely exonerated and
@@ -61,6 +63,7 @@ MAPPORT3 equ 0FFh           ; mapper segment register for page 3
 TESTBASE equ 08000h         ; page 2 - where the mapper RAM is paged in
 TESTLEN  equ 04000h         ; full 16KB per segment
 NSEG     equ 32             ; 32 x 16KB = 512KB
+MAXFAIL  equ 8              ; failure samples logged per pass
 
         org 04000h
 
@@ -173,6 +176,8 @@ SOAKWNEXT:
         jr      c,SOAKWSEG
 
         ; ---------------------------------------------- PHASE 2: verify all
+        xor     a
+        ld      (FAILN),a           ; fresh sample log for this pass
         ld      e,0
 SOAKRSEG:
         ld      a,(SKIPSEG)
@@ -191,7 +196,7 @@ SOAKRBYTE:
         ld      a,(hl)
         cp      d
         jr      z,SOAKROK
-        call    BUMPERR
+        call    RECERR
 SOAKROK:
         inc     hl
         dec     bc
@@ -228,28 +233,140 @@ SOAKRNEXT:
         call    PRINTHEX
         ld      a,(ERRTOT+0)
         call    PRINTHEX
+        call    CRLF
+
+        ; ------------------------------------------------------------------
+        ; Dump where the failures actually were. The error count per pass is
+        ; almost constant (9,7,7,7 on the first run), which is the signature
+        ; of DETERMINISTIC failures at fixed locations rather than random
+        ; metastability - so the addresses should repeat pass to pass, and
+        ; that is what identifies the fault.
+        ; ------------------------------------------------------------------
+        xor     a
+        ld      (FI),a
+PRF_LOOP:
+        ld      a,(FI)
+        ld      b,a
+        ld      a,(FAILN)
+        cp      b
+        jp      z,PRF_END
+
+        ld      a,b                 ; hl = FAILBUF + index*5
+        add     a,a
+        add     a,a
+        add     a,b
+        ld      l,a
+        ld      h,0
+        ld      de,FAILBUF
+        add     hl,de
+        ld      (RECPTR),hl
+
+        ld      de,MSG_S
+        call    PRINT
+        ld      hl,(RECPTR)
+        ld      a,(hl)              ; segment
+        call    PRINTHEX
+
+        ld      de,MSG_AT
+        call    PRINT
+        ld      hl,(RECPTR)
+        inc     hl
+        ld      a,(hl)              ; address high
+        call    PRINTHEX
+        inc     hl
+        ld      a,(hl)              ; address low
+        call    PRINTHEX
+
+        ld      de,MSG_EXP
+        call    PRINT
+        ld      hl,(RECPTR)
+        ld      de,3
+        add     hl,de
+        ld      a,(hl)              ; expected
+        call    PRINTHEX
+
+        ld      de,MSG_GOT
+        call    PRINT
+        ld      hl,(RECPTR)
+        ld      de,4
+        add     hl,de
+        ld      a,(hl)              ; actual
+        call    PRINTHEX
+        call    CRLF
+
+        ld      a,(FI)
+        inc     a
+        ld      (FI),a
+        jp      PRF_LOOP
+PRF_END:
 
         jp      SOAK
 
 ; ---------------------------------------------------------------- helpers
-; Increment the 32-bit little-endian counter at ERRTOT. Must preserve BC, DE
-; and HL - the caller is mid-scan and holds the pointer and byte count there.
-BUMPERR:
+; Record one mismatch: bump the 32-bit total, and for the first MAXFAIL of
+; each pass also log segment / address / expected / actual so the failures can
+; be located instead of merely counted.
+;
+; Must preserve BC, DE and HL - the caller is mid-scan and holds the pointer,
+; the byte count, the expected value and the segment number in them.
+; On entry: A = actual, D = expected, E = segment, HL = address.
+RECERR:
+        ld      (TMPACT),a
         push    hl
+        push    de
+        push    bc
         push    af
+        ld      (TMPADR),hl
+        ld      a,e
+        ld      (TMPSEG),a
+        ld      a,d
+        ld      (TMPEXP),a
+
         ld      hl,ERRTOT
         inc     (hl)
-        jr      nz,BE_DONE
+        jr      nz,RE_1
         inc     hl
         inc     (hl)
-        jr      nz,BE_DONE
+        jr      nz,RE_1
         inc     hl
         inc     (hl)
-        jr      nz,BE_DONE
+        jr      nz,RE_1
         inc     hl
         inc     (hl)
-BE_DONE:
+RE_1:
+        ld      a,(FAILN)
+        cp      MAXFAIL
+        jr      nc,RE_DONE
+        ld      b,a
+        inc     a
+        ld      (FAILN),a
+        ld      a,b                 ; hl = FAILBUF + index*5
+        add     a,a
+        add     a,a
+        add     a,b
+        ld      l,a
+        ld      h,0
+        ld      de,FAILBUF
+        add     hl,de
+
+        ld      a,(TMPSEG)
+        ld      (hl),a
+        inc     hl
+        ld      a,(TMPADR+1)
+        ld      (hl),a
+        inc     hl
+        ld      a,(TMPADR+0)
+        ld      (hl),a
+        inc     hl
+        ld      a,(TMPEXP)
+        ld      (hl),a
+        inc     hl
+        ld      a,(TMPACT)
+        ld      (hl),a
+RE_DONE:
         pop     af
+        pop     bc
+        pop     de
         pop     hl
         ret
 
@@ -298,6 +415,10 @@ MSG_START:   db "Soaking - leave it running.",13,10
              db "E must stay 00000000.",13,10,0
 MSG_P:       db "pass ",0
 MSG_E:       db "  errors ",0
+MSG_S:       db " s=",0
+MSG_AT:      db " @",0
+MSG_EXP:     db " exp=",0
+MSG_GOT:     db " got=",0
 
 ; ---------------------------------------------------------------------------
 ; Scratch in page 3. Page 3 is our own mapper RAM at the segment named by
@@ -307,5 +428,13 @@ OURSLOT  equ 0C000h
 SKIPSEG  equ 0C001h
 ERRTOT   equ 0C002h        ; 4 bytes, little-endian
 PASSCNT  equ 0C006h        ; 2 bytes
+FAILN    equ 0C008h        ; failures logged this pass
+FI       equ 0C009h        ; print loop index
+RECPTR   equ 0C00Ah        ; 2 bytes
+TMPSEG   equ 0C00Ch
+TMPEXP   equ 0C00Dh
+TMPACT   equ 0C00Eh
+TMPADR   equ 0C00Fh        ; 2 bytes
+FAILBUF  equ 0C020h        ; MAXFAIL x 5 bytes: seg, addrH, addrL, exp, got
 
         end
