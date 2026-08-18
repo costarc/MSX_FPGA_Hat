@@ -384,7 +384,26 @@ architecture bevioural of SDMapper_TOP is
 	-- Sampling 3 clocks (60ns) after the enable gives 3x the previous margin,
 	-- and still completes the whole capture well before /WR falls.
 	-- ------------------------------------------------------------------------
-	constant AMUX_SETTLE : integer := 2;	-- extra wait states; sample at SETTLE+1 clocks
+	-- ------------------------------------------------------------------------
+	-- MEASURED 2026-08-18: this must be as SMALL as possible, not as large as
+	-- possible. Raising it from 0 to 2 made the failure WORSE (16% -> 18% of
+	-- subslot writes lost), which is the clearest evidence yet that the
+	-- capture is racing /WR rather than failing to settle.
+	--
+	-- The budget: at 3.58MHz the Z80 drops MREQ at ~140ns into the cycle and
+	-- /WR one full T-state later at ~419ns - 279ns to reconstruct the address.
+	-- Cost with SETTLE=2: 60ns trigger synchroniser + 220ns FSM = ~280ns, dead
+	-- level with the deadline. With SETTLE=0 the FSM is 7 clocks (140ns), so
+	-- ~200ns total and ~79ns of margin.
+	--
+	-- Confirmed by measurement, not inference: the s_ffff_slt decode counter
+	-- read 0000 (no shortfall - the address IS reconstructed correctly), while
+	-- exp_slot's rejected-window counter read 0 and only 53,678 of 65,536
+	-- writes committed. Windows are not being rejected, they are never
+	-- OPENING - so ffff arrives outside the /WR window. Correct address,
+	-- wrong time.
+	-- ------------------------------------------------------------------------
+	constant AMUX_SETTLE : integer := 0;	-- extra wait states; sample at SETTLE+1 clocks
 	signal capture_wait  : integer range 0 to 7 := 0;
 	signal addr_capture_state : addr_capture_state_t := S_IDLE;
 
