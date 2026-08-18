@@ -490,6 +490,28 @@ architecture bevioural of SDMapper_TOP is
 	signal dbg_sd_data_cnt		: std_logic_vector(7 downto 0);
 	signal dbg_sd_marker		: std_logic_vector(7 downto 0);
 	signal dbg_exp_rej : std_logic_vector(15 downto 0);
+
+	-- ------------------------------------------------------------------------
+	-- DIAGNOSTIC (2026-08-18): count how many times the address capture ever
+	-- decodes 0FFFFh at all (rising edges of s_ffff_slt).
+	--
+	-- exp_slot's rejected-window counter reads ZERO while ffffstress reports
+	-- ~11,500 lost subslot writes, so the write window never OPENS. Two things
+	-- can cause that and they need opposite fixes:
+	--   s_A never reads FFFF          -> the A_MUX capture is producing the
+	--                                    wrong address
+	--   s_A reads FFFF but TOO LATE   -> capture finishes after /WR has risen,
+	--                                    so the window has already gone
+	--
+	-- ffffstress performs exactly 65536 writes, so a 16-bit counter wraps to
+	-- 0000 if every one of them decoded. Anything else is the shortfall:
+	--   0000  -> every write decoded as FFFF; the capture is fine and the
+	--            problem is timing (too late), or sltsl/wr qualification
+	--   ~D2C6 -> ~11,500 writes never decoded as FFFF; the capture itself is
+	--            producing wrong addresses
+	-- ------------------------------------------------------------------------
+	signal dbg_ffff_cnt  : std_logic_vector(15 downto 0) := (others => '0');
+	signal s_ffff_slt_d  : std_logic := '0';
 	signal dbg_exp_reg		: std_logic_vector(7 downto 0);
 	signal dbg_sd_ever_accessed: std_logic;
 	signal dbg_sd_init_done	: std_logic;
@@ -740,6 +762,21 @@ begin
 	-- ------------------------------------------------------------------------
 	-- Slot expansion
 	-- ------------------------------------------------------------------------
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				dbg_ffff_cnt <= (others => '0');
+				s_ffff_slt_d <= '0';
+			else
+				s_ffff_slt_d <= s_ffff_slt;
+				if s_ffff_slt = '1' and s_ffff_slt_d = '0' then
+					dbg_ffff_cnt <= dbg_ffff_cnt + 1;
+				end if;
+			end if;
+		end if;
+	end process;
+
 	s_sltsl_en    <= (not SLTSL_n) when SW(9) = '0' else '0';		-- SDMapper (Nextor+Mapper) enabled only when SW(9)='0' - see SW(9) note above
 	-- s_addr_valid gate: see its declaration. The pre-existing note in the
 	-- address-capture section already identified s_ffff_slt as vulnerable to
@@ -1678,7 +1715,7 @@ begin
 	-- (each 2-bit field selects a subslot per page); garbage or a value that
 	-- changes when it should not is the fault.
 	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else dbg_exp_rej(11 downto 8)  when SW(5) = '1' else dbg_exp_reg(3 downto 0);
-	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else dbg_exp_rej(15 downto 12) when SW(5) = '1' else dbg_exp_reg(7 downto 4);
+	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else dbg_ffff_cnt(15 downto 12) when SW(5) = '1' else dbg_exp_reg(7 downto 4);
 
 	LEDG(9)          <= bist_done when SW(4) = '1' else s_rom_subslot_ever_q;
 	LEDG(8)          <= '1' when (SW(4) = '1' and bist_done = '1' and bist_errors = x"0000") else

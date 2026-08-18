@@ -43,6 +43,7 @@
 ; ============================================================================
 
 ENASLT  equ 00024h
+CHPUT   equ 000A2h
 RAMAD2  equ 0F343h          ; BIOS var: slot id of RAM in page 2
 
 PAY1    equ 04200h          ; len 1130h -> 8000h
@@ -61,10 +62,47 @@ PAY4    equ 06080h          ; len 0160h -> E000h
 
 ; ---------------------------------------------------------------------------
 INIT:
+        ; ------------------------------------------------------------------
+        ; Progress markers (2026-08-18). On a real Gradiente MSX1 the first
+        ; version reached BASIC with "Syntax error" and no output from
+        ; testram at all, so it either died or returned before printing its
+        ; banner. These markers say exactly how far the wrapper gets, and the
+        ; page-2 check tests the one assumption that can silently ruin the
+        ; copies: at cartridge INIT the BIOS has OUR SLOT in page 2, so
+        ; 8000h-BFFF is ROM until ENASLT swaps RAM in. If that fails, three of
+        ; the four payload blocks are written into ROM and vanish, leaving the
+        ; stub at E000h with nothing to run.
+        ; ------------------------------------------------------------------
+        ld      a,'1'
+        call    CHPUT
+
         ; Put RAM in page 2 - at INIT the BIOS has our cartridge there.
         ld      a,(RAMAD2)
         ld      h,080h
         call    ENASLT
+
+        ; Verify page 2 really is writable RAM now.
+        ld      a,055h
+        ld      (08000h),a
+        ld      a,(08000h)
+        cp      055h
+        jr      nz,NOTRAM
+        ld      a,0AAh
+        ld      (08000h),a
+        ld      a,(08000h)
+        cp      0AAh
+        jr      z,P2OK
+NOTRAM:
+        ld      a,'!'
+        call    CHPUT
+        ld      a,'P'
+        call    CHPUT
+        ld      a,'2'
+        call    CHPUT
+HALT1:  jr      HALT1
+P2OK:
+        ld      a,'2'
+        call    CHPUT
 
         ld      hl,PAY1
         ld      de,08000h
@@ -86,6 +124,16 @@ INIT:
         ld      bc,00160h
         ldir
 
-        jp      0E000h
+        ld      a,'3'
+        call    CHPUT
+
+        ; CALL rather than JP: testram expects to return to DOS, and from ROM
+        ; there is nothing to return to. Calling it lets us distinguish "it
+        ; ran and came back" from "it never ran at all".
+        call    0E000h
+
+        ld      a,'R'
+        call    CHPUT
+HALT2:  jr      HALT2
 
         end
