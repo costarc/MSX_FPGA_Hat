@@ -331,10 +331,9 @@ architecture bevioural of SDMapper_TOP is
 	-- there is nothing to track or hold across. See the U1_DIR note.)
 
 	-- Mapper segment-register capture pipeline - see the write process.
-	signal map_d_s1, map_d_s2   : std_logic_vector(4 downto 0) := (others => '0');
+	signal map_d_q              : std_logic_vector(4 downto 0) := (others => '0');
 	signal map_sel_q            : std_logic_vector(1 downto 0) := (others => '0');
 	signal map_wr_q             : std_logic := '0';
-	signal map_wr_len           : std_logic_vector(3 downto 0) := (others => '0');
 
 	-- ROM bank-switch register capture - see the bank-switch write process.
 	signal bank_d_s1, bank_d_s2 : std_logic_vector(7 downto 0) := (others => '0');
@@ -508,7 +507,6 @@ architecture bevioural of SDMapper_TOP is
 	signal dbg_sd_last_rx		: std_logic_vector(7 downto 0);
 	signal dbg_sd_data_cnt		: std_logic_vector(7 downto 0);
 	signal dbg_sd_marker		: std_logic_vector(7 downto 0);
-	signal dbg_exp_rej : std_logic_vector(15 downto 0);
 
 	-- ------------------------------------------------------------------------
 	-- DIAGNOSTIC (2026-08-18): count how many times the address capture ever
@@ -529,8 +527,6 @@ architecture bevioural of SDMapper_TOP is
 	--   ~D2C6 -> ~11,500 writes never decoded as FFFF; the capture itself is
 	--            producing wrong addresses
 	-- ------------------------------------------------------------------------
-	signal dbg_ffff_cnt  : std_logic_vector(15 downto 0) := (others => '0');
-	signal s_ffff_slt_d  : std_logic := '0';
 	signal dbg_exp_reg		: std_logic_vector(7 downto 0);
 	signal dbg_sd_ever_accessed: std_logic;
 	signal dbg_sd_init_done	: std_logic;
@@ -573,10 +569,6 @@ architecture bevioural of SDMapper_TOP is
 	signal s_io_mapper_rd_en : std_logic;
 	signal s_io_mapper_wr_en : std_logic;
 
-	signal s_io_mapper_rd_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
-	signal s_io_mapper_wr_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
-	signal s_io_mapper_rd_qualified : std_logic := '0';
-	signal s_io_mapper_wr_qualified : std_logic := '0';
 
 	signal s_mapper_rdata : std_logic_vector(7 downto 0);
 
@@ -781,20 +773,6 @@ begin
 	-- ------------------------------------------------------------------------
 	-- Slot expansion
 	-- ------------------------------------------------------------------------
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				dbg_ffff_cnt <= (others => '0');
-				s_ffff_slt_d <= '0';
-			else
-				s_ffff_slt_d <= s_ffff_slt;
-				if s_ffff_slt = '1' and s_ffff_slt_d = '0' then
-					dbg_ffff_cnt <= dbg_ffff_cnt + 1;
-				end if;
-			end if;
-		end if;
-	end process;
 
 	s_sltsl_en    <= (not SLTSL_n) when SW(9) = '0' else '0';		-- SDMapper (Nextor+Mapper) enabled only when SW(9)='0' - see SW(9) note above
 	-- s_addr_valid gate: see its declaration. The pre-existing note in the
@@ -895,8 +873,7 @@ begin
 		cpu_d			=> D,
 		cpu_q			=> s_expn_q,
 		exp_n			=> slt_exp_n,
-		exp_reg_o	=> dbg_exp_reg,
-		exp_rej_o	=> dbg_exp_rej
+		exp_reg_o	=> dbg_exp_reg
 	);
 
 	process(CLOCK_50)
@@ -1198,99 +1175,44 @@ begin
 	s_io_mapper_rd_en <= '1' when s_io_mapper_en = '1' and RD_n = '0' else '0';
 	s_io_mapper_wr_en <= '1' when s_io_mapper_en = '1' and WR_n = '0' else '0';
 
+
+	-- ------------------------------------------------------------------------
+	-- Mapper segment registers. SIMPLIFIED 2026-08-18 to match exp_slot and the
+	-- msxsdmapperv2 reference: a combinational write window, and a capture on
+	-- its trailing edge taking the previous sample so the committed value is
+	-- one clock clear of the Z80 releasing the bus.
+	--
+	-- Removed: an 8-clock (160ns) pulse-qualification counter and a 2-deep
+	-- stability pipeline with a minimum-window check. Belavenuto's mapper.vhd
+	-- has neither - just "mp_wr_s <= '1' when ioFx_i='1' and cpu_wr_n_i='0'"
+	-- and a register clocked off it - and the qualification delay was pure
+	-- latency on every port access.
+	-- ------------------------------------------------------------------------
 	process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
 			if s_reset = '1' then
-				s_io_mapper_rd_dur_cnt   <= (others => '0');
-				s_io_mapper_wr_dur_cnt   <= (others => '0');
-				s_io_mapper_rd_qualified <= '0';
-				s_io_mapper_wr_qualified <= '0';
+				reg_page0_q  <= "00011";	-- MSX reset defaults: 3/2/1/0
+				reg_page1_q  <= "00010";
+				reg_page2_q  <= "00001";
+				reg_page3_q  <= "00000";
+				map_d_q      <= (others => '0');
+				map_sel_q    <= (others => '0');
+				map_wr_q     <= '0';
 			else
-				if s_io_mapper_rd_en = '1' then
-					if s_io_mapper_rd_dur_cnt < MIN_PULSE_CYCLES then
-						s_io_mapper_rd_dur_cnt <= s_io_mapper_rd_dur_cnt + 1;
-					end if;
-					if s_io_mapper_rd_dur_cnt >= MIN_PULSE_CYCLES then
-						s_io_mapper_rd_qualified <= '1';
-					end if;
-				else
-					s_io_mapper_rd_dur_cnt   <= (others => '0');
-					s_io_mapper_rd_qualified <= '0';
-				end if;
+				map_wr_q <= s_io_mapper_wr_en;
 
 				if s_io_mapper_wr_en = '1' then
-					if s_io_mapper_wr_dur_cnt < MIN_PULSE_CYCLES then
-						s_io_mapper_wr_dur_cnt <= s_io_mapper_wr_dur_cnt + 1;
-					end if;
-					if s_io_mapper_wr_dur_cnt >= MIN_PULSE_CYCLES then
-						s_io_mapper_wr_qualified <= '1';
-					end if;
-				else
-					s_io_mapper_wr_dur_cnt   <= (others => '0');
-					s_io_mapper_wr_qualified <= '0';
-				end if;
-			end if;
-		end if;
-	end process;
-
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				reg_page0_q <= "00011";
-				reg_page1_q <= "00010";
-				reg_page2_q <= "00001";
-				reg_page3_q <= "00000";
-				map_d_s1    <= (others => '0');
-				map_d_s2    <= (others => '0');
-				map_sel_q   <= (others => '0');
-				map_wr_q    <= '0';
-				map_wr_len  <= (others => '0');
-			else
-				-- ----------------------------------------------------------
-				-- BUG FIX (2026-08-16): these registers used to latch D
-				-- CONTINUOUSLY while the write window was qualified, so the
-				-- value that stuck was the LAST sample before the window
-				-- closed - taken exactly as the Z80 releases the bus and D
-				-- goes invalid, sampled from signals asynchronous to this
-				-- clock. Same fault as exp_slot's subslot register, but far
-				-- more damaging: a corrupted SEGMENT NUMBER re-points a whole
-				-- 16KB page at the wrong block of SRAM. Nextor rewrites these
-				-- constantly, so one bad sample silently relocates memory
-				-- underneath running code - which is exactly the remaining
-				-- mapper corruption (SRAM itself is proven good by the BIST,
-				-- and the SRAM write is now self-timed).
-				--
-				-- Fix, mirroring exp_slot: keep a 2-deep pipeline of samples
-				-- taken while the window is open (D is valid throughout the
-				-- Z80's write pulse), and commit the OLDER sample when the
-				-- window closes - data captured well before the bus release.
-				-- Short/glitch windows are rejected outright, because the
-				-- pipeline only advances while the window is open and would
-				-- otherwise commit a stale value from an unrelated moment.
-				-- The port select is latched alongside the data so it cannot
-				-- drift either.
-				-- ----------------------------------------------------------
-				map_wr_q <= s_io_mapper_wr_qualified;
-
-				if s_io_mapper_wr_qualified = '1' then
-					map_d_s1  <= D(4 downto 0);
-					map_d_s2  <= map_d_s1;
+					map_d_q   <= D(4 downto 0);
 					map_sel_q <= s_A(1 downto 0);
-					if map_wr_len /= "1111" then
-						map_wr_len <= map_wr_len + 1;
-					end if;
-				else
-					map_wr_len <= (others => '0');
 				end if;
 
-				if s_io_mapper_wr_qualified = '0' and map_wr_q = '1' and map_wr_len >= "0100" then
+				if s_io_mapper_wr_en = '0' and map_wr_q = '1' then
 					case map_sel_q is
-						when "00"   => reg_page0_q <= map_d_s2;
-						when "01"   => reg_page1_q <= map_d_s2;
-						when "10"   => reg_page2_q <= map_d_s2;
-						when others => reg_page3_q <= map_d_s2;
+						when "00"   => reg_page0_q <= map_d_q;
+						when "01"   => reg_page1_q <= map_d_q;
+						when "10"   => reg_page2_q <= map_d_q;
+						when others => reg_page3_q <= map_d_q;
 					end case;
 				end if;
 			end if;
@@ -1580,7 +1502,7 @@ begin
 	     s_expn_q               when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else	-- Slot expansion register
 	     FL_DQ(7 downto 0)      when s_rom_rd_en = '1' else										-- ROM / Flash (only when actually selected+driving - see s_rom_rd_en)
 	     SRAM_DQ                when s_mem_rd_en = '1' else										-- RAM / Mapper
-	     s_mapper_rdata         when s_io_mapper_rd_qualified = '1' else							-- Mapper segment registers
+	     s_mapper_rdata         when s_io_mapper_rd_en = '1' else							-- Mapper segment registers
 	     sd_data_dout           when sd_data_rd_en = '1' else										-- SD_DATA
 	     -- ------------------------------------------------------------------
 	     -- Fallback for a read of THIS slot that no device above matched
@@ -1662,7 +1584,7 @@ begin
 	-- BUSDIR_n: only /IORQ-based reads need it (MSX Technical Data Book
 	-- 1.6.2) - ordinary /SLTSL memory reads (ROM, RAM, SD/timer registers,
 	-- FFFF) do not. Never tri-stated - always actively driven.
-	BUSDIR_n <= '0' when s_io_mapper_rd_qualified = '1' else '1';
+	BUSDIR_n <= '0' when s_io_mapper_rd_en = '1' else '1';
 
 	-- ------------------------------------------------------------------------
 	-- Debug display (2026-08-12, XESS SD core pivot). ROM/RAM sub-slot
@@ -1718,8 +1640,8 @@ begin
 	-- how many windows opened and were then discarded by the length filter.
 	-- Equal -> the filter is the cause. Near zero -> the window never opened,
 	-- so the fault is upstream in ffff / s_addr_valid / address capture.
-	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else dbg_exp_rej(3 downto 0)   when SW(5) = '1' else dbg_sd_data_cnt(3 downto 0);
-	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else dbg_exp_rej(7 downto 4)   when SW(5) = '1' else dbg_sd_data_cnt(7 downto 4);
+	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else dbg_sd_data_cnt(3 downto 0);
+	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else dbg_sd_data_cnt(7 downto 4);
 	-- HEX3:HEX2 now shows SD_DEBUG (register 9) - the last trace marker the
 	-- driver wrote. The error code has read 00 on every recent run, whereas
 	-- the open question is which driver entry point Nextor reaches, and a
@@ -1733,8 +1655,8 @@ begin
 	-- subslot routing this register controls. Expect a stable, sensible value
 	-- (each 2-bit field selects a subslot per page); garbage or a value that
 	-- changes when it should not is the fault.
-	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else dbg_exp_rej(11 downto 8)  when SW(5) = '1' else dbg_exp_reg(3 downto 0);
-	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else dbg_ffff_cnt(15 downto 12) when SW(5) = '1' else dbg_exp_reg(7 downto 4);
+	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else dbg_exp_reg(3 downto 0);
+	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else dbg_exp_reg(7 downto 4);
 
 	LEDG(9)          <= bist_done when SW(4) = '1' else s_rom_subslot_ever_q;
 	LEDG(8)          <= '1' when (SW(4) = '1' and bist_done = '1' and bist_errors = x"0000") else
