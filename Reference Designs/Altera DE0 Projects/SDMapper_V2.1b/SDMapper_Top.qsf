@@ -483,12 +483,24 @@ set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_
 # Two mitigations, both free in timing terms - the SRAM is a 10ns part and
 # the self-timed write gives it several 40ns clock cycles:
 #
-#   REVERTED 2026-08-18: the 4mA assignments below are REMOVED, so the SRAM
-#   pins are back at the 8mA default. They were bundled into the same
-#   bitstream as a U1_DIR change that broke SD reads, which made it impossible
-#   to attribute the regression - exactly the ambiguity we had agreed to avoid.
-#   Re-apply this on its own, with a soaktest run to judge it, once the bus
-#   direction change has been validated.
+#   RE-APPLIED 2026-08-18, now with a quantitative test to judge it by.
+#   ffffstress.rom on real hardware measured the subslot register (0FFFFh)
+#   DROPPING ~16% of writes - 10,670 of 65,536 in one run, 99.6% of them
+#   classified as "got == previous value written", i.e. the write never landed
+#   rather than arriving corrupted. That is exactly the observed Nextor hang:
+#   Nextor writes 0x51 to bank its kernel into page 1, the write is lost, the
+#   stale 0x55 remains, page 1 stays RAM and the CPU executes mapper RAM where
+#   the driver should be.
+#
+#   The decisive correlation: with SW(8) ON (mapper RAM disabled) the SAME test
+#   reports ZERO errors, every run. SW(8) touches nothing in exp_slot - not
+#   sltsl_n, not ffff, not cpu_a, not the capture logic. What it changes is how
+#   hard the SRAM bus is working: with the mapper serving as main RAM all 31
+#   SRAM signals switch on essentially every instruction fetch. So the FFFF
+#   capture fails precisely when the SRAM bus is busy, which is a
+#   signal-integrity problem, not a logic bug - and the same mechanism already
+#   proven twice on this board (the DE0 #2 addon swap, and the
+#   heavily-populated-low-byte address signature).
 #
 #   1. Drop drive strength to 4mA (as already done for the SD pins). Lower
 #      drive means less di/dt through the shared ground return, which is what
@@ -514,3 +526,35 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 
 
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
+# --- 4mA drive on the SRAM bus (see rationale above) ---
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[16]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[17]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_WE_N
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_OE_N
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_CE_N
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_UB_N
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_LB_N
