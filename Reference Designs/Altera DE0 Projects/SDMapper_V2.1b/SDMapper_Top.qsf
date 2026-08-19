@@ -462,99 +462,31 @@ set_global_assignment -name VHDL_FILE decoder_7seg.vhd
 set_global_assignment -name QIP_FILE Clock_25MHz.qip
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 # ============================================================================
-# SIGNAL-INTEGRITY HARDENING (2026-08-18)
+# SRAM DRIVE STRENGTH (2026-08-19) - 4mA REVERTED, real-hardware regression
 #
-# The 512KB SRAM is on a daughter board reached through the DE0 GPIO header:
-# long traces, high loop inductance, and very few ground return pins shared
-# by ~31 signals. Real-hardware evidence that this matters:
+# 4mA drive on the 31 SRAM signals was applied 2026-08-18 to reduce ground
+# bounce on the daughter board's marginal GPIO-header connection (see the DE0
+# #2 addon-board swap and the heavily-populated-low-byte failing-address
+# signature - both still valid evidence that the connection IS marginal).
 #
-#   - DE0 #2 failed EVERY mapper read (506,433 of ~507,904 bytes per soak
-#     pass, all returning a constant) and was cured by swapping the SRAM
-#     addon board.
-#   - DE0 #1 went from ~7 errors per soak pass to zero across ~27MB with no
-#     design change at all.
-#   - Every failing address shared one bit pattern - A[11:8]=0000, A[7:6]=11,
-#     A[3:0]=1111 - i.e. a heavily-populated low byte next to an empty high
-#     region, and the last address before a 4-bit carry. That is the
-#     signature of simultaneous-switching-output noise / ground bounce, not
-#     of a logic fault. The read data was also independent of the segment
-#     register, meaning the SRAM was not driving the bus at all.
+# The theory was wrong about which direction to push drive strength. Bisected
+# on real hardware, single variable: 928404e's exact VHDL (the last commit
+# verified to boot Nextor with SW(8)=1, mapper disabled, RAM supplied by a
+# second cartridge) PLUS ONLY this QSF's 4mA SRAM assignments, nothing else
+# changed - and it hangs identically to the full HEAD build. No VHDL logic is
+# involved; this QSF block alone reproduces the regression.
 #
-# Two mitigations, both free in timing terms - the SRAM is a 10ns part and
-# the self-timed write gives it several 40ns clock cycles:
+# Reading: at 4mA the drive is too weak to reliably charge/discharge the
+# marginal trace capacitance through the header - the opposite failure mode
+# from the ground-bounce theory, but a genuine one. Reverted to the Cyclone
+# III default (8mA), which is what 928404e always used and is proven stable.
 #
-#   RE-APPLIED 2026-08-18, now with a quantitative test to judge it by.
-#   ffffstress.rom on real hardware measured the subslot register (0FFFFh)
-#   DROPPING ~16% of writes - 10,670 of 65,536 in one run, 99.6% of them
-#   classified as "got == previous value written", i.e. the write never landed
-#   rather than arriving corrupted. That is exactly the observed Nextor hang:
-#   Nextor writes 0x51 to bank its kernel into page 1, the write is lost, the
-#   stale 0x55 remains, page 1 stays RAM and the CPU executes mapper RAM where
-#   the driver should be.
-#
-#   The decisive correlation: with SW(8) ON (mapper RAM disabled) the SAME test
-#   reports ZERO errors, every run. SW(8) touches nothing in exp_slot - not
-#   sltsl_n, not ffff, not cpu_a, not the capture logic. What it changes is how
-#   hard the SRAM bus is working: with the mapper serving as main RAM all 31
-#   SRAM signals switch on essentially every instruction fetch. So the FFFF
-#   capture fails precisely when the SRAM bus is busy, which is a
-#   signal-integrity problem, not a logic bug - and the same mechanism already
-#   proven twice on this board (the DE0 #2 addon swap, and the
-#   heavily-populated-low-byte address signature).
-#
-#   1. Drop drive strength to 4mA (as already done for the SD pins). Lower
-#      drive means less di/dt through the shared ground return, which is what
-#      causes ground bounce. 4mA is the minimum Cyclone III offers for 3.3-V
-#      LVTTL and is ample for a short header trace into a single CMOS input.
-#
-#      NOTE: do NOT also set SLEW_RATE here. Cyclone III rejects it -
-#      "Current strength 4mA ... cannot have Slew Rate logic option setting 0"
-#      (Fitter error 169205, 63 of them). Slew-rate control is only available
-#      at the higher current strength, so the two mitigations are mutually
-#      exclusive and reduced drive is the more effective of the two.
-#   2. Reserve unused pins as input tri-stated - stated EXPLICITLY, not as a
-#      correction. It was initially assumed that Quartus defaulted Cyclone III
-#      to "As output driving ground", which would have meant the FPGA actively
-#      driving every unassigned pin on the GPIO header the SRAM addon plugs
-#      into. That was WRONG: the Fitter report's Setting and Default columns
-#      both read "As input tri-stated with weak pull-up", so this was already
-#      the behaviour and the assignment changes nothing on this device. It is
-#      kept only so the intent is explicit and survives a device or family
-#      change, where the default is NOT guaranteed to be the safe one.
+# RESERVE_ALL_UNUSED_PINS is kept - it was independently verified to be a
+# no-op on this device (Fitter report's Setting and Default columns both
+# already read "As input tri-stated with weak pull-up"), so it carries no
+# effect and no risk to revert alongside the drive strength.
 # ============================================================================
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 
 
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
-# --- 4mA drive on the SRAM bus (see rationale above) ---
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[0]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[1]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[2]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[3]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[4]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[5]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[6]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[7]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[8]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[9]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[10]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[11]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[12]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[13]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[14]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[15]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[16]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_ADDR[17]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[0]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[1]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[2]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[3]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[4]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[5]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[6]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_DQ[7]
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_WE_N
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_OE_N
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_CE_N
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_UB_N
-set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to SRAM_LB_N
