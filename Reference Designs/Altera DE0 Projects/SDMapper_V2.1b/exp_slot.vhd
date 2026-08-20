@@ -57,44 +57,107 @@ end exp_slot;
 
 architecture rtl of exp_slot is
 
-	signal exp_reg      : std_logic_vector(7 downto 0);
-	signal exp_sel      : std_logic_vector(1 downto 0);
+	signal exp_reg  : std_logic_vector(7 downto 0);
+	signal exp_sel  : std_logic_vector(1 downto 0);
+	signal exp_wr   : std_logic;
+	signal exp_rd   : std_logic;
 
-	-- Write window and the one sample we commit from it.
-	signal exp_wr_raw   : std_logic;
-	signal exp_wr_raw_d : std_logic;
-	signal exp_d_q      : std_logic_vector(7 downto 0);
+	-- ------------------------------------------------------------------------
+	-- Synchronizers for the write-qualifying signals. All three are sampled
+	-- together on every clock_i edge so they stay aligned with each other,
+	-- removing the dependency on their real-world relative skew.
+	-- ------------------------------------------------------------------------
+	signal sltsl_n_meta, sltsl_n_sync    : std_logic;
+	signal cpu_wr_n_meta, cpu_wr_n_sync  : std_logic;
+	signal ffff_meta, ffff_sync          : std_logic;
+
+	signal exp_wr_sync, exp_wr_sync_d    : std_logic;
+	signal exp_wr_falling_pulse          : std_logic;
+
+	-- Subslot-register capture pipeline - see the note on the capture process.
+	signal exp_wr_raw, exp_wr_raw_d      : std_logic;
+	signal exp_wr_len                    : std_logic_vector(3 downto 0);
+	signal exp_d_s1, exp_d_s2            : std_logic_vector(7 downto 0);
+	signal exp_d_stable                  : std_logic_vector(7 downto 0);
+	signal exp_have_stable               : std_logic;
 
 begin
 
+	-- Sinais de selecao do slot (kept combinational, level-based - used only
+	-- for the read-side tri-state mux below, not as a clock)
+	exp_rd <= '1' when sltsl_n = '0' and cpu_rd_n = '0' and ffff = '1'	else '0';
+
 	-- ------------------------------------------------------------------------
-	-- SIMPLIFIED 2026-08-18.
+	-- Synchronize sltsl_n, cpu_wr_n and ffff into the clock_i domain.
+	-- ------------------------------------------------------------------------
+	process(clock_i)
+	begin
+		if rising_edge(clock_i) then
+			sltsl_n_meta  <= sltsl_n;
+			sltsl_n_sync  <= sltsl_n_meta;
+
+			cpu_wr_n_meta <= cpu_wr_n;
+			cpu_wr_n_sync <= cpu_wr_n_meta;
+
+			ffff_meta     <= ffff;
+			ffff_sync     <= ffff_meta;
+		end if;
+	end process;
+
+	-- Recompute the write qualifier from the now-synchronized, glitch-free
+	-- signals, then edge-detect its falling edge to get a one clock_i-wide
+	-- pulse at the end of the write cycle (same trigger point as the
+	-- original falling_edge(exp_wr) design).
+	exp_wr_sync <= '1' when sltsl_n_sync = '0' and cpu_wr_n_sync = '0' and ffff_sync = '1' else '0';
+
+	process(clock_i)
+	begin
+		if rising_edge(clock_i) then
+			exp_wr_sync_d <= exp_wr_sync;
+		end if;
+	end process;
+
+	exp_wr_falling_pulse <= exp_wr_sync_d and not exp_wr_sync;
+
+	-- Expansion register - now fully synchronous
+	-- process(clock_i)
+	-- begin
+	-- 	if rising_edge(clock_i) then
+	-- 		if reset_n = '0' then				-- Zerar registrador do expansor em um reset
+	-- 			exp_reg <= X"00";
+	-- 		elsif exp_wr_falling_pulse = '1' then	-- Escrita no endereco &HFFFF
+	-- 			exp_reg <= cpu_d;
+	-- 		end if;
+	-- 	end if;
+	-- end process;
+
+	-- ------------------------------------------------------------------------
+	-- Subslot register capture: sample DURING the write window, but COMMIT a
+	-- value taken safely before the window closes.
 	--
-	-- This file had accumulated a synchroniser chain, a minimum-window-length
-	-- filter, a two-deep sample pipeline, whole-byte stability voting, an
-	-- always-commit fallback and a rejected-window counter - every one added to
-	-- chase a symptom. Measurement retired them:
-	--   * the length filter rejected NOTHING (counter read 0)
-	--   * 99.7% of failures were DROPPED writes, not corrupted ones, so the
-	--     voting addressed a fault that was not happening
-	--   * the always-commit fallback published an UNVOTED sample, which was a
-	--     hole rather than a safety net
-	--   * the synchroniser chain (sltsl_n_sync/cpu_wr_n_sync/ffff_sync ->
-	--     exp_wr_sync -> exp_wr_falling_pulse) was computed and then never
-	--     used at all - the capture always ran off exp_wr_raw
+	-- BUG (2026-08-16, real hardware): the previous version latched cpu_d
+	-- continuously while the RAW window held, so the value that stuck was the
+	-- LAST sample before the window closed - taken right at the point where
+	-- the Z80 is releasing the bus and D is going invalid, and sampled from
+	-- signals asynchronous to clock_i. A single mis-sampled bit rewrites the
+	-- page routing underneath running code.
 	--
-	-- What is left is the structure msxsdmapperv2 has run on real hardware for
-	-- a decade: a combinational write qualifier, and a capture on its trailing
-	-- edge.
+	-- Observed: exp_reg = 0x41 when Nextor locked up. 0x41 routes page 2 to
+	-- subslot 0 (this cart's ROM), whose page-2 window never activates for the
+	-- 128KB kernel - so page 2 had NOTHING responding and reads floated. The
+	-- value Nextor intends there is 0x51 (page 2 -> subslot 1 = mapper RAM),
+	-- which differs from 0x41 by exactly ONE BIT. This register is rewritten
+	-- on every inter-slot call, i.e. constantly, so a rare bad sample is
+	-- inevitable - and shows up as "mostly works, fails randomly, different
+	-- symptom each time".
 	--
-	--     exp_wr <= '1' when sltsl_n='0' and cpu_wr_n='0' and ffff='1';
-	--     ... falling_edge(exp_wr) -> exp_reg <= cpu_d;
-	--
-	-- The single deliberate difference: that design uses the async qualifier
-	-- directly as a clock, which is not safe in an FPGA. Here cpu_d is
-	-- registered on every clock while the window is open and the PREVIOUS
-	-- sample is committed when it closes, so the committed value is always one
-	-- clock clear of the Z80 releasing the bus.
+	-- Fix: keep a 2-deep pipeline of samples taken while the window is open
+	-- (D is valid throughout the Z80's write pulse, so mid-window samples are
+	-- sound), and commit exp_reg from the OLDER sample when the window ends.
+	-- That commits data captured >=2 clocks (80ns at 25MHz) before the window
+	-- closed, well clear of the bus release, while still never sampling after
+	-- WR_n has risen - which is what the synchronized-qualifier version got
+	-- wrong in the other direction.
 	-- ------------------------------------------------------------------------
 	exp_wr_raw <= '1' when sltsl_n = '0' and cpu_wr_n = '0' and ffff = '1' else '0';
 
@@ -103,17 +166,77 @@ begin
 		if rising_edge(clock_i) then
 			if reset_n = '0' then
 				exp_reg      <= X"00";
-				exp_d_q      <= X"00";
+				exp_d_s1     <= X"00";
+				exp_d_s2     <= X"00";
 				exp_wr_raw_d <= '0';
+				exp_wr_len   <= (others => '0');
+				exp_d_stable <= X"00";
+				exp_have_stable <= '0';
 			else
 				exp_wr_raw_d <= exp_wr_raw;
 
 				if exp_wr_raw = '1' then
-					exp_d_q <= cpu_d;			-- valid throughout the write pulse
+					exp_d_s1 <= cpu_d;	-- newest sample
+					exp_d_s2 <= exp_d_s1;	-- one clock older
+
+					-- STABILITY VOTING (2026-08-16): cpu_d is the raw Z80 data
+					-- bus, asynchronous to clock_i, so any single sample can be
+					-- metastable and resolve to the wrong value on one bit -
+					-- precisely the observed 0x41-instead-of-0x51 corruption,
+					-- where the intended and captured values differ by one bit.
+					-- Taking "the older sample" avoided the bus-release edge but
+					-- did nothing about metastability, because it still trusted
+					-- a SINGLE sample.
+					--
+					-- D is held stable by the Z80 for the whole write pulse
+					-- (~1us = ~25 clocks here), so a value seen IDENTICALLY on
+					-- two consecutive samples is real; a metastable or
+					-- mid-transition sample will not repeat. Only such agreed
+					-- values are remembered as committable.
+					if exp_d_s1 = exp_d_s2 then
+						exp_d_stable    <= exp_d_s2;
+						exp_have_stable <= '1';
+					end if;
+
+					if exp_wr_len /= "1111" then
+						exp_wr_len <= exp_wr_len + 1;	-- how long has this window been open?
+					end if;
+				else
+					exp_wr_len      <= (others => '0');
+					exp_have_stable <= '0';
 				end if;
 
-				if exp_wr_raw = '0' and exp_wr_raw_d = '1' then
-					exp_reg <= exp_d_q;			-- trailing edge: commit
+				-- Window just closed: commit the older, safely-sampled value -
+				-- but ONLY if the window was long enough to have been a real
+				-- Z80 write.
+				--
+				-- BUG (2026-08-16): the length check was missing. exp_d_s1/s2
+				-- only update WHILE the window is open, so a spurious one- or
+				-- two-clock window committed whatever stale value those
+				-- registers happened to be holding from some earlier, unrelated
+				-- moment - i.e. a glitch wrote garbage routing. Observed on real
+				-- hardware as exp_reg flipping between 0xFD and 0x00, where 0xFD
+				-- selects subslot 3 for three pages and this cart only
+				-- implements subslots 0 and 1.
+				--
+				-- A genuine write at 3.58MHz holds this window for roughly 25
+				-- clocks of the 25MHz domain; requiring 4 rejects glitches by a
+				-- wide margin while never rejecting a real access.
+				-- CORRECTION (2026-08-16): requiring exp_have_stable made the
+				-- commit CONDITIONAL, so if two samples never registered as
+				-- agreeing the write was dropped entirely and the routing was
+				-- left at its reset value - observed on hardware as exp_reg
+				-- stuck at 0x00, i.e. the mapper permanently invisible. That
+				-- is strictly worse than committing a slightly-risky value:
+				-- a dropped subslot write breaks routing outright, while a
+				-- single-bit risk only sometimes corrupts. The stable value is
+				-- preferred when available, but the write is ALWAYS committed.
+				if exp_wr_raw = '0' and exp_wr_raw_d = '1' and exp_wr_len >= "0100" then
+					if exp_have_stable = '1' then
+						exp_reg <= exp_d_stable;	-- agreed across two samples
+					else
+						exp_reg <= exp_d_s2;		-- fallback: older sample
+					end if;
 				end if;
 			end if;
 		end if;
@@ -121,21 +244,31 @@ begin
 
 	exp_reg_o <= exp_reg;
 
-	-- Read back: the MSX standard returns the one's complement. Driven
-	-- unconditionally - the top level already gates it onto D with its own read
-	-- conditions, and gating here inferred a latch clocked by RD_n, which
-	-- TimeQuest then analysed as a phantom clock domain.
+	-- Leitura dos registros
+	-- CLEANUP (2026-08-15): this used to be
+	--     cpu_q <= (not exp_reg) when exp_rd = '1';
+	-- with no else branch, which infers a TRANSPARENT LATCH whose enable is
+	-- derived from cpu_rd_n. TimeQuest then treats RD_n as a clock ("Warning
+	-- 332060: Node RD_n was determined to be a clock but was found without an
+	-- associated clock assignment") and analyses hold against an async bus
+	-- signal - which is where the marginal/negative hold slack seen on some
+	-- builds came from.
+	--
+	-- The latch was never needed: the top level only ever muxes s_expn_q onto
+	-- D while its own read conditions hold (SLTSL_n low, A=FFFF, RD_n low),
+	-- so gating here was redundant with that. Driving it unconditionally is
+	-- functionally identical at every point where the value is actually used,
+	-- and removes both the latch and the phantom RD_n clock domain.
 	cpu_q <= not exp_reg;
 
-	-- Sub-slot select for the page being addressed, and the 2-to-4 demux.
+	-- Seleciona qual subslot acionar de acordo com endereco do barramento e registros
 	with cpu_a(15 downto 14) select exp_sel <=
 		exp_reg(1 downto 0) when "00",
 		exp_reg(3 downto 2) when "01",
 		exp_reg(5 downto 4) when "10",
 		exp_reg(7 downto 6) when others;
 
-	-- ffff = '1' forces ALL sub-slots inactive, so a write to the subslot
-	-- register can never also reach the RAM that lives at 0FFFFh in page 3.
+	-- Demux 2-to-4
 	exp_n <= "1111" when ffff = '1' or sltsl_n = '1'      else
 				"1110" when sltsl_n = '0' and exp_sel = "00" else
 				"1101" when sltsl_n = '0' and exp_sel = "01" else
