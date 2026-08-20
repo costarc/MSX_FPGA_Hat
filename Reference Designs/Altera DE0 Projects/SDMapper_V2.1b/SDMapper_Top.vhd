@@ -1,190 +1,68 @@
--- MSX_DE0/DE1 FPGA Interface
--- Ronivon Costa @ 2023 - 2026
+-- ============================================================================
+-- SDMapper_V2.1b - MSX cartridge on Terasic DE0 (Cyclone III EP3C16F484C6)
+-- Ronivon Costa, 2023-2026
 --
--- MSXDOS2 (actually it has Nextor Operating System in the Flash) is one of the many Reference Designs
--- I created for the MSX FPGA Interface.
--- MSX_FPGA_Interface is an interface that allows MSX computers to connect to the mentioned FPGA development boards,
--- safely (provides the needed signal level shifting between 3.3V and 5V).
--- This connection makes it possible to use the development boards as generic peripherals.
--- --------------------------------------------------------------------------------------------------------------------------------------
--- Acknowledgment:
+-- Nextor kernel in Flash + SD card interface + 512KB MSX Memory Mapper, in one
+-- expanded cartridge slot.
 --
--- Most of this core was re-used from the amazing MSX SD Mapper V2, by Fabio Belavenuto - https://github.com/fbelavenuto/msxsdmapperv2
--- I had to make many changes to make it work with the MSX FPGA Interface and the Terasic DE0/DE1 boards.
--- --------------------------------------------------------------------------------------------------------------------------------------
+-- Derived from Fabio Belavenuto's MSX SD Mapper V2
+-- (github.com/fbelavenuto/msxsdmapperv2). SD core is XESS Corp's SdCardCtrl.
 --
--- INTEGRATION (2026-08-11): FULL DESIGN RESTORED
--- --------------------------------------------------------------------------------------------------------------------------------------
--- This file replaces the "SIMPLIFIED TEST VARIANT" that had stripped this
--- design down to a single non-expanded ROM-only slot (see git history / the
--- SDMapper_V2.1b_DE0_noexpslot branch for that variant and why it existed:
--- real-hardware debugging of "SDMapper - Boots Nextor Some Times" found the
--- ROM sub-slot enable never coincided with a genuine read).
+-- ---------------------------------------------------------------------------
+-- CONTENTS
+--   1. Entity / MSX bus and board pins
+--   2. Declarations
+--   3. Reset
+--   4. Address capture (A_MUX)          - the board's one real complication
+--   5. Slot decode (expansion, ROM/RAM)
+--   6. Flash / ROM banking
+--   7. SD card bridge
+--   8. Memory mapper (segment registers + SRAM)
+--   9. MSX bus drivers (D, U1, BUSDIR, WAIT)
+--  10. Display (HEX / LED)
 --
--- This version re-integrates full MSX secondary-slot expansion, gluing
--- together independently-developed and independently-tested pieces for this
--- same MSX_FPGA_Hat rev 2.1b interface board:
---   -> ROM sub-slot: the ASCII16 Flash-boot logic already present in this
---      file (itself derived from MegaROM_ASCII16/MSX_FPGA_Top.vhd, which has
---      a real-hardware-confirmed boot MILESTONE), hard-locked to flashbase
---      0x000000 (Nextor) instead of MegaROM_ASCII16's SW-selectable game
---      catalog - this board only ever boots Nextor from that offset.
---   -> RAM sub-slot: the standard MSX Memory Mapper (512KB, DE0 SRAM addon)
---      from MemoryMapper/MSX_FPGA_Top.vhd, itself real-hardware-tested on a
---      Canon V-8/V-9 (see project_memorymapper_hardware_test memory). This
---      is a hard requirement (the whole point of this board is expanding
---      MSX1 machines with only 16KB RAM, like the Canon V-8, to run DOS2) -
---      never removed or shared with any SD-access scheme.
---   -> Slot expansion: exp_slot.vhd, unchanged.
+-- ---------------------------------------------------------------------------
+-- THE BOARD'S ONE COMPLICATION
+-- The MSX address bus reaches the FPGA through two '245 buffers sharing eight
+-- pins (A_MUX), gated by U2OE_n (A0-A7) and U3OE_n (A8-A15). Nothing can be
+-- decoded until both halves have been captured, which is what s_addr_valid
+-- means. Every reference design has all 16 lines immediately; we do not.
+-- Data is separate: it crosses U1, whose direction is U1_DIR.
 --
--- SD CARD PROTOCOL PIVOT (2026-08-12): Belavenuto's raw-SPI protocol
--- (spi.vhd/spi2.vhd - both still in this directory, unused by this file) was
--- extensively debugged this session: a real wait_n_s/start_s bug was found
--- and fixed, five other real fixes landed (pull-ups, status_s polarity,
--- timer clock domain, U1_DIR polarity, WAIT_n inversion), and a completely
--- independent second SPI engine (spi2.vhd) was built and bit-verified via
--- an isolated testbench - yet the SD card never responded with anything but
--- 0xFF on real hardware, through either engine. Since two independently-
--- verified SPI implementations produced the identical symptom, the bug was
--- judged unlikely to be in hand-rolled SPI bit-shifting logic at all.
+-- U1_DIR POLARITY: '0' drives towards the MSX, '1' listens. Confirmed on real
+-- hardware; earlier versions of this file had it backwards.
 --
--- This file now uses a mature, widely-used, third-party SD SPI core instead
--- of continuing to hand-roll one: XESS Corp's SdCardCtrl (sdcard_xess.vhd,
--- ported from https://github.com/xesscorp/VHDL_Lib/blob/master/SDCard.vhd,
--- LGPL v3 - see that file's header for the exact porting notes), wrapped by
--- a new register-level bridge (sdcard_bridge.vhd) that translates its
--- block-level handshake protocol into simple byte-level registers a Nextor
--- driver can poke/peek, the same way spi.vhd's SPIDATA/SPICTRL registers
--- did for the abandoned protocol. See sdcard_bridge.vhd's header for the
--- exact register map. The ROM/RAM sub-slots above are completely unchanged -
--- only the SD-access mechanism inside the ROM sub-slot's memory window was
--- replaced.
+-- ---------------------------------------------------------------------------
+-- MEMORY MAP (within /SLTSL, SDMapper mode SW(9)='0')
+--   ROM sub-slot 0 (the reset default for every page, so Nextor's kernel is
+--   visible immediately with no FFFF write needed):
+--     4000-7FFF  Bank 1 window, Flash base 0x000000 (Nextor)
+--       6000-67FF, 7000-77FF  bank-switch registers (write-only)
+--       7B00-7B0F             SD register window, only when rom_bank1_q = 7
+--     8000-BFFF  Bank 2 window, Flash-backed only when rom_bank2_q >= 8
+--   RAM sub-slot 1: all four pages, each via its own segment register.
+--   FFFF         sub-slot select register (intercepted in every sub-slot).
 --
--- CRITICAL FIX CARRIED FORWARD FROM MegaROM_ASCII16's MILESTONE: this file
--- (and the DE1 "Boots Nextor Some Times" predecessor it was ported from) had
--- U1_DIR backwards - '1' was treated as "drive toward the MSX bus". Real
--- hardware testing on MegaROM_ASCII16 (OUT &H5A,170 -> INP(&H5A)=170,
--- confirmed round-trip only after flipping the polarity) established the
--- opposite: DIR=1 means MSX->FPGA (listen), DIR=0 means FPGA->MSX (drive).
--- Every U1_DIR expression in this file uses the CORRECTED polarity.
+-- I/O PORTS (system-wide, not slot-scoped - per the MSX standard)
+--   FC-FF        memory-mapper segment registers, one per page
 --
--- Also carried forward: the "continuous re-latch of D WHILE a qualified
--- write window holds" fix (MegaROM_ASCII16's documented real-hardware bug -
--- garbage bank registers from sampling D on a delayed edge after WR_n had
--- already risen and the Z80 released the bus). Every register write in this
--- file that used to sample D on a synchronized falling edge (ROM bank
--- switch) shares one glitch-filtered qualifier (s_cart_write_qualified) and
--- re-latches continuously instead.
---
--- STATUS: compiled and GHDL-simulated against this integration's own logic;
--- NOT YET tested on real hardware as of this pivot. Card presence/write-
--- protect are still manual (SW(0)/SW(2) - this board has no physical
--- card-detect sensing).
--- --------------------------------------------------------------------------------------------------------------------------------------
---
--- HOW TO USE THIS BOARD
--- --------------------------------------------------------------------------------------------------------------------------------------
--- Switches (SW):
---   SW(9)    - Board mode select:
---                '0' = SDMapper mode (Nextor + Memory Mapper enabled - this
---                      file's whole design). This cartridge responds to
---                      /SLTSL-based memory access (ROM, RAM/mapper, and the
---                      slot-expansion register at FFFF) AND the mapper I/O
---                      ports (FC-FF) are decoded.
---                '1' = MegaROM emulation mode (RESERVED FOR FUTURE USE - not
---                      implemented in this file yet). SDMapper (ROM, RAM/
---                      mapper, mapper I/O ports, the FFFF slot-expansion
---                      register) is entirely disabled/silent on the bus in
---                      this mode, freeing it up for a future MegaROM
---                      emulation core (see MegaROM_ASCII16/MSX_FPGA_Top.vhd)
---                      to be merged into this same file and taken live here.
---   SW(8)    - Unused/free (RAM/mapper is gated by SW(9) alone, same as ROM
---              and SD - see SW(9) above).
---   SW(2)    - SD card 1 (onboard microSD) write-protect flag, reported to
---              software via the status register.
---   SW(0)    - SD card 1 (onboard microSD) present flag. This board has no
---              physical card-detect sensing, so presence is set manually.
---
--- Pushbuttons (KEY):
---   KEY(0)   - Manual reset. Combined with the MSX's own RESET_n line - either
---              one being asserted forces a full reset of this design.
---   KEY(2:1) - Unused (DE0 has only 3 buttons).
---
--- Memory map (within this cartridge's /SLTSL-selected space, SDMapper mode
--- only - SW(9)='0'):
---   ROM sub-slot (exp_slot subslot 0 - the default/reset subslot for every
---   page, so Nextor's kernel is visible immediately after reset with no FFFF
---   write needed):
---     4000-7FFF   - Bank 1 window. Flash-backed, base 0x000000 (Nextor).
---       6000-67FF, 7000-77FF - Bank-switch registers (write-only; reads in
---                               this range still return normal ROM data).
---       7B00-7B08             - SD card register window (see
---                               sdcard_bridge.vhd for the exact map). Only
---                               visible when rom_bank1_q = 7 (bank 1
---                               switched to segment 7 to reach it), same
---                               convention the abandoned SPI protocol used.
---     8000-BFFF   - Bank 2 window. Only Flash-backed when rom_bank2_q >= 8.
---   RAM sub-slot: pages 0, 2, 3 always reach RAM (no ROM ever contends for
---   them - see s_sltsl_ram_en's comment); page 1 arbitrates between ROM
---   sub-slot 0 (default) and RAM sub-slot 1 via the FFFF register, same as
---   the ROM sub-slot above. Each page's RAM is addressed via its own
---   segment register - see I/O ports below.
---   FFFF        - Slot-expansion sub-slot select register (intercepted
---                 regardless of which sub-slot would otherwise be visible).
---
--- I/O ports (global - not slot-scoped, per msx.org/wiki/Memory_Mapper; gated
--- by SW(9)='0' i.e. SDMapper mode, same convention as the standalone
--- MemoryMapper reference just inverted to match this board's mode switch):
---   FC-FF       - Standard MSX memory-mapper segment registers, one per page.
--- --------------------------------------------------------------------------------------------------------------------------------------
---
--- CLOCK DOMAINS
--- --------------------------------------------------------------------------------------------------------------------------------------
--- CLOCK_50 (50MHz, raw board oscillator, no PLL) drives everything in this
--- file EXCEPT the sdcard_bridge instantiation: the address-bus capture
--- state machine, every synchronizer/glitch-filter, exp_slot's clock, the
--- mapper/ROM-bank registers.
---
--- clock_i (25MHz, generated from CLOCK_50 via Clock_25MHz) drives ONLY the
--- sdcard_bridge component (and the ported XESS SdCardCtrl core inside it -
--- see sdcard_xess.vhd's FREQ_G=25.0 generic). SdCardCtrl generates its own
--- SD-spec-correct two-speed SCLK internally (~0.4MHz during CMD0/CMD8/
--- ACMD41 identification, ~12.5MHz operational afterward) from this single
--- master clock. sdcard_bridge already synchronizes its CPU-facing inputs
--- internally on its own clock_i, so this split introduces no new
--- clock-domain-crossing hazard.
--- --------------------------------------------------------------------------------------------------------------------------------------
---
--- ADDRESS BUS MULTIPLEXING
--- --------------------------------------------------------------------------------------------------------------------------------------
--- The MSX_FPGA_Hat interface board has too few FPGA-side GPIO pins to present the
--- full 16-bit MSX address bus at once. The low byte (A0-A7, via level-shifter U2)
--- and high byte (A8-A15, via level-shifter U3) share the same 8 physical FPGA
--- pins (port A_MUX below), each buffer independently gated by its own output
--- enable (U2OE_n, U3OE_n). Only one of the two must ever be enabled at a time.
---
--- This file reconstructs the full address internally as the registered signal
--- s_A, via a small CLOCK_50-synchronous state machine that:
---   1) Waits for a synchronized falling edge on (MREQ_n and IORQ_n) - i.e. the
---      start of any new bus cycle, memory or I/O. By Z80 timing, the address is
---      already valid and stable by the time either of these assert.
---   2) Enables U2 (low byte), waits one CLOCK_50 period for the buffer to settle,
---      then captures A_MUX into s_A(7 downto 0).
---   3) Disables U2, enables U3 (high byte), waits one CLOCK_50 period, then
---      captures A_MUX into s_A(15 downto 8).
---   4) Returns to idle with both buffers disabled, until the next trigger.
--- A one-cycle guard state with both buffers disabled sits between steps 2 and 3
--- so the two output-enables are never asserted anywhere near the same instant,
--- even accounting for small routing/propagation skew between them.
---
--- addr_capture_trigger preempts this state machine from ANY state (not just
--- idle) so a new bus cycle's trigger is never silently dropped while a
--- previous, now-superseded capture is still in progress.
--- --------------------------------------------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------
+-- SWITCHES                                  PUSHBUTTONS
+--   SW(9)=0  SDMapper mode (cart enabled)     KEY(0)  reset (with MSX RESET_n)
+--   SW(8)=1  mapper RAM + FC-FF ports OFF
+--   SW(7)=0  SD register window ON  <- note inverted sense
+--   SW(6)=1  legacy V-8 workaround (NOT subslot-compliant - leave off)
+--   SW(4)=1  SRAM BIST
+--   SW(2)    SD write-protect flag      SW(0)  SD card-present flag
+-- ============================================================================
+
 library ieee ;
 use ieee.std_logic_1164.all;
 use IEEE.std_logic_unsigned.all;
 
+-- ----------------------------------------------------------------------------
+-- 1. ENTITY / MSX BUS AND BOARD PINS
+-- ----------------------------------------------------------------------------
 Entity SDMapper_TOP is
 port (
     CLOCK_50:		in std_logic;								--	50 MHz
@@ -264,6 +142,10 @@ end SDMapper_TOP;
 
 architecture bevioural of SDMapper_TOP is
 
+	-- ------------------------------------------------------------------------
+	-- 2. DECLARATIONS (components, types, signals)
+	-- ------------------------------------------------------------------------
+
 	component decoder_7seg
 	port (
 		NUMBER		: in   std_logic_vector(3 downto 0);
@@ -331,10 +213,9 @@ architecture bevioural of SDMapper_TOP is
 	-- there is nothing to track or hold across. See the U1_DIR note.)
 
 	-- Mapper segment-register capture pipeline - see the write process.
-	signal map_d_s1, map_d_s2   : std_logic_vector(4 downto 0) := (others => '0');
+	signal map_d_q              : std_logic_vector(4 downto 0) := (others => '0');
 	signal map_sel_q            : std_logic_vector(1 downto 0) := (others => '0');
 	signal map_wr_q             : std_logic := '0';
-	signal map_wr_len           : std_logic_vector(3 downto 0) := (others => '0');
 
 	-- ROM bank-switch register capture - see the bank-switch write process.
 	signal bank_d_s1, bank_d_s2 : std_logic_vector(7 downto 0) := (others => '0');
@@ -355,7 +236,56 @@ architecture bevioural of SDMapper_TOP is
 	signal bus_req_meta, bus_req_sync, bus_req_sync_d : std_logic;
 	signal addr_capture_trigger : std_logic;
 
-	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_CAP, S_GUARD, S_HIGH_EN, S_HIGH_CAP);
+	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_WAIT, S_LOW_CAP, S_GUARD, S_HIGH_EN, S_HIGH_WAIT, S_HIGH_CAP);
+
+	-- ------------------------------------------------------------------------
+	-- A_MUX SETTLE TIME (2026-08-18) - root cause of the lost 0FFFFh writes.
+	--
+	-- The capture used to sample A_MUX exactly ONE clock (20ns) after asserting
+	-- U2OE_n/U3OE_n. A 74LVC245's output-enable time is ~6-9ns, on top of the
+	-- FPGA's own output delay on the OE pin and the settling of eight lines
+	-- through the GPIO header into the daughter board. 20ns was right at the
+	-- edge, and worst-case exactly when all eight lines have to slew HIGH
+	-- together.
+	--
+	-- That is why 0FFFFh specifically failed. It is the only address where all
+	-- 16 bits are 1, so it demands a full all-high settle TWICE in one cycle.
+	-- A single line not yet valid means s_A /= FFFF, so ffff never asserts,
+	-- exp_wr_raw never opens a window, and the subslot write vanishes with no
+	-- error and no retry.
+	--
+	-- Measured on real hardware: ffffstress.rom reported ~16% of subslot writes
+	-- lost (10,670 of 65,536), 99.6% of them as "got == previous value" - i.e.
+	-- dropped, not corrupted. The exp_slot rejected-window counter added for
+	-- this read ZERO, proving the window never opened rather than being
+	-- discarded by the length filter. Meanwhile 27MB of mapper soak was
+	-- perfectly clean, because ordinary sequential addresses never demand this
+	-- worst case.
+	--
+	-- Sampling 3 clocks (60ns) after the enable gives 3x the previous margin,
+	-- and still completes the whole capture well before /WR falls.
+	-- ------------------------------------------------------------------------
+	-- ------------------------------------------------------------------------
+	-- MEASURED 2026-08-18: this must be as SMALL as possible, not as large as
+	-- possible. Raising it from 0 to 2 made the failure WORSE (16% -> 18% of
+	-- subslot writes lost), which is the clearest evidence yet that the
+	-- capture is racing /WR rather than failing to settle.
+	--
+	-- The budget: at 3.58MHz the Z80 drops MREQ at ~140ns into the cycle and
+	-- /WR one full T-state later at ~419ns - 279ns to reconstruct the address.
+	-- Cost with SETTLE=2: 60ns trigger synchroniser + 220ns FSM = ~280ns, dead
+	-- level with the deadline. With SETTLE=0 the FSM is 7 clocks (140ns), so
+	-- ~200ns total and ~79ns of margin.
+	--
+	-- Confirmed by measurement, not inference: the s_ffff_slt decode counter
+	-- read 0000 (no shortfall - the address IS reconstructed correctly), while
+	-- exp_slot's rejected-window counter read 0 and only 53,678 of 65,536
+	-- writes committed. Windows are not being rejected, they are never
+	-- OPENING - so ffff arrives outside the /WR window. Correct address,
+	-- wrong time.
+	-- ------------------------------------------------------------------------
+	constant AMUX_SETTLE : integer := 0;	-- extra wait states; sample at SETTLE+1 clocks
+	signal capture_wait  : integer range 0 to 7 := 0;
 	signal addr_capture_state : addr_capture_state_t := S_IDLE;
 
 	-- ------------------------------------------------------------------------
@@ -459,6 +389,26 @@ architecture bevioural of SDMapper_TOP is
 	signal dbg_sd_last_rx		: std_logic_vector(7 downto 0);
 	signal dbg_sd_data_cnt		: std_logic_vector(7 downto 0);
 	signal dbg_sd_marker		: std_logic_vector(7 downto 0);
+
+	-- ------------------------------------------------------------------------
+	-- DIAGNOSTIC (2026-08-18): count how many times the address capture ever
+	-- decodes 0FFFFh at all (rising edges of s_ffff_slt).
+	--
+	-- exp_slot's rejected-window counter reads ZERO while ffffstress reports
+	-- ~11,500 lost subslot writes, so the write window never OPENS. Two things
+	-- can cause that and they need opposite fixes:
+	--   s_A never reads FFFF          -> the A_MUX capture is producing the
+	--                                    wrong address
+	--   s_A reads FFFF but TOO LATE   -> capture finishes after /WR has risen,
+	--                                    so the window has already gone
+	--
+	-- ffffstress performs exactly 65536 writes, so a 16-bit counter wraps to
+	-- 0000 if every one of them decoded. Anything else is the shortfall:
+	--   0000  -> every write decoded as FFFF; the capture is fine and the
+	--            problem is timing (too late), or sltsl/wr qualification
+	--   ~D2C6 -> ~11,500 writes never decoded as FFFF; the capture itself is
+	--            producing wrong addresses
+	-- ------------------------------------------------------------------------
 	signal dbg_exp_reg		: std_logic_vector(7 downto 0);
 	signal dbg_sd_ever_accessed: std_logic;
 	signal dbg_sd_init_done	: std_logic;
@@ -501,10 +451,6 @@ architecture bevioural of SDMapper_TOP is
 	signal s_io_mapper_rd_en : std_logic;
 	signal s_io_mapper_wr_en : std_logic;
 
-	signal s_io_mapper_rd_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
-	signal s_io_mapper_wr_dur_cnt   : std_logic_vector(3 downto 0) := (others => '0');
-	signal s_io_mapper_rd_qualified : std_logic := '0';
-	signal s_io_mapper_wr_qualified : std_logic := '0';
 
 	signal s_mapper_rdata : std_logic_vector(7 downto 0);
 
@@ -547,6 +493,10 @@ begin
 	-- the MSX_FPGA_Hat board, which inverts whatever level the FPGA drives.
 	WAIT_n <= not s_sdbridge_wait_n_o;
 
+
+	-- ----------------------------------------------------------------------------
+	-- 3. RESET
+	-- ----------------------------------------------------------------------------
 	-- Reset circuit
 	-- ------------------------------------------------------------------------
 	-- Reset controller (2026-08-16).
@@ -640,6 +590,10 @@ begin
 	-- high-byte snapshot used ONLY for spi_cs_s, never touching s_ffff_slt
 	-- or other sensitive combinational decode).
 	-- ------------------------------------------------------------------------
+
+	-- ----------------------------------------------------------------------------
+	-- 4. ADDRESS CAPTURE (A_MUX) - see the header note
+	-- ----------------------------------------------------------------------------
 	s_bus_req_n <= MREQ_n and IORQ_n;
 
 	process(CLOCK_50)
@@ -669,6 +623,7 @@ begin
 				addr_capture_state <= S_LOW_EN;
 				U2OE_n <= '1';
 				U3OE_n <= '1';
+				capture_wait <= 0;
 				-- A new bus cycle invalidates the previous address IMMEDIATELY:
 				-- from here until S_HIGH_CAP completes, s_A is a mix of old and
 				-- new bytes and must not be decoded by anything (see the
@@ -706,8 +661,13 @@ begin
 	end process;
 
 	-- ------------------------------------------------------------------------
+
+	-- ----------------------------------------------------------------------------
+	-- 5. SLOT DECODE (expansion, ROM vs RAM sub-slot)
+	-- ----------------------------------------------------------------------------
 	-- Slot expansion
 	-- ------------------------------------------------------------------------
+
 	s_sltsl_en    <= (not SLTSL_n) when SW(9) = '0' else '0';		-- SDMapper (Nextor+Mapper) enabled only when SW(9)='0' - see SW(9) note above
 	-- s_addr_valid gate: see its declaration. The pre-existing note in the
 	-- address-capture section already identified s_ffff_slt as vulnerable to
@@ -924,6 +884,10 @@ begin
                         and s_A(15 downto 8) = x"7B" 
                         and s_A(7 downto 4) = x"0"
                    else '0';
+
+	-- ----------------------------------------------------------------------------
+	-- 6. FLASH / ROM BANKING
+	-- ----------------------------------------------------------------------------
 	-- ------------------------------------------------------------------------
 	-- Shared glitch-filtered write qualifier for ROM sub-slot register
 	-- writes (bank switch) - see declaration above for the rationale.
@@ -1044,6 +1008,10 @@ begin
 	-- SD card register bridge (ported XESS SdCardCtrl core + Z80-bus
 	-- glue) - see sdcard_bridge.vhd for the full register map and design
 	-- rationale.
+
+	-- ----------------------------------------------------------------------------
+	-- 7. SD CARD BRIDGE (sdcard_bridge.vhd / sdcard_xess.vhd)
+	-- ----------------------------------------------------------------------------
 	sdbridge_inst: entity work.sdcard_bridge
 	port map (
 		clock_i			=> clock_i,
@@ -1109,99 +1077,48 @@ begin
 	s_io_mapper_rd_en <= '1' when s_io_mapper_en = '1' and RD_n = '0' else '0';
 	s_io_mapper_wr_en <= '1' when s_io_mapper_en = '1' and WR_n = '0' else '0';
 
+
+
+	-- ----------------------------------------------------------------------------
+	-- 8. MEMORY MAPPER (segment registers + SRAM)
+	-- ----------------------------------------------------------------------------
+	-- ------------------------------------------------------------------------
+	-- Mapper segment registers. SIMPLIFIED 2026-08-18 to match exp_slot and the
+	-- msxsdmapperv2 reference: a combinational write window, and a capture on
+	-- its trailing edge taking the previous sample so the committed value is
+	-- one clock clear of the Z80 releasing the bus.
+	--
+	-- Removed: an 8-clock (160ns) pulse-qualification counter and a 2-deep
+	-- stability pipeline with a minimum-window check. Belavenuto's mapper.vhd
+	-- has neither - just "mp_wr_s <= '1' when ioFx_i='1' and cpu_wr_n_i='0'"
+	-- and a register clocked off it - and the qualification delay was pure
+	-- latency on every port access.
+	-- ------------------------------------------------------------------------
 	process(CLOCK_50)
 	begin
 		if rising_edge(CLOCK_50) then
 			if s_reset = '1' then
-				s_io_mapper_rd_dur_cnt   <= (others => '0');
-				s_io_mapper_wr_dur_cnt   <= (others => '0');
-				s_io_mapper_rd_qualified <= '0';
-				s_io_mapper_wr_qualified <= '0';
+				reg_page0_q  <= "00011";	-- MSX reset defaults: 3/2/1/0
+				reg_page1_q  <= "00010";
+				reg_page2_q  <= "00001";
+				reg_page3_q  <= "00000";
+				map_d_q      <= (others => '0');
+				map_sel_q    <= (others => '0');
+				map_wr_q     <= '0';
 			else
-				if s_io_mapper_rd_en = '1' then
-					if s_io_mapper_rd_dur_cnt < MIN_PULSE_CYCLES then
-						s_io_mapper_rd_dur_cnt <= s_io_mapper_rd_dur_cnt + 1;
-					end if;
-					if s_io_mapper_rd_dur_cnt >= MIN_PULSE_CYCLES then
-						s_io_mapper_rd_qualified <= '1';
-					end if;
-				else
-					s_io_mapper_rd_dur_cnt   <= (others => '0');
-					s_io_mapper_rd_qualified <= '0';
-				end if;
+				map_wr_q <= s_io_mapper_wr_en;
 
 				if s_io_mapper_wr_en = '1' then
-					if s_io_mapper_wr_dur_cnt < MIN_PULSE_CYCLES then
-						s_io_mapper_wr_dur_cnt <= s_io_mapper_wr_dur_cnt + 1;
-					end if;
-					if s_io_mapper_wr_dur_cnt >= MIN_PULSE_CYCLES then
-						s_io_mapper_wr_qualified <= '1';
-					end if;
-				else
-					s_io_mapper_wr_dur_cnt   <= (others => '0');
-					s_io_mapper_wr_qualified <= '0';
-				end if;
-			end if;
-		end if;
-	end process;
-
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				reg_page0_q <= "00011";
-				reg_page1_q <= "00010";
-				reg_page2_q <= "00001";
-				reg_page3_q <= "00000";
-				map_d_s1    <= (others => '0');
-				map_d_s2    <= (others => '0');
-				map_sel_q   <= (others => '0');
-				map_wr_q    <= '0';
-				map_wr_len  <= (others => '0');
-			else
-				-- ----------------------------------------------------------
-				-- BUG FIX (2026-08-16): these registers used to latch D
-				-- CONTINUOUSLY while the write window was qualified, so the
-				-- value that stuck was the LAST sample before the window
-				-- closed - taken exactly as the Z80 releases the bus and D
-				-- goes invalid, sampled from signals asynchronous to this
-				-- clock. Same fault as exp_slot's subslot register, but far
-				-- more damaging: a corrupted SEGMENT NUMBER re-points a whole
-				-- 16KB page at the wrong block of SRAM. Nextor rewrites these
-				-- constantly, so one bad sample silently relocates memory
-				-- underneath running code - which is exactly the remaining
-				-- mapper corruption (SRAM itself is proven good by the BIST,
-				-- and the SRAM write is now self-timed).
-				--
-				-- Fix, mirroring exp_slot: keep a 2-deep pipeline of samples
-				-- taken while the window is open (D is valid throughout the
-				-- Z80's write pulse), and commit the OLDER sample when the
-				-- window closes - data captured well before the bus release.
-				-- Short/glitch windows are rejected outright, because the
-				-- pipeline only advances while the window is open and would
-				-- otherwise commit a stale value from an unrelated moment.
-				-- The port select is latched alongside the data so it cannot
-				-- drift either.
-				-- ----------------------------------------------------------
-				map_wr_q <= s_io_mapper_wr_qualified;
-
-				if s_io_mapper_wr_qualified = '1' then
-					map_d_s1  <= D(4 downto 0);
-					map_d_s2  <= map_d_s1;
+					map_d_q   <= D(4 downto 0);
 					map_sel_q <= s_A(1 downto 0);
-					if map_wr_len /= "1111" then
-						map_wr_len <= map_wr_len + 1;
-					end if;
-				else
-					map_wr_len <= (others => '0');
 				end if;
 
-				if s_io_mapper_wr_qualified = '0' and map_wr_q = '1' and map_wr_len >= "0100" then
+				if s_io_mapper_wr_en = '0' and map_wr_q = '1' then
 					case map_sel_q is
-						when "00"   => reg_page0_q <= map_d_s2;
-						when "01"   => reg_page1_q <= map_d_s2;
-						when "10"   => reg_page2_q <= map_d_s2;
-						when others => reg_page3_q <= map_d_s2;
+						when "00"   => reg_page0_q <= map_d_q;
+						when "01"   => reg_page1_q <= map_d_q;
+						when "10"   => reg_page2_q <= map_d_q;
+						when others => reg_page3_q <= map_d_q;
 					end case;
 				end if;
 			end if;
@@ -1480,6 +1397,10 @@ begin
 	           wr_data_q       when wr_drive = '1'                      else
 	           (others => 'Z');
 
+
+	-- ----------------------------------------------------------------------------
+	-- 9. MSX BUS DRIVERS (D, U1, BUSDIR_n, WAIT_n)
+	-- ----------------------------------------------------------------------------
 	-- ------------------------------------------------------------------------
 	-- Load the MSX bus with data from whichever device in this core is
 	-- currently selected. Single driver for D (VHDL doesn't allow two
@@ -1491,7 +1412,7 @@ begin
 	     s_expn_q               when s_sltsl_en = '1' and s_ffff_slt = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' else	-- Slot expansion register
 	     FL_DQ(7 downto 0)      when s_rom_rd_en = '1' else										-- ROM / Flash (only when actually selected+driving - see s_rom_rd_en)
 	     SRAM_DQ                when s_mem_rd_en = '1' else										-- RAM / Mapper
-	     s_mapper_rdata         when s_io_mapper_rd_qualified = '1' else							-- Mapper segment registers
+	     s_mapper_rdata         when s_io_mapper_rd_en = '1' else							-- Mapper segment registers
 	     sd_data_dout           when sd_data_rd_en = '1' else										-- SD_DATA
 	     -- ------------------------------------------------------------------
 	     -- Fallback for a read of THIS slot that no device above matched
@@ -1573,7 +1494,7 @@ begin
 	-- BUSDIR_n: only /IORQ-based reads need it (MSX Technical Data Book
 	-- 1.6.2) - ordinary /SLTSL memory reads (ROM, RAM, SD/timer registers,
 	-- FFFF) do not. Never tri-stated - always actively driven.
-	BUSDIR_n <= '0' when s_io_mapper_rd_qualified = '1' else '1';
+	BUSDIR_n <= '0' when s_io_mapper_rd_en = '1' else '1';
 
 	-- ------------------------------------------------------------------------
 	-- Debug display (2026-08-12, XESS SD core pivot). ROM/RAM sub-slot
@@ -1624,6 +1545,15 @@ begin
 	--   HEX3:HEX2 = error_o(7 downto 0) - non-zero means the core faulted
 	--   HEX1:HEX0 = completed SD_DATA byte transfers (wraps at 256)
 	-- error_o(15 downto 8) is still readable by software at SD_ERRHI.
+	-- SW(5)=1: show the exp_slot REJECTED-WINDOW counter (see exp_rej_o).
+	-- ffffstress.rom reports how many subslot writes were LOST; this shows
+	-- how many windows opened and were then discarded by the length filter.
+	-- Equal -> the filter is the cause. Near zero -> the window never opened,
+	-- so the fault is upstream in ffff / s_addr_valid / address capture.
+
+	-- ----------------------------------------------------------------------------
+	-- 10. DISPLAY (HEX / LED)
+	-- ----------------------------------------------------------------------------
 	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else dbg_sd_data_cnt(3 downto 0);
 	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else dbg_sd_data_cnt(7 downto 4);
 	-- HEX3:HEX2 now shows SD_DEBUG (register 9) - the last trace marker the
