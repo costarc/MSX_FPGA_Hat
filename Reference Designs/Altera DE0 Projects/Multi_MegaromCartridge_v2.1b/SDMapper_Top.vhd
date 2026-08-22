@@ -592,11 +592,15 @@ architecture bevioural of SDMapper_TOP is
 	signal s_mr_idx      : std_logic_vector(4 downto 0);   -- SW(4:0) = game index 0..23
 
 	-- Legacy SDMapper (Nextor ROM + RAM mapper + SD + sub-slot expansion) is
-	-- PERMANENTLY DISABLED on this branch: with SW(9) redefined as multirom
-	-- on/off there is no switch position left to select it. The logic is left
-	-- in the source rather than deleted so it can be restored if this design
-	-- ever needs to host Nextor again - the Multi_Cartridge_v2.1b branch still
-	-- carries both paths, selectable via SW(5).
+	-- DISABLED FOR NOW. SW(9)='0' currently just silences the cart; it does
+	-- NOT fall back to Nextor, and must not - that path is unfinished here.
+	--
+	-- PLANNED (once the multirom design is complete):
+	--     SW(9)='0' -> boot Nextor, i.e. the FIRST ROM in Flash (0x000000)
+	--     SW(9)='1' -> boot the games (multirom, as implemented today)
+	-- The logic is left in the source rather than deleted so it can be
+	-- re-enabled for that; Multi_Cartridge_v2.1b also still carries both
+	-- paths, selectable via SW(5).
 	signal s_legacy_en   : std_logic;
 	signal s_mr_rd       : std_logic;                      -- genuine read of the selected game
 
