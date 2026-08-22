@@ -1,6 +1,27 @@
-# This repo stores files with their original (mostly CRLF) line endings.
-# Disable ALL end-of-line conversion so git never rewrites them, and the
-# working tree always compares byte-identical to the stored blobs.
-# Without this, core.autocrlf=true normalises CRLF->LF for comparison and
-# every text file in the repo shows as permanently "modified".
-* -text
+# Line endings, settled once and for all.
+#
+# text=auto: git stores LF in the repository and checks out the platform's
+# native endings (CRLF on Windows). This cooperates with core.autocrlf=true
+# instead of fighting it, so `git status` stays clean no matter which git
+# config a machine happens to have.
+#
+# A previous attempt used "* -text" (store bytes verbatim). That preserved
+# CRLF in the blobs, which conflicted with the system-level autocrlf=true and
+# made two git processes on the SAME repo disagree about whether files were
+# modified. text=auto is the conventional fix.
+* text=auto
+
+# Binary formats - never translate these, ever.
+*.rom  binary
+*.ROM  binary
+*.bin  binary
+*.sof  binary
+*.pof  binary
+*.jic  binary
+*.zip  binary
+*.pdf  binary
+*.step binary
+*.dat  binary
+*.qws  binary
+*.hex  binary
+*.dsk  binary

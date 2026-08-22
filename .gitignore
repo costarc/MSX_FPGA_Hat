@@ -23,3 +23,9 @@ output_files/
 
 # KiCad open-file lock markers
 *.lck
+
+# Local backups and scratch build outputs (large, not source)
+MSX_FPGA_Hat-backups/
+bisect_sof/
+*.qws
+work-obj08.cf
