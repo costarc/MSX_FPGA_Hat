@@ -10,7 +10,9 @@ SDMapper_Top.vhd's MULTIROM section.
     FLASH MAP
     ---------
     0x000000  128KB   System ROM (SDMAPPER.ROM) - fixed, boots Nextor
-    0x020000  384KB   reserved / free
+    0x020000  128KB   MapperTest diagnostic ROMs - 8 slots x 16KB
+                      (SW(9)=0, SW(8)=1, SW(2:0) selects)
+    0x040000  256KB   reserved / free
     0x080000  512KB   PLAIN games   - 16 slots x 32KB   -> game index 0-15
     0x100000 1024KB   ASCII16 games -  4 slots x 256KB  -> game index 16-19
     0x200000  512KB   Konami4 games -  4 slots x 128KB  -> game index 20-23
@@ -37,10 +39,12 @@ KB = 1024
 
 # --- region bases (must stay power-of-2 aligned; see note above) -------------
 SYSTEM_BASE  = 0x000000
+TEST_BASE    = 0x020000
 PLAIN_BASE   = 0x080000
 ASCII16_BASE = 0x100000
 KONAMI8_BASE = 0x200000
 
+TEST_SLOT    = 16 * KB      # MapperTest diagnostic ROMs
 PLAIN_SLOT   = 32 * KB      # every plain game gets a 32KB slot
 ASCII16_SLOT = 256 * KB
 KONAMI8_SLOT = 128 * KB
@@ -49,6 +53,21 @@ IMAGE_SIZE   = KONAMI8_BASE + 4 * KONAMI8_SLOT   # 0x280000 = 2.5MB
 
 # --- system ROM --------------------------------------------------------------
 SYSTEM_ROM = "SDMAPPER.ROM"
+
+# --- MapperTest diagnostic ROMs: SW(2:0) selects, with SW(9)=0 and SW(8)=1 --
+# These run with the RAM mapper and sub-slot expansion LIVE, which is the whole
+# point - they exercise the path the FPGA-side SRAM BIST cannot reach:
+# MSX bus -> A_MUX capture -> exp_slot subslot -> segment registers -> SRAM.
+TEST_ROMS = [
+    ("maptest.rom",      16 * KB),   # 0 - segment integrity + aliasing
+    ("testramrom.rom",   16 * KB),   # 1
+    ("testramrom2.rom",  16 * KB),   # 2
+    ("porttest.rom",     16 * KB),   # 3 - FCh-FFh segment registers
+    ("page0test.rom",    16 * KB),   # 4
+    ("soaktest.rom",     16 * KB),   # 5
+    ("soaktest_ei.rom",  16 * KB),   # 6
+    ("ffffstress.rom",   16 * KB),   # 7 - FFFF subslot-select stress
+]
 
 # --- plain (non-mapped) games: slot index -> (filename, expected size) --------
 # Slot index is what the FPGA's game-select switches choose.
@@ -156,6 +175,8 @@ def main():
         missing.append(f"system {SYSTEM_ROM}")
         sys_len = None
 
+    tests = place(image, TEST_BASE, TEST_SLOT, TEST_ROMS,
+                  rom_dirs, "test", missing, oversize)
     plain = place(image, PLAIN_BASE, PLAIN_SLOT, PLAIN_GAMES,
                   rom_dirs, "plain", missing, oversize)
     place(image, ASCII16_BASE, ASCII16_SLOT, ASCII16_GAMES,
@@ -171,6 +192,12 @@ def main():
           f"{len(image)//KB}KB)\n")
     print(f"  0x{SYSTEM_BASE:06X}  system  {SYSTEM_ROM}"
           f"{'' if sys_len else '   *** MISSING ***'}")
+    print()
+    print("  MAPPERTEST ROMS (SW(9)=0, SW(8)=1, SW(2:0) selects)")
+    print("  slot  flash      size   rom")
+    for idx, addr, name, expected, actual in tests:
+        mark = "" if actual is not None else "   *** MISSING ***"
+        print(f"  {idx:>4}  0x{addr:06X}  {expected//KB:>3}KB   {name}{mark}")
     print()
     print("  PLAIN GAMES (switch-selectable slots)")
     print("  slot  flash      size   rom")

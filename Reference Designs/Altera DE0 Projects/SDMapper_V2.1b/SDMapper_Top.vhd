@@ -1205,7 +1205,28 @@ begin
 	FL_WP_N <= '0';		-- write-protect not used (writes are permanently disabled below anyway)
 	FL_WE_N <= '1';		-- permanently disabled: never write to the shared Flash
 
-	s_flashbase <= x"000000";		-- FlashRAM address for the Nextor Operating System
+	-- ROM image selection in SDMapper mode (SW(9)='0'):
+	--   SW(8)='0' -> Nextor       : SDMAPPER.ROM at 0x000000
+	--   SW(8)='1' -> MapperTest   : SW(2:0) picks one of 8 diagnostic ROMs
+	--                               from the reserved region at 0x020000
+	--
+	-- The test ROMs (MapperTest/*.rom, 16KB each) verify the one path the
+	-- FPGA-side SRAM BIST cannot reach: MSX bus -> A_MUX address capture ->
+	-- exp_slot subslot -> mapper segment registers -> SRAM. The BIST passes
+	-- over all 512KB while Nextor still fails, so the fault lies somewhere in
+	-- that chain rather than in the memory itself.
+	--
+	-- Crucially they run with the RAM mapper and sub-slot expansion LIVE
+	-- (SDMapper mode), which the multirom game path cannot offer - games
+	-- deliberately switch all of that off.
+	--
+	-- Base = 0x020000 + n*16KB, i.e. bit 17 set with n in bits 16:14, so the
+	-- address is pure concatenation and needs no adder. Bank 0 of the ASCII16
+	-- decode maps flashbase+0..0x3FFF into page 1, which is exactly a plain
+	-- 16KB cartridge - the test ROMs never touch the bank registers.
+	s_flashbase <= "000000" & '1' & SW(2 downto 0) & "00000000000000"
+	                   when SW(8) = '1' else
+	               x"000000";		-- FlashRAM address for the Nextor Operating System
 
 	-- Checks the address being accessed. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
 	-- MULTIROM takes priority: selected game's Flash base plus the
