@@ -538,6 +538,41 @@ architecture bevioural of SDMapper_TOP is
 	-- FL_DQ unless the Flash is actually enabled and driving.
 	signal s_rom_rd_en : std_logic;
 
+	-- ------------------------------------------------------------------------
+	-- MULTIROM (SW(5)='1') - plain, non-mapped cartridge from Flash
+	-- ------------------------------------------------------------------------
+	-- Presents ONE switch-selected plain ROM straight on /SLTSL, with no
+	-- sub-slot expansion, no RAM mapper, no SD and no ASCII16 banking - i.e.
+	-- exactly what an ordinary 8/16/32KB cartridge looks like to the MSX.
+	-- With SW(5)='0' every one of those subsystems behaves exactly as before,
+	-- so normal Nextor/SDMapper operation is untouched.
+	--
+	-- Flash map (see Tools/build_multirom.py, which builds the image):
+	--     0x000000  128KB  system ROM (SDMAPPER.ROM / Nextor)
+	--     0x080000  512KB  PLAIN games - 16 slots x 32KB   <- this mode
+	--     0x100000 1024KB  ASCII16     -  4 slots x 256KB  (NOT YET DECODED)
+	--     0x200000  512KB  Konami8     -  4 slots x 128KB  (NOT YET DECODED)
+	--
+	-- Every region base is a power of two and every slot is a fixed power-of-
+	-- two size, so the Flash address is pure bit-concatenation - no adder:
+	--     s_rom_a = "0000" & '1' & idx(3:0) & offset(14:0)
+	-- where bit 19 is the 0x080000 region base. Smaller ROMs are zero-padded
+	-- into their 32KB slot by the build script, so the slot stride is uniform
+	-- regardless of the game's real size.
+	--
+	-- FUTURE: the ASCII16 and Konami8 regions above are already reserved and
+	-- populated by the build script, but NOT yet decoded here - this mode
+	-- currently handles plain ROMs only. Extending multirom to MegaROM
+	-- (ASCII16 / Konami8) mappers is the planned next step: it needs the
+	-- mapper's bank registers driven from the selected region instead of
+	-- s_flashbase, and a mapper-type selector alongside the game index.
+	signal s_multirom_en : std_logic;                      -- SW(5), qualified by SW(9)
+	signal s_mr_idx      : std_logic_vector(3 downto 0);   -- SW(3:0) = plain-game slot 0..15
+	signal s_mr_size     : std_logic_vector(1 downto 0);   -- 00=8KB, 01=16KB, 10=32KB
+	signal s_mr_offset   : std_logic_vector(14 downto 0);  -- byte offset inside the game
+	signal s_mr_inrange  : std_logic;                      -- s_A lands in this game's window
+	signal s_mr_rd       : std_logic;                      -- genuine read of this game
+
 	signal s_mem_page_seg  : std_logic_vector(4 downto 0);
 	signal s_sram_full_addr : std_logic_vector(18 downto 0);	-- '0' & segment(3:0) & s_A(13:0) = 256K, lower byte lane only
 
@@ -714,7 +749,9 @@ begin
 	-- a transient mismatched byte pairing reading as 0xFFFF and spuriously
 	-- triggering exp_slot's subslot-select write ("a hang, not a clean
 	-- failure"); this makes that impossible rather than order-dependent.
-	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' else '0';
+	-- MULTIROM: a plain cartridge is NOT sub-slot expanded, so the FFFF
+	-- subslot register must not exist at all in that mode.
+	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' and SW(5) = '0' else '0';
 	-- SYSTEMATIC s_addr_valid GATING (2026-08-16).
 	--
 	-- This board reconstructs the address from the time-multiplexed A_MUX, so
@@ -730,7 +767,11 @@ begin
 	-- s_sltsl_rom_en feeds s_cart_write_en (the ROM bank-switch qualifier),
 	-- which had no gate of its own. Gating at the source means every
 	-- downstream user inherits it rather than needing its own gate.
-	s_sltsl_rom_en <= (not slt_exp_n(0)) when SW(9) = '0' and s_addr_valid = '1' else '0';
+	-- MULTIROM: SW(5)='1' takes the whole ASCII16/Nextor ROM path out of
+	-- circuit (this also inhibits s_cart_write_en, so a plain game can never
+	-- trip the bank-switch registers); the multirom decode drives Flash
+	-- directly instead. See the MULTIROM signal declarations.
+	s_sltsl_rom_en <= (not slt_exp_n(0)) when SW(9) = '0' and SW(5) = '0' and s_addr_valid = '1' else '0';
 
 	-- RAM sub-slot arbitration: real sub-slot arbitration (via exp_slot,
 	-- gated behind an FFFF write selecting sub-slot 1) is only needed for
@@ -787,7 +828,9 @@ begin
 	--                in every page. Does not compete in the BIOS RAM search.
 	--   SW(6)='1' -> LEGACY V-8 workaround: RAM visible in pages 0/2/3 with no
 	--                subslot check (what this design did until now).
-	s_sltsl_ram_en <= '0' when s_sltsl_en = '0' or SW(8) = '1' or s_addr_valid = '0'  else
+	-- SW(5)='1' (MULTIROM) also forces the RAM mapper off: a plain cartridge
+	-- presents ROM only, with nothing else of ours on the bus.
+	s_sltsl_ram_en <= '0' when s_sltsl_en = '0' or SW(8) = '1' or SW(5) = '1' or s_addr_valid = '0'  else
 	                  '1' when slt_exp_n(1) = '0'                                     else	-- RAM subslot genuinely selected
 	                  '1' when SW(6) = '1' and s_A(15 downto 14) /= "01"              else	-- legacy V-8 workaround
 	                  '0';
@@ -828,6 +871,44 @@ begin
 	end process;
 
 	-- ------------------------------------------------------------------------
+	-- MULTIROM decode - see the signal declarations for the Flash map and the
+	-- note on extending this to MegaROM (ASCII16/Konami8) mappers.
+	-- ------------------------------------------------------------------------
+	s_multirom_en <= '1' when SW(9) = '0' and SW(5) = '1' else '0';
+	s_mr_idx      <= SW(3 downto 0);
+
+	-- Slot sizes must match Tools/build_multirom.py's PLAIN_GAMES table.
+	--   0-8  32KB : CASTLE ELEVATOR GALAGA GOONIES GULKAVE GYRODINE LODERUN ZANAC KMASTER
+	--   9-14 16KB : ROAD HRALLY AVALANCH PACMAN Rally-X kung-fu
+	--   15    8KB : FROGGER
+	s_mr_size <= "10" when s_mr_idx <= x"8" else
+	             "01" when s_mr_idx <= x"E" else
+	             "00";
+
+	-- Which MSX addresses this game answers. A plain cartridge starts at
+	-- 0x4000: 8KB reaches 0x5FFF, 16KB 0x7FFF, 32KB spans pages 1 AND 2 to
+	-- 0xBFFF. Anything outside stays untouched so other slots still work.
+	s_mr_inrange <= '1' when s_mr_size = "10" and (s_A(15 downto 14) = "01" or s_A(15 downto 14) = "10") else
+	                '1' when s_mr_size = "01" and  s_A(15 downto 14) = "01"  else
+	                '1' when s_mr_size = "00" and  s_A(15 downto 13) = "010" else
+	                '0';
+
+	-- Offset inside the game. For 32KB, s_A(15) distinguishes page 1 (0x4000-
+	-- 0x7FFF -> 0x0000-0x3FFF) from page 2 (0x8000-0xBFFF -> 0x4000-0x7FFF),
+	-- so s_A(15) & s_A(13 downto 0) yields a flat 0-32767 offset directly.
+	s_mr_offset <= (s_A(15) & s_A(13 downto 0)) when s_mr_size = "10" else
+	               ('0'     & s_A(13 downto 0)) when s_mr_size = "01" else
+	               ("00"    & s_A(12 downto 0));
+
+	s_mr_rd <= '1' when s_multirom_en = '1'
+	                and SLTSL_n      = '0'
+	                and s_addr_valid = '1'
+	                and MREQ_n       = '0'
+	                and RD_n         = '0'
+	                and s_mr_inrange = '1'
+	           else '0';
+
+	-- ------------------------------------------------------------------------
 	-- ROM sub-slot: ASCII16 Flash boot (Nextor, flashbase 0x000000). DE0
 	-- onboard parallel Flash is 16-bit forced into 8-bit "byte mode"
 	-- (FL_BYTE_N='0'): FL_ADDR carries bits [22:1], the LSB (A-1) goes out on
@@ -842,13 +923,17 @@ begin
 	s_flashbase <= x"000000";		-- FlashRAM address for the Nextor Operating System
 
 	-- Checks the address being accessed. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
-	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(2 downto 0) & s_A(13 downto 0)) when s_sltsl_rom_en = '1' and (s_A(15 downto 14) = "01" or s_A(15 downto 14) = "11") else		-- Bank1
+	-- MULTIROM takes priority: plain game at 0x080000 + idx*32KB + offset,
+	-- built entirely by concatenation (bit 19 = the 0x080000 region base).
+	s_rom_a(23 downto 0) <= ("0000" & '1' & s_mr_idx & s_mr_offset)                     when s_multirom_en = '1' else
+	                        s_flashbase + (rom_bank1_q(2 downto 0) & s_A(13 downto 0)) when s_sltsl_rom_en = '1' and (s_A(15 downto 14) = "01" or s_A(15 downto 14) = "11") else		-- Bank1
                            s_flashbase + (rom_bank2_q(3 downto 0) & s_A(13 downto 0)) when s_sltsl_rom_en = '1' and (s_A(15 downto 14) = "10" or s_A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
 
 	-- Excludes the SD card register window, which lives inside bank 1's
 	-- address range - Flash must not drive its outputs while it's accessed.
 	FL_CE_N <=
+		'0'	when s_mr_rd = '1'																								else		-- MULTIROM plain game
 		'0'	when s_A(15 downto 14) = "01" and s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' and s_addr_valid = '1'	else
 		'0'	when s_A(15 downto 14) = "10" and s_sltsl_rom_en = '1' and rom_bank2_q(3) = '1' and s_addr_valid = '1'					else		-- Only if bank > 7
 		'1';
@@ -875,7 +960,8 @@ begin
 	-- after a sector read) while Nextor receives garbage and can never mount.
 	-- Keeping this term costs nothing and preserves the manual fix's intent
 	-- (no Flash/Mapper contention).
-	s_rom_rd_en <= '1' when s_addr_valid = '1'
+	s_rom_rd_en <= '1' when s_mr_rd = '1' else		-- MULTIROM plain game (D-bus mux picks FL_DQ)
+	               '1' when s_addr_valid = '1'
                     and s_sltsl_rom_en = '1'
                     and RD_n = '0'
                     and s_sdbridge_cs_s = '0'
@@ -1104,7 +1190,9 @@ begin
 	-- s_addr_valid gate: the port number comes from s_A(7 downto 2), which is
 	-- part of the same reconstructed address - a chimera can transiently read
 	-- as a mapper port access. See the gating note at s_sltsl_rom_en.
-	s_io_mapper_en    <= '1' when SW(9) = '0' and SW(8) = '0' and s_addr_valid = '1' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
+	-- SW(5)='1' (MULTIROM) also removes the mapper I/O ports (FCh-FFh): a
+	-- plain cartridge must not answer any I/O port at all.
+	s_io_mapper_en    <= '1' when SW(9) = '0' and SW(8) = '0' and SW(5) = '0' and s_addr_valid = '1' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
 
 	s_io_mapper_rd_en <= '1' when s_io_mapper_en = '1' and RD_n = '0' else '0';
 	s_io_mapper_wr_en <= '1' when s_io_mapper_en = '1' and WR_n = '0' else '0';
