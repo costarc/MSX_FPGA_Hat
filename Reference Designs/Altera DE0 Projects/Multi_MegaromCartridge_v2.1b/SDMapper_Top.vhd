@@ -539,15 +539,19 @@ architecture bevioural of SDMapper_TOP is
 	signal s_rom_rd_en : std_logic;
 
 	-- ------------------------------------------------------------------------
-	-- MULTIROM (SW(5)='1') - plain, non-mapped cartridge from Flash
+	-- MULTIROM (SW(9)='1') - switch-selected cartridge from Flash
 	--
-	-- *** VALIDATED ON REAL HARDWARE (2026-08-22) ***
-	-- All 16 plain-ROM slots play without glitches. This also retroactively
-	-- confirms 7fcb3c3 as a genuinely good base (it had only been inferred
-	-- from git history, never tested), and shows the PCB v2.1b bus
-	-- interfacing is sound end to end: address capture, /SLTSL gating,
-	-- Flash read and D-bus drive all work under sustained real gameplay
-	-- across 8KB, 16KB and 32KB games.
+	-- *** VALIDATED ON REAL HARDWARE (2026-08-22) - see README.md ***
+	-- All 24 game slots play: plain 8/16/32KB, ASCII16 and Konami4 MegaROMs.
+	-- Confirmed on three machines - Zemix BR, Panasonic FS-A1F and Canon
+	-- V-25 (the V-25 cannot display MSX2 titles needing more than its 64KB
+	-- VRAM, which is a machine limitation, not a cartridge fault).
+	--
+	-- This also retroactively confirms 7fcb3c3 as a genuinely good base (it
+	-- had only been inferred from git history, never tested), and shows the
+	-- PCB v2.1b bus interfacing is sound end to end: address capture,
+	-- /SLTSL gating, Flash read and D-bus drive all hold up under sustained
+	-- real gameplay, including MegaROM bank switching.
 	--
 	-- Worth contrasting with the plain_rom_simulator branch, which chased
 	-- intermittent corruption for a long session with the SAME bus logic but
