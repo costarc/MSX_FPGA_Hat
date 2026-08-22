@@ -1109,13 +1109,26 @@ begin
 				s_a8_bank1_q   <= (others => '0');
 				s_a8_bank2_q   <= (others => '0');
 				s_a8_bank3_q   <= (others => '0');
-				s_k4_bank1_q   <= (others => '0');
-				s_k4_bank2_q   <= (others => '0');
-				s_k4_bank3_q   <= (others => '0');
-				s_kscc_bank0_q <= (others => '0');
-				s_kscc_bank1_q <= (others => '0');
-				s_kscc_bank2_q <= (others => '0');
-				s_kscc_bank3_q <= (others => '0');
+				-- KONAMI RESET DEFAULTS ARE NOT ZERO (bug fix - USAS hung at
+				-- the Konami logo while MGEAR, same mapper and size, ran
+				-- fine). Real Konami mappers - and openMSX's RomKonami.cc /
+				-- RomKonamiSCC.cc, which both do
+				--     for (i : xrange(2,6)) bankSwitch(i, i-2);
+				-- - power up with the ROM's first 32KB mapped LINEARLY:
+				-- segments 0,1,2,3 across 0x4000/0x6000/0x8000/0xA000.
+				-- Resetting every register to 0 instead (as inherited from
+				-- MegaROM_ASCII16) makes segment 0 appear FOUR times, so any
+				-- game that relies on the power-on layout for a region it
+				-- has not explicitly banked yet reads the wrong code. Games
+				-- that set every bank themselves before use (MGEAR) are
+				-- unaffected, which is exactly the observed split.
+				s_k4_bank1_q   <= x"01";	-- 0x6000-0x7FFF (0x4000-0x5FFF is fixed segment 0)
+				s_k4_bank2_q   <= x"02";	-- 0x8000-0x9FFF
+				s_k4_bank3_q   <= x"03";	-- 0xA000-0xBFFF
+				s_kscc_bank0_q <= x"00";	-- 0x4000-0x5FFF (switchable on SCC, unlike Konami4)
+				s_kscc_bank1_q <= x"01";	-- 0x6000-0x7FFF
+				s_kscc_bank2_q <= x"02";	-- 0x8000-0x9FFF
+				s_kscc_bank3_q <= x"03";	-- 0xA000-0xBFFF
 			elsif s_multirom_en = '1' and s_cart_write_qualified = '1' then
 				case s_mr_mapper is
 					when "010" =>	-- ASCII16
