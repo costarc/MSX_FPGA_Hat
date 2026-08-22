@@ -11,9 +11,12 @@ SDMapper_Top.vhd's MULTIROM section.
     ---------
     0x000000  128KB   System ROM (SDMAPPER.ROM) - fixed, boots Nextor
     0x020000  384KB   reserved / free
-    0x080000  512KB   PLAIN games   - 16 slots x 32KB   <- SW selects slot
-    0x100000 1024KB   ASCII16 games -  4 slots x 256KB  (not yet implemented)
-    0x200000  512KB   Konami8 games -  4 slots x 128KB  (not yet implemented)
+    0x080000  512KB   PLAIN games   - 16 slots x 32KB   -> game index 0-15
+    0x100000 1024KB   ASCII16 games -  4 slots x 256KB  -> game index 16-19
+    0x200000  512KB   Konami4 games -  4 slots x 128KB  -> game index 20-23
+
+The FPGA's game table (SDMapper_Top.vhd, MULTIROM section) must match these
+bases exactly - SW(4:0) selects the index shown above.
 
 Smaller ROMs are zero-padded up to their slot size, so a 16KB or 8KB game still
 occupies one 32KB plain slot. That wastes a little Flash (4MB device, ~2.5MB
@@ -69,7 +72,7 @@ PLAIN_GAMES = [
     ("FROGGER.ROM",   8 * KB),   # 15
 ]
 
-# --- mapped games: reserved, not yet decoded by the FPGA ---------------------
+# --- mapped games: game index 16-19 (ASCII16) and 20-23 (Konami4) ------------
 ASCII16_GAMES = [
     ("XEVIOUS.ROM",  256 * KB),
     ("FANZONE2.ROM", 256 * KB),
