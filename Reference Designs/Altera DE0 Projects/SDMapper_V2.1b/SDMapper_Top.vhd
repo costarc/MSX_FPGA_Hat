@@ -586,12 +586,12 @@ architecture bevioural of SDMapper_TOP is
 	-- (ASCII16 / Konami8) mappers is the planned next step: it needs the
 	-- mapper's bank registers driven from the selected region instead of
 	-- s_flashbase, and a mapper-type selector alongside the game index.
-	-- SW(9) IS the multirom on/off switch on this branch:
-	--   SW(9)='1' -> multirom cartridge active
-	--   SW(9)='0' -> completely silent; /SLTSL is ignored and the MSX
-	--                bypasses our slot entirely, as if no cart were fitted
-	-- NOTE this INVERTS the SDMapper convention this file was inherited from,
-	-- where SW(9)='0' enabled the cart and SW(9)='1' silenced it.
+	-- SW(9) selects WHAT the cartridge presents. It is no longer an on/off
+	-- switch - the cart responds in both positions:
+	--   SW(9)='0' -> Nextor: SDMAPPER.ROM at Flash 0x000000 (ASCII16, 128KB)
+	--   SW(9)='1' -> games:  multirom, game index on SW(4:0)
+	-- Both go through the SAME datapath (Flash read, D-bus drive, mapper
+	-- decode, bank registers); only the base address and mapper type differ.
 	signal s_multirom_en : std_logic;
 	signal s_mr_idx      : std_logic_vector(4 downto 0);   -- SW(4:0) = game index 0..23
 
@@ -825,7 +825,12 @@ begin
 	-- ------------------------------------------------------------------------
 	-- Slot expansion
 	-- ------------------------------------------------------------------------
-	s_sltsl_en    <= (not SLTSL_n) when SW(9) = '1' else '0';		-- INVERTED vs SDMapper: SW(9)='1' = multirom active, '0' = silent		-- SDMapper (Nextor+Mapper) enabled only when SW(9)='0' - see SW(9) note above
+	-- The cartridge now responds in BOTH SW(9) positions - there is no
+	-- silent mode any more. SW(9) selects WHAT we present, not whether we
+	-- are present at all:
+	--     SW(9)='0' -> Nextor  (SDMAPPER.ROM at Flash 0x000000, ASCII16)
+	--     SW(9)='1' -> games   (multirom, game index on SW(4:0))
+	s_sltsl_en    <= not SLTSL_n;
 	-- s_addr_valid gate: see its declaration. The pre-existing note in the
 	-- address-capture section already identified s_ffff_slt as vulnerable to
 	-- a transient mismatched byte pairing reading as 0xFFFF and spuriously
@@ -956,8 +961,15 @@ begin
 	-- MULTIROM decode - see the signal declarations for the Flash map and the
 	-- note on extending this to MegaROM (ASCII16/Konami8) mappers.
 	-- ------------------------------------------------------------------------
-	s_legacy_en   <= '0';		-- see declaration: Nextor/RAM/SD path disabled on this branch
-	s_multirom_en <= '1' when SW(9) = '1' else '0';
+	-- s_legacy_en stays '0': the ORIGINAL SDMapper ROM path (sub-slot
+	-- expanded, its own ASCII16 banking, SD register window, RAM mapper) is
+	-- still switched out. Nextor is booted through the multirom datapath
+	-- instead - same Flash read, same D-bus drive, same bank registers,
+	-- just pointed at 0x000000 with the ASCII16 mapper. Re-enabling the
+	-- full legacy path (SD card + RAM mapper, which Nextor needs to be
+	-- genuinely useful rather than merely booting) is the next step.
+	s_legacy_en   <= '0';
+	s_multirom_en <= '1';		-- ROM datapath active in both SW(9) positions
 	s_mr_idx      <= SW(4 downto 0);
 
 	-- Game table: index -> Flash base + mapper type. Bases must match
@@ -971,8 +983,16 @@ begin
 	-- MegaROM_ASCII16/MSX_FPGA_Top.vhd, which notes them as confirmed by web
 	-- search rather than assumed - all four Konami titles are Konami4
 	-- (no SCC).
-	process(s_mr_idx)
+	-- SW(9)='0' overrides the game table entirely and points the ROM at the
+	-- system area: SDMAPPER.ROM lives at Flash 0x000000 and is a 128KB
+	-- ASCII16 MegaROM, which the mapper decode above already handles - so
+	-- this needs no new datapath, only a different base and mapper type.
+	process(s_mr_idx, SW)
 	begin
+		if SW(9) = '0' then
+			s_mr_flashbase <= x"000000";	-- SDMAPPER.ROM (Nextor kernel)
+			s_mr_mapper    <= "010";		-- ASCII16, 128KB = 8 x 16KB banks
+		else
 		case s_mr_idx is
 			-- plain games -------------------------------------------------
 			when "00000" => s_mr_flashbase <= x"080000"; s_mr_mapper <= "001";	-- [0]  CASTLE   32KB
@@ -1004,6 +1024,7 @@ begin
 			-- unused codes 24-31 fall back to slot 0 -----------------------
 			when others  => s_mr_flashbase <= x"080000"; s_mr_mapper <= "001";
 		end case;
+		end if;
 	end process;
 
 	-- Per-mapper address decode: for the page(s) this mapper actually maps at
