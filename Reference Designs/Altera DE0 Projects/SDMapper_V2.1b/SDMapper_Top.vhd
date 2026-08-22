@@ -1111,12 +1111,19 @@ begin
 		end case;
 	end process;
 
+	-- s_sdbridge_cs_s = '0' is NOT optional: the SD register window lives
+	-- INSIDE the ROM address space (0x7B0x in ASCII16 bank 7). Without this
+	-- term the Flash would drive D there too and win the mux, so the CPU
+	-- would read ROM bytes where SD registers belong - see the note at
+	-- s_sdbridge_cs_s. It also keeps FL_CE_N deasserted for that window,
+	-- since FL_CE_N is gated on s_mr_rd.
 	s_mr_rd <= '1' when s_multirom_en = '1'
 	                and SLTSL_n      = '0'
 	                and s_addr_valid = '1'
 	                and MREQ_n       = '0'
 	                and RD_n         = '0'
 	                and s_mr_active  = '1'
+	                and s_sdbridge_cs_s = '0'
 	           else '0';
 
 	-- Bank-switch register writes. Re-latches D CONTINUOUSLY while the write
@@ -1293,11 +1300,34 @@ begin
 	-- Flash ROM can host a standalone mapper test with nothing else of ours on
 	-- the bus. The window lives inside ROM address space (7B00-7B0F in bank 7),
 	-- so removing it guarantees the test ROM cannot trip over it.
+	-- NEXTOR-VIA-MULTIROM (2026-08-22): the second branch below is what makes
+	-- the SD card reachable when Nextor is booted through the multirom
+	-- datapath (SW(9)='0'). The original first branch is gated on
+	-- s_sltsl_rom_en, which is dead while s_legacy_en='0', so without this
+	-- the window simply did not exist - and because the multirom Flash read
+	-- covers the whole ASCII16 page-1 window INCLUDING 0x7B0x, reads of the
+	-- SD status registers were being answered by Flash ROM bytes instead.
+	-- Nextor then reported "card not detected" at boot, yet CALL FDISK
+	-- happily showed a bogus 16GB card (it was interpreting ROM content as
+	-- register values) and partition creation failed. This is precisely the
+	-- failure the 2026-08-15 note further up warns about.
+	--
+	-- Bank check: the original used rom_bank1_q="111" (a 3-bit register).
+	-- The multirom ASCII16 page-1 register s_a16_bank0_q is 8 bits wide, so
+	-- the low 3 bits are compared to keep identical behaviour for the 0-7
+	-- bank numbers this 128KB kernel actually uses.
 	s_sdbridge_cs_s <= '1' when SW(7) = '0' and s_addr_valid = '1'
                         and s_sltsl_rom_en = '1' 
                         and rom_bank1_q = "111" 
                         and s_A(15 downto 8) = x"7B" 
                         and s_A(7 downto 4) = x"0"
+                   else
+	                   '1' when SW(7) = '0' and s_addr_valid = '1'
+	                        and s_multirom_en = '1' and SW(9) = '0'
+	                        and SLTSL_n = '0'
+	                        and s_a16_bank0_q(2 downto 0) = "111"
+	                        and s_A(15 downto 8) = x"7B"
+	                        and s_A(7 downto 4) = x"0"
                    else '0';
 	-- ------------------------------------------------------------------------
 	-- Shared glitch-filtered write qualifier for ROM sub-slot register
