@@ -1,0 +1,6 @@
+# This repo stores files with their original (mostly CRLF) line endings.
+# Disable ALL end-of-line conversion so git never rewrites them, and the
+# working tree always compares byte-identical to the stored blobs.
+# Without this, core.autocrlf=true normalises CRLF->LF for comparison and
+# every text file in the repo shows as permanently "modified".
+* -text
