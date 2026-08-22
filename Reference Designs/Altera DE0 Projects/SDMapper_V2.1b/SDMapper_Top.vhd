@@ -540,6 +540,22 @@ architecture bevioural of SDMapper_TOP is
 
 	-- ------------------------------------------------------------------------
 	-- MULTIROM (SW(5)='1') - plain, non-mapped cartridge from Flash
+	--
+	-- *** VALIDATED ON REAL HARDWARE (2026-08-22) ***
+	-- All 16 plain-ROM slots play without glitches. This also retroactively
+	-- confirms 7fcb3c3 as a genuinely good base (it had only been inferred
+	-- from git history, never tested), and shows the PCB v2.1b bus
+	-- interfacing is sound end to end: address capture, /SLTSL gating,
+	-- Flash read and D-bus drive all work under sustained real gameplay
+	-- across 8KB, 16KB and 32KB games.
+	--
+	-- Worth contrasting with the plain_rom_simulator branch, which chased
+	-- intermittent corruption for a long session with the SAME bus logic but
+	-- the ROM held in FPGA fabric: a 16KB combinational lookup synthesized to
+	-- ~12,700 LEs (83% of the device) of multiplexer tree on a path TimeQuest
+	-- never constrained. Reading real Flash instead costs ~19 LEs on top of
+	-- the base design and is rock solid. The storage mechanism, not the bus
+	-- interfacing, was the difference.
 	-- ------------------------------------------------------------------------
 	-- Presents ONE switch-selected plain ROM straight on /SLTSL, with no
 	-- sub-slot expansion, no RAM mapper, no SD and no ASCII16 banking - i.e.
