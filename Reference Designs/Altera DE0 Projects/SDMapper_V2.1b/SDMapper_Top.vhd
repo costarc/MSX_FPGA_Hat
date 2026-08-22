@@ -961,15 +961,17 @@ begin
 	-- MULTIROM decode - see the signal declarations for the Flash map and the
 	-- note on extending this to MegaROM (ASCII16/Konami8) mappers.
 	-- ------------------------------------------------------------------------
-	-- s_legacy_en stays '0': the ORIGINAL SDMapper ROM path (sub-slot
-	-- expanded, its own ASCII16 banking, SD register window, RAM mapper) is
-	-- still switched out. Nextor is booted through the multirom datapath
-	-- instead - same Flash read, same D-bus drive, same bank registers,
-	-- just pointed at 0x000000 with the ASCII16 mapper. Re-enabling the
-	-- full legacy path (SD card + RAM mapper, which Nextor needs to be
-	-- genuinely useful rather than merely booting) is the next step.
-	s_legacy_en   <= '0';
-	s_multirom_en <= '1';		-- ROM datapath active in both SW(9) positions
+	-- SW(9) picks ONE of two complete, mutually exclusive designs:
+	--   '0' -> the ORIGINAL SDMapper: Nextor at Flash 0x000000 with its own
+	--          ASCII16 banking, the SD register window, the SRAM-backed
+	--          Memory Mapper, and sub-slot expansion. Nextor needs a RAM
+	--          mapper to run at all, which is why booting the kernel alone
+	--          was never going to be enough.
+	--   '1' -> multirom: switch-selected games from Flash, no RAM/SD/subslot.
+	-- They are never active together, so neither can drive D, FL_CE_N or the
+	-- transceiver while the other owns the bus.
+	s_legacy_en   <= '1' when SW(9) = '0' else '0';
+	s_multirom_en <= '1' when SW(9) = '1' else '0';
 	s_mr_idx      <= SW(4 downto 0);
 
 	-- Game table: index -> Flash base + mapper type. Bases must match
@@ -983,16 +985,8 @@ begin
 	-- MegaROM_ASCII16/MSX_FPGA_Top.vhd, which notes them as confirmed by web
 	-- search rather than assumed - all four Konami titles are Konami4
 	-- (no SCC).
-	-- SW(9)='0' overrides the game table entirely and points the ROM at the
-	-- system area: SDMAPPER.ROM lives at Flash 0x000000 and is a 128KB
-	-- ASCII16 MegaROM, which the mapper decode above already handles - so
-	-- this needs no new datapath, only a different base and mapper type.
-	process(s_mr_idx, SW)
+	process(s_mr_idx)
 	begin
-		if SW(9) = '0' then
-			s_mr_flashbase <= x"000000";	-- SDMAPPER.ROM (Nextor kernel)
-			s_mr_mapper    <= "010";		-- ASCII16, 128KB = 8 x 16KB banks
-		else
 		case s_mr_idx is
 			-- plain games -------------------------------------------------
 			when "00000" => s_mr_flashbase <= x"080000"; s_mr_mapper <= "001";	-- [0]  CASTLE   32KB
@@ -1024,7 +1018,6 @@ begin
 			-- unused codes 24-31 fall back to slot 0 -----------------------
 			when others  => s_mr_flashbase <= x"080000"; s_mr_mapper <= "001";
 		end case;
-		end if;
 	end process;
 
 	-- Per-mapper address decode: for the page(s) this mapper actually maps at
@@ -1300,34 +1293,17 @@ begin
 	-- Flash ROM can host a standalone mapper test with nothing else of ours on
 	-- the bus. The window lives inside ROM address space (7B00-7B0F in bank 7),
 	-- so removing it guarantees the test ROM cannot trip over it.
-	-- NEXTOR-VIA-MULTIROM (2026-08-22): the second branch below is what makes
-	-- the SD card reachable when Nextor is booted through the multirom
-	-- datapath (SW(9)='0'). The original first branch is gated on
-	-- s_sltsl_rom_en, which is dead while s_legacy_en='0', so without this
-	-- the window simply did not exist - and because the multirom Flash read
-	-- covers the whole ASCII16 page-1 window INCLUDING 0x7B0x, reads of the
-	-- SD status registers were being answered by Flash ROM bytes instead.
-	-- Nextor then reported "card not detected" at boot, yet CALL FDISK
-	-- happily showed a bogus 16GB card (it was interpreting ROM content as
-	-- register values) and partition creation failed. This is precisely the
-	-- failure the 2026-08-15 note further up warns about.
-	--
-	-- Bank check: the original used rom_bank1_q="111" (a 3-bit register).
-	-- The multirom ASCII16 page-1 register s_a16_bank0_q is 8 bits wide, so
-	-- the low 3 bits are compared to keep identical behaviour for the 0-7
-	-- bank numbers this 128KB kernel actually uses.
+	-- This window is live again because SW(9)='0' now enables the full
+	-- legacy path (s_sltsl_rom_en). While it was disabled, reads of the SD
+	-- status registers fell through to Flash ROM - Nextor reported "card
+	-- not detected" yet CALL FDISK showed a bogus 16GB card, because it was
+	-- interpreting ROM bytes as register values. Exactly the failure the
+	-- 2026-08-15 note above warns about.
 	s_sdbridge_cs_s <= '1' when SW(7) = '0' and s_addr_valid = '1'
                         and s_sltsl_rom_en = '1' 
                         and rom_bank1_q = "111" 
                         and s_A(15 downto 8) = x"7B" 
                         and s_A(7 downto 4) = x"0"
-                   else
-	                   '1' when SW(7) = '0' and s_addr_valid = '1'
-	                        and s_multirom_en = '1' and SW(9) = '0'
-	                        and SLTSL_n = '0'
-	                        and s_a16_bank0_q(2 downto 0) = "111"
-	                        and s_A(15 downto 8) = x"7B"
-	                        and s_A(7 downto 4) = x"0"
                    else '0';
 	-- ------------------------------------------------------------------------
 	-- Shared glitch-filtered write qualifier for ROM sub-slot register
