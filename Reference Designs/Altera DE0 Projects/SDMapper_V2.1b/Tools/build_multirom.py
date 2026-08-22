@@ -10,9 +10,9 @@ SDMapper_Top.vhd's MULTIROM section.
     FLASH MAP
     ---------
     0x000000  128KB   System ROM (SDMAPPER.ROM) - fixed, boots Nextor
-    0x020000  128KB   MapperTest diagnostic ROMs - 8 slots x 16KB
-                      (SW(9)=0, SW(8)=1, SW(2:0) selects)
-    0x040000  256KB   reserved / free
+    0x020000  128KB   reserved / free
+    0x040000  256KB   MapperTest diagnostic ROMs - 16 slots x 16KB
+                      (SW(9)=0, SW(8)=1, SW(3:0) selects)
     0x080000  512KB   PLAIN games   - 16 slots x 32KB   -> game index 0-15
     0x100000 1024KB   ASCII16 games -  4 slots x 256KB  -> game index 16-19
     0x200000  512KB   Konami4 games -  4 slots x 128KB  -> game index 20-23
@@ -39,7 +39,7 @@ KB = 1024
 
 # --- region bases (must stay power-of-2 aligned; see note above) -------------
 SYSTEM_BASE  = 0x000000
-TEST_BASE    = 0x020000
+TEST_BASE    = 0x040000
 PLAIN_BASE   = 0x080000
 ASCII16_BASE = 0x100000
 KONAMI8_BASE = 0x200000
@@ -67,6 +67,11 @@ TEST_ROMS = [
     ("soaktest.rom",     16 * KB),   # 5
     ("soaktest_ei.rom",  16 * KB),   # 6
     ("ffffstress.rom",   16 * KB),   # 7 - FFFF subslot-select stress
+    ("testmapper.rom",   16 * KB),   # 8 - empirical mapper SIZE detection +
+                                     #     00/FF/AA/55 patterns over every
+                                     #     detected segment. Port FEh / page 2
+                                     #     only, so it is safe on any machine
+                                     #     and also sizes third-party mappers.
 ]
 
 # --- plain (non-mapped) games: slot index -> (filename, expected size) --------
@@ -193,7 +198,7 @@ def main():
     print(f"  0x{SYSTEM_BASE:06X}  system  {SYSTEM_ROM}"
           f"{'' if sys_len else '   *** MISSING ***'}")
     print()
-    print("  MAPPERTEST ROMS (SW(9)=0, SW(8)=1, SW(2:0) selects)")
+    print("  MAPPERTEST ROMS (SW(9)=0, SW(8)=1, SW(3:0) selects)")
     print("  slot  flash      size   rom")
     for idx, addr, name, expected, actual in tests:
         mark = "" if actual is not None else "   *** MISSING ***"
