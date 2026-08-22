@@ -98,8 +98,11 @@
 --                      this mode, freeing it up for a future MegaROM
 --                      emulation core (see MegaROM_ASCII16/MSX_FPGA_Top.vhd)
 --                      to be merged into this same file and taken live here.
---   SW(8)    - Unused/free (RAM/mapper is gated by SW(9) alone, same as ROM
---              and SD - see SW(9) above).
+--   SW(8)    - Unused/free. (Briefly used as a RAM-mapper disable gate;
+--              removed 2026-08-22 so the mapper always tracks SW(9).)
+--   SW(6)    - Unused/free. (Briefly used for a Canon V-8 workaround that
+--              exposed RAM without a sub-slot check; removed 2026-08-22 as
+--              non-compliant.)
 --   SW(2)    - SD card 1 (onboard microSD) write-protect flag, reported to
 --              software via the status register.
 --   SW(0)    - SD card 1 (onboard microSD) present flag. This board has no
@@ -879,15 +882,9 @@ begin
 	-- routing only ever reaches this cartridge via page 2, exactly the page
 	-- this fix stops gating behind a sub-slot switch nothing was issuing).
 	--
-	-- DIAGNOSTIC GATE (2026-08-13): SW(8)='1' disables the RAM mapper
-	-- entirely, same bisection purpose as the SD gate below (see
-	-- s_sdbridge_cs_s) - SW(9)='1' proved the machine is stable with
-	-- ROM+RAM+SD all off together, but not which one is at fault. Paired
-	-- with SW(7) (SD) this covers every combination in one build:
-	--   SW(9)=1            -> everything off (known-stable baseline)
-	--   SW(9)=0,SW(8)=1     -> ROM+SD only, mapper off
-	--   SW(9)=0,SW(7)=1     -> ROM+RAM only, SD off
-	--   SW(9)=0,SW(8)=SW(7)=0 -> normal operation (unchanged from before)
+	-- (The SW(8) diagnostic gate that used to disable the RAM mapper was
+	-- removed 2026-08-22 - see the note at s_sltsl_ram_en below. SW(7) still
+	-- isolates the SD register window.)
 	-- SUBSLOT COMPLIANCE (2026-08-15, real hardware on a Canon V-25).
 	--
 	-- Evidence: SW(9)='1' (cart silent) gives a CLEAN boot logo; SW(9)='0'
@@ -910,16 +907,15 @@ begin
 	-- unreachable. It is NOT standard: a compliant cartridge only presents its
 	-- RAM when its own subslot is selected.
 	--
-	-- SW(6) selects between them, so this can be tested rather than assumed:
-	--   SW(6)='0' -> STANDARD: RAM only when subslot 1 is actually selected,
-	--                in every page. Does not compete in the BIOS RAM search.
-	--   SW(6)='1' -> LEGACY V-8 workaround: RAM visible in pages 0/2/3 with no
-	--                subslot check (what this design did until now).
-	-- SW(5)='1' (MULTIROM) also forces the RAM mapper off: a plain cartridge
-	-- presents ROM only, with nothing else of ours on the bus.
-	s_sltsl_ram_en <= '0' when s_legacy_en = '0' or s_sltsl_en = '0' or SW(8) = '1' or s_addr_valid = '0'  else
-	                  '1' when slt_exp_n(1) = '0'                                     else	-- RAM subslot genuinely selected
-	                  '1' when SW(6) = '1' and s_A(15 downto 14) /= "01"              else	-- legacy V-8 workaround
+	-- SIMPLIFIED (2026-08-22): the SW(6) legacy V-8 branch and the SW(8)
+	-- disable gate are both gone. Only the STANDARD, spec-compliant
+	-- behaviour remains - the RAM appears solely when its own subslot is
+	-- selected, in every page. Removing them takes two variables out of the
+	-- mapper investigation; the V-8 workaround in particular made the
+	-- cartridge non-compliant (RAM visible with no subslot check), which is
+	-- not something we want to debug through.
+	s_sltsl_ram_en <= '0' when s_legacy_en = '0' or s_sltsl_en = '0' or s_addr_valid = '0' else
+	                  '1' when slt_exp_n(1) = '0'                                          else	-- RAM subslot genuinely selected
 	                  '0';
 
 	s_reset_n     <= not s_reset;
@@ -1269,14 +1265,11 @@ begin
 	-- entirely, leaving ROM boot and the RAM mapper fully live. Purpose: the
 	-- machine is stable with SW(9)='1', but that gates ROM, RAM and SD
 	-- together, so it does not say WHICH subsystem destabilizes the bus.
-	-- Paired with SW(8) (mapper, see s_sltsl_ram_en above) this covers every
-	-- combination in one build without needing the mapper switched off on
-	-- the V-8 (only 16KB onboard RAM - Nextor genuinely needs the cart's
-	-- mapper there):
-	--   SW(9)=1              -> everything off (known-stable baseline)
-	--   SW(9)=0,SW(8)=1       -> ROM+SD only, mapper off
-	--   SW(9)=0,SW(7)=1       -> ROM+RAM only, SD off
-	--   SW(9)=0,SW(8)=SW(7)=0 -> normal operation (unchanged from before)
+	-- The companion SW(8) mapper gate was removed 2026-08-22, so the
+	-- remaining combinations are:
+	--   SW(9)=1        -> multirom games; ROM+RAM+SD all inert
+	--   SW(9)=0,SW(7)=1 -> SDMapper with ROM+RAM live, SD window off
+	--   SW(9)=0,SW(7)=0 -> full SDMapper operation
 	-- With SW(7)='1': no WAIT_n can ever be asserted, and 7B00-7B08 stops
 	-- aliasing over ROM space (those addresses fall through to Flash like
 	-- any other ROM byte).
@@ -1478,26 +1471,23 @@ begin
 	-- RAM sub-slot: standard MSX Memory Mapper (512KB) - logic ported
 	-- verbatim from MemoryMapper/MSX_FPGA_Top.vhd (see declarations above).
 	-- ------------------------------------------------------------------------
-	-- SW(8) gates the mapper I/O ports as well as the RAM (2026-08-16).
+	-- The mapper ports track the RAM exactly: both are alive whenever the
+	-- legacy (SDMapper) mode is selected and inert otherwise. The old SW(8)
+	-- gate is gone (2026-08-22) - keeping ports and RAM in lockstep is the
+	-- important property, since answering FCh-FFh with no RAM behind it
+	-- advertises a memory mapper that does not exist: DOS probes the ports,
+	-- concludes a mapper is present, sizes it, then writes into nothing.
 	--
-	-- Taken from Belavenuto's msxsdmapperv2, which is the working reference for
-	-- this exact ROM+RAM expanded-slot structure. There, ONE switch disables
-	-- the mapper, the slot expander AND the FCh-FFh ports together:
-	--     io_cs         <= not iorq_n_i and m1_n_i and sw_i(0);
-	--     sltsl_ram_n_s <= slt_exp_n(1) when sw_i(0) = '1' else '1';
+	-- CONSEQUENCE: this design now ALWAYS claims FCh-FFh in SDMapper mode, so
+	-- on a machine that has its own Memory Mapper (e.g. the Zemmix's internal
+	-- 4096KB) two mappers answer the same ports. That configuration is no
+	-- longer avoidable by switch - it needs the multirom mode (SW(9)='1') or a
+	-- machine without an internal mapper. The FS-A1F baseline is unaffected.
 	--
-	-- Ours gated the ports on SW(9) alone, so with SW(8)='1' the RAM was
-	-- disabled but we STILL answered FCh-FFh - advertising a memory mapper
-	-- with no memory behind it. DOS probes those ports, concludes a mapper
-	-- exists, sizes it, and then writes into nothing. That made "mapper off"
-	-- an incoherent configuration rather than a clean one, and any test run in
-	-- it was measuring a machine being told a lie.
-	-- s_addr_valid gate: the port number comes from s_A(7 downto 2), which is
-	-- part of the same reconstructed address - a chimera can transiently read
-	-- as a mapper port access. See the gating note at s_sltsl_rom_en.
-	-- SW(5)='1' (MULTIROM) also removes the mapper I/O ports (FCh-FFh): a
-	-- plain cartridge must not answer any I/O port at all.
-	s_io_mapper_en    <= '1' when s_legacy_en = '1' and SW(8) = '0' and s_addr_valid = '1' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
+	-- s_addr_valid gate: the port number comes from s_A(7 downto 2), part of
+	-- the same reconstructed address - a chimera can transiently read as a
+	-- mapper port access. See the gating note at s_sltsl_rom_en.
+	s_io_mapper_en    <= '1' when s_legacy_en = '1' and s_addr_valid = '1' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
 
 	s_io_mapper_rd_en <= '1' when s_io_mapper_en = '1' and RD_n = '0' else '0';
 	s_io_mapper_wr_en <= '1' when s_io_mapper_en = '1' and WR_n = '0' else '0';
