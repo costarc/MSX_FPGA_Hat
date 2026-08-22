@@ -538,123 +538,6 @@ architecture bevioural of SDMapper_TOP is
 	-- FL_DQ unless the Flash is actually enabled and driving.
 	signal s_rom_rd_en : std_logic;
 
-	-- ------------------------------------------------------------------------
-	-- MULTIROM (SW(9)='1') - switch-selected cartridge from Flash
-	--
-	-- *** VALIDATED ON REAL HARDWARE (2026-08-22) - see README.md ***
-	-- All 24 game slots play: plain 8/16/32KB, ASCII16 and Konami4 MegaROMs.
-	-- Confirmed on three machines - Zemix BR, Panasonic FS-A1F and Canon
-	-- V-25 (the V-25 cannot display MSX2 titles needing more than its 64KB
-	-- VRAM, which is a machine limitation, not a cartridge fault).
-	--
-	-- This also retroactively confirms 7fcb3c3 as a genuinely good base (it
-	-- had only been inferred from git history, never tested), and shows the
-	-- PCB v2.1b bus interfacing is sound end to end: address capture,
-	-- /SLTSL gating, Flash read and D-bus drive all hold up under sustained
-	-- real gameplay, including MegaROM bank switching.
-	--
-	-- Worth contrasting with the plain_rom_simulator branch, which chased
-	-- intermittent corruption for a long session with the SAME bus logic but
-	-- the ROM held in FPGA fabric: a 16KB combinational lookup synthesized to
-	-- ~12,700 LEs (83% of the device) of multiplexer tree on a path TimeQuest
-	-- never constrained. Reading real Flash instead costs ~19 LEs on top of
-	-- the base design and is rock solid. The storage mechanism, not the bus
-	-- interfacing, was the difference.
-	-- ------------------------------------------------------------------------
-	-- Presents ONE switch-selected plain ROM straight on /SLTSL, with no
-	-- sub-slot expansion, no RAM mapper, no SD and no ASCII16 banking - i.e.
-	-- exactly what an ordinary 8/16/32KB cartridge looks like to the MSX.
-	-- With SW(5)='0' every one of those subsystems behaves exactly as before,
-	-- so normal Nextor/SDMapper operation is untouched.
-	--
-	-- Flash map (see Tools/build_multirom.py, which builds the image):
-	--     0x000000  128KB  system ROM (SDMAPPER.ROM / Nextor)
-	--     0x080000  512KB  PLAIN games - 16 slots x 32KB   <- this mode
-	--     0x100000 1024KB  ASCII16     -  4 slots x 256KB  (NOT YET DECODED)
-	--     0x200000  512KB  Konami8     -  4 slots x 128KB  (NOT YET DECODED)
-	--
-	-- Every region base is a power of two and every slot is a fixed power-of-
-	-- two size, so the Flash address is pure bit-concatenation - no adder:
-	--     s_rom_a = "0000" & '1' & idx(3:0) & offset(14:0)
-	-- where bit 19 is the 0x080000 region base. Smaller ROMs are zero-padded
-	-- into their 32KB slot by the build script, so the slot stride is uniform
-	-- regardless of the game's real size.
-	--
-	-- FUTURE: the ASCII16 and Konami8 regions above are already reserved and
-	-- populated by the build script, but NOT yet decoded here - this mode
-	-- currently handles plain ROMs only. Extending multirom to MegaROM
-	-- (ASCII16 / Konami8) mappers is the planned next step: it needs the
-	-- mapper's bank registers driven from the selected region instead of
-	-- s_flashbase, and a mapper-type selector alongside the game index.
-	-- SW(9) IS the multirom on/off switch on this branch:
-	--   SW(9)='1' -> multirom cartridge active
-	--   SW(9)='0' -> completely silent; /SLTSL is ignored and the MSX
-	--                bypasses our slot entirely, as if no cart were fitted
-	-- NOTE this INVERTS the SDMapper convention this file was inherited from,
-	-- where SW(9)='0' enabled the cart and SW(9)='1' silenced it.
-	signal s_multirom_en : std_logic;
-	signal s_mr_idx      : std_logic_vector(4 downto 0);   -- SW(4:0) = game index 0..23
-
-	-- Legacy SDMapper (Nextor ROM + RAM mapper + SD + sub-slot expansion) is
-	-- DISABLED FOR NOW. SW(9)='0' currently just silences the cart; it does
-	-- NOT fall back to Nextor, and must not - that path is unfinished here.
-	--
-	-- PLANNED (once the multirom design is complete):
-	--     SW(9)='0' -> boot Nextor, i.e. the FIRST ROM in Flash (0x000000)
-	--     SW(9)='1' -> boot the games (multirom, as implemented today)
-	-- The logic is left in the source rather than deleted so it can be
-	-- re-enabled for that; Multi_Cartridge_v2.1b also still carries both
-	-- paths, selectable via SW(5).
-	signal s_legacy_en   : std_logic;
-	signal s_mr_rd       : std_logic;                      -- genuine read of the selected game
-
-	-- ------------------------------------------------------------------------
-	-- MULTIROM mapper support (MegaROM)
-	-- ------------------------------------------------------------------------
-	-- The mapper decode below is PORTED VERBATIM in structure from
-	-- MegaROM_ASCII16/MSX_FPGA_Top.vhd in this same repo - a multi-mapper
-	-- cartridge simulator already confirmed working on real hardware with
-	-- Xevious, Nemesis, Penguin Adventure, Usas and Metal Gear. That design's
-	-- comments record two findings worth preserving here, both of which were
-	-- verified rather than assumed:
-	--
-	--   * Konami4 hardware only decodes D0-D3 (4 bits) of the written byte as
-	--     the segment number; Konami-SCC only D0-D5 (6 bits). Real mappers
-	--     silently drop the upper bits, so games routinely leave them set.
-	--     Using the full unmasked byte computes a wildly out-of-range Flash
-	--     address - garbage/crash on hardware. The masks below are required.
-	--
-	--   * Bank registers must RE-LATCH D CONTINUOUSLY while the write is
-	--     qualified, never sample once on a trailing edge. The Z80 releases D
-	--     shortly after WR_n rises, so a delayed one-shot captures floating
-	--     noise. That exact bug made MegaROM games boot but show garbage once
-	--     bank-switched content loaded, while plain ROMs (which never write
-	--     bank registers) were unaffected.
-	--
-	-- Mapper type encoding (matches MegaROM_ASCII16, plus "110" for 8KB):
-	--   000 plain 16KB (page 1)      011 ASCII8
-	--   001 plain 32KB (pages 1+2)   100 Konami4 (no SCC)
-	--   010 ASCII16                  101 Konami SCC (banking only, no audio)
-	--   110 plain  8KB (0x4000-0x5FFF)
-	signal s_mr_flashbase   : std_logic_vector(23 downto 0);
-	signal s_mr_mapper      : std_logic_vector(2 downto 0);
-	signal s_mr_rel_addr    : std_logic_vector(23 downto 0);
-	signal s_mr_active      : std_logic;   -- s_A falls in a page this mapper maps (read OR write)
-
-	signal s_a16_bank0_q  : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII16: 0x4000-0x7FFF
-	signal s_a16_bank1_q  : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII16: 0x8000-0xBFFF
-	signal s_a8_bank0_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0x4000-0x5FFF
-	signal s_a8_bank1_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0x6000-0x7FFF
-	signal s_a8_bank2_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0x8000-0x9FFF
-	signal s_a8_bank3_q   : std_logic_vector(7 downto 0) := (others => '0');	-- ASCII8:  0xA000-0xBFFF
-	signal s_k4_bank1_q   : std_logic_vector(7 downto 0) := (others => '0');	-- Konami4: 0x6000-0x7FFF (bank0 fixed = 0)
-	signal s_k4_bank2_q   : std_logic_vector(7 downto 0) := (others => '0');	-- Konami4: 0x8000-0x9FFF
-	signal s_k4_bank3_q   : std_logic_vector(7 downto 0) := (others => '0');	-- Konami4: 0xA000-0xBFFF
-	signal s_kscc_bank0_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0x4000-0x5FFF
-	signal s_kscc_bank1_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0x6000-0x7FFF
-	signal s_kscc_bank2_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0x8000-0x9FFF
-	signal s_kscc_bank3_q : std_logic_vector(7 downto 0) := (others => '0');	-- KonamiSCC: 0xA000-0xBFFF
-
 	signal s_mem_page_seg  : std_logic_vector(4 downto 0);
 	signal s_sram_full_addr : std_logic_vector(18 downto 0);	-- '0' & segment(3:0) & s_A(13:0) = 256K, lower byte lane only
 
@@ -825,15 +708,13 @@ begin
 	-- ------------------------------------------------------------------------
 	-- Slot expansion
 	-- ------------------------------------------------------------------------
-	s_sltsl_en    <= (not SLTSL_n) when SW(9) = '1' else '0';		-- INVERTED vs SDMapper: SW(9)='1' = multirom active, '0' = silent		-- SDMapper (Nextor+Mapper) enabled only when SW(9)='0' - see SW(9) note above
+	s_sltsl_en    <= (not SLTSL_n) when SW(9) = '0' else '0';		-- SDMapper (Nextor+Mapper) enabled only when SW(9)='0' - see SW(9) note above
 	-- s_addr_valid gate: see its declaration. The pre-existing note in the
 	-- address-capture section already identified s_ffff_slt as vulnerable to
 	-- a transient mismatched byte pairing reading as 0xFFFF and spuriously
 	-- triggering exp_slot's subslot-select write ("a hang, not a clean
 	-- failure"); this makes that impossible rather than order-dependent.
-	-- MULTIROM: a plain cartridge is NOT sub-slot expanded, so the FFFF
-	-- subslot register must not exist at all in that mode.
-	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' and s_legacy_en = '1' else '0';
+	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' else '0';
 	-- SYSTEMATIC s_addr_valid GATING (2026-08-16).
 	--
 	-- This board reconstructs the address from the time-multiplexed A_MUX, so
@@ -849,11 +730,7 @@ begin
 	-- s_sltsl_rom_en feeds s_cart_write_en (the ROM bank-switch qualifier),
 	-- which had no gate of its own. Gating at the source means every
 	-- downstream user inherits it rather than needing its own gate.
-	-- MULTIROM: SW(5)='1' takes the whole ASCII16/Nextor ROM path out of
-	-- circuit (this also inhibits s_cart_write_en, so a plain game can never
-	-- trip the bank-switch registers); the multirom decode drives Flash
-	-- directly instead. See the MULTIROM signal declarations.
-	s_sltsl_rom_en <= (not slt_exp_n(0)) when s_legacy_en = '1' and s_addr_valid = '1' else '0';
+	s_sltsl_rom_en <= (not slt_exp_n(0)) when SW(9) = '0' and s_addr_valid = '1' else '0';
 
 	-- RAM sub-slot arbitration: real sub-slot arbitration (via exp_slot,
 	-- gated behind an FFFF write selecting sub-slot 1) is only needed for
@@ -910,9 +787,7 @@ begin
 	--                in every page. Does not compete in the BIOS RAM search.
 	--   SW(6)='1' -> LEGACY V-8 workaround: RAM visible in pages 0/2/3 with no
 	--                subslot check (what this design did until now).
-	-- SW(5)='1' (MULTIROM) also forces the RAM mapper off: a plain cartridge
-	-- presents ROM only, with nothing else of ours on the bus.
-	s_sltsl_ram_en <= '0' when s_legacy_en = '0' or s_sltsl_en = '0' or SW(8) = '1' or s_addr_valid = '0'  else
+	s_sltsl_ram_en <= '0' when s_sltsl_en = '0' or SW(8) = '1' or s_addr_valid = '0'  else
 	                  '1' when slt_exp_n(1) = '0'                                     else	-- RAM subslot genuinely selected
 	                  '1' when SW(6) = '1' and s_A(15 downto 14) /= "01"              else	-- legacy V-8 workaround
 	                  '0';
@@ -953,230 +828,6 @@ begin
 	end process;
 
 	-- ------------------------------------------------------------------------
-	-- MULTIROM decode - see the signal declarations for the Flash map and the
-	-- note on extending this to MegaROM (ASCII16/Konami8) mappers.
-	-- ------------------------------------------------------------------------
-	s_legacy_en   <= '0';		-- see declaration: Nextor/RAM/SD path disabled on this branch
-	s_multirom_en <= '1' when SW(9) = '1' else '0';
-	s_mr_idx      <= SW(4 downto 0);
-
-	-- Game table: index -> Flash base + mapper type. Bases must match
-	-- Tools/build_multirom.py's region layout exactly.
-	--   0-15 plain   at 0x080000 + i*32KB   (each padded to a 32KB slot)
-	--  16-19 ASCII16 at 0x100000 + i*256KB
-	--  20-23 Konami4 at 0x200000 + i*128KB
-	-- Sizes for the plain slots come from the real ROM sizes, not the slot
-	-- stride: 0-8 are 32KB, 9-14 are 16KB, 15 is 8KB.
-	-- Mapper types for the MegaROMs are those recorded in
-	-- MegaROM_ASCII16/MSX_FPGA_Top.vhd, which notes them as confirmed by web
-	-- search rather than assumed - all four Konami titles are Konami4
-	-- (no SCC).
-	process(s_mr_idx)
-	begin
-		case s_mr_idx is
-			-- plain games -------------------------------------------------
-			when "00000" => s_mr_flashbase <= x"080000"; s_mr_mapper <= "001";	-- [0]  CASTLE   32KB
-			when "00001" => s_mr_flashbase <= x"088000"; s_mr_mapper <= "001";	-- [1]  ELEVATOR 32KB
-			when "00010" => s_mr_flashbase <= x"090000"; s_mr_mapper <= "001";	-- [2]  GALAGA   32KB
-			when "00011" => s_mr_flashbase <= x"098000"; s_mr_mapper <= "001";	-- [3]  GOONIES  32KB
-			when "00100" => s_mr_flashbase <= x"0A0000"; s_mr_mapper <= "001";	-- [4]  GULKAVE  32KB
-			when "00101" => s_mr_flashbase <= x"0A8000"; s_mr_mapper <= "001";	-- [5]  GYRODINE 32KB
-			when "00110" => s_mr_flashbase <= x"0B0000"; s_mr_mapper <= "001";	-- [6]  LODERUN  32KB
-			when "00111" => s_mr_flashbase <= x"0B8000"; s_mr_mapper <= "001";	-- [7]  ZANAC    32KB
-			when "01000" => s_mr_flashbase <= x"0C0000"; s_mr_mapper <= "001";	-- [8]  KMASTER  32KB
-			when "01001" => s_mr_flashbase <= x"0C8000"; s_mr_mapper <= "000";	-- [9]  ROAD     16KB
-			when "01010" => s_mr_flashbase <= x"0D0000"; s_mr_mapper <= "000";	-- [10] HRALLY   16KB
-			when "01011" => s_mr_flashbase <= x"0D8000"; s_mr_mapper <= "000";	-- [11] AVALANCH 16KB
-			when "01100" => s_mr_flashbase <= x"0E0000"; s_mr_mapper <= "000";	-- [12] PACMAN   16KB
-			when "01101" => s_mr_flashbase <= x"0E8000"; s_mr_mapper <= "000";	-- [13] Rally-X  16KB
-			when "01110" => s_mr_flashbase <= x"0F0000"; s_mr_mapper <= "000";	-- [14] kung-fu  16KB
-			when "01111" => s_mr_flashbase <= x"0F8000"; s_mr_mapper <= "110";	-- [15] FROGGER   8KB
-			-- ASCII16 MegaROMs (256KB each) --------------------------------
-			when "10000" => s_mr_flashbase <= x"100000"; s_mr_mapper <= "010";	-- [16] XEVIOUS
-			when "10001" => s_mr_flashbase <= x"140000"; s_mr_mapper <= "010";	-- [17] FANZONE2
-			when "10010" => s_mr_flashbase <= x"180000"; s_mr_mapper <= "010";	-- [18] ISHTAR
-			when "10011" => s_mr_flashbase <= x"1C0000"; s_mr_mapper <= "010";	-- [19] ANDROGYN
-			-- Konami4 MegaROMs (128KB each) --------------------------------
-			when "10100" => s_mr_flashbase <= x"200000"; s_mr_mapper <= "100";	-- [20] NEMESIS / Gradius
-			when "10101" => s_mr_flashbase <= x"220000"; s_mr_mapper <= "100";	-- [21] PENGUIN / Penguin Adventure
-			when "10110" => s_mr_flashbase <= x"240000"; s_mr_mapper <= "100";	-- [22] USAS
-			when "10111" => s_mr_flashbase <= x"260000"; s_mr_mapper <= "100";	-- [23] MGEAR / Metal Gear
-			-- unused codes 24-31 fall back to slot 0 -----------------------
-			when others  => s_mr_flashbase <= x"080000"; s_mr_mapper <= "001";
-		end case;
-	end process;
-
-	-- Per-mapper address decode: for the page(s) this mapper actually maps at
-	-- the current s_A, compute the ROM-relative address. Every page boundary
-	-- is aligned to its own page size, so bit-slicing s_A gives the in-page
-	-- offset with no subtraction - EXCEPT plain 32KB, where 0x4000 is not
-	-- 32KB-aligned, so that branch flips s_A(14) instead. Combinational, so
-	-- it feeds FL_ADDR immediately.
-	process(s_mr_mapper, s_A, s_a16_bank0_q, s_a16_bank1_q,
-	        s_a8_bank0_q, s_a8_bank1_q, s_a8_bank2_q, s_a8_bank3_q,
-	        s_k4_bank1_q, s_k4_bank2_q, s_k4_bank3_q,
-	        s_kscc_bank0_q, s_kscc_bank1_q, s_kscc_bank2_q, s_kscc_bank3_q)
-	begin
-		s_mr_rel_addr <= (others => '0');
-		s_mr_active   <= '0';
-		case s_mr_mapper is
-			when "000" =>	-- plain 16KB: page 1 only
-				if s_A(15 downto 14) = "01" then
-					s_mr_rel_addr <= "0000000000" & s_A(13 downto 0);
-					s_mr_active   <= '1';
-				end if;
-			when "001" =>	-- plain 32KB: pages 1+2
-				if s_A(15 downto 14) = "01" or s_A(15 downto 14) = "10" then
-					s_mr_rel_addr <= "000000000" & (not s_A(14)) & s_A(13 downto 0);
-					s_mr_active   <= '1';
-				end if;
-			when "110" =>	-- plain 8KB: 0x4000-0x5FFF only
-				if s_A(15 downto 13) = "010" then
-					s_mr_rel_addr <= "00000000000" & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				end if;
-			when "010" =>	-- ASCII16: 2 x 16KB banks
-				if s_A(15 downto 14) = "01" then
-					s_mr_rel_addr <= "00" & s_a16_bank0_q & s_A(13 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A(15 downto 14) = "10" then
-					s_mr_rel_addr <= "00" & s_a16_bank1_q & s_A(13 downto 0);
-					s_mr_active   <= '1';
-				end if;
-			when "011" =>	-- ASCII8: 4 x 8KB banks
-				if    s_A >= x"4000" and s_A <= x"5FFF" then
-					s_mr_rel_addr <= "000" & s_a8_bank0_q & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"6000" and s_A <= x"7FFF" then
-					s_mr_rel_addr <= "000" & s_a8_bank1_q & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"8000" and s_A <= x"9FFF" then
-					s_mr_rel_addr <= "000" & s_a8_bank2_q & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"A000" and s_A <= x"BFFF" then
-					s_mr_rel_addr <= "000" & s_a8_bank3_q & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				end if;
-			when "100" =>	-- Konami4: 4 x 8KB, bank0 fixed = 0, D0-D3 only (see decl note)
-				if    s_A >= x"4000" and s_A <= x"5FFF" then
-					s_mr_rel_addr <= "000" & x"00" & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"6000" and s_A <= x"7FFF" then
-					s_mr_rel_addr <= "000" & "0000" & s_k4_bank1_q(3 downto 0) & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"8000" and s_A <= x"9FFF" then
-					s_mr_rel_addr <= "000" & "0000" & s_k4_bank2_q(3 downto 0) & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"A000" and s_A <= x"BFFF" then
-					s_mr_rel_addr <= "000" & "0000" & s_k4_bank3_q(3 downto 0) & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				end if;
-			when "101" =>	-- Konami SCC: 4 x 8KB, D0-D5 only, banking only (no SCC audio)
-				if    s_A >= x"4000" and s_A <= x"5FFF" then
-					s_mr_rel_addr <= "000" & "00" & s_kscc_bank0_q(5 downto 0) & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"6000" and s_A <= x"7FFF" then
-					s_mr_rel_addr <= "000" & "00" & s_kscc_bank1_q(5 downto 0) & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"8000" and s_A <= x"9FFF" then
-					s_mr_rel_addr <= "000" & "00" & s_kscc_bank2_q(5 downto 0) & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				elsif s_A >= x"A000" and s_A <= x"BFFF" then
-					s_mr_rel_addr <= "000" & "00" & s_kscc_bank3_q(5 downto 0) & s_A(12 downto 0);
-					s_mr_active   <= '1';
-				end if;
-			when others =>
-				null;
-		end case;
-	end process;
-
-	s_mr_rd <= '1' when s_multirom_en = '1'
-	                and SLTSL_n      = '0'
-	                and s_addr_valid = '1'
-	                and MREQ_n       = '0'
-	                and RD_n         = '0'
-	                and s_mr_active  = '1'
-	           else '0';
-
-	-- Bank-switch register writes. Re-latches D CONTINUOUSLY while the write
-	-- is qualified - never a trailing-edge one-shot; see the declaration note
-	-- for the real-hardware bug that distinction caused. s_cart_write_qualified
-	-- is the design's existing glitch filter (MIN_PULSE_CYCLES), shared with
-	-- the Nextor ASCII16 path, which is inert whenever SW(5)='1'.
-	process(CLOCK_50)
-	begin
-		if rising_edge(CLOCK_50) then
-			if s_reset = '1' then
-				s_a16_bank0_q  <= (others => '0');
-				s_a16_bank1_q  <= (others => '0');
-				s_a8_bank0_q   <= (others => '0');
-				s_a8_bank1_q   <= (others => '0');
-				s_a8_bank2_q   <= (others => '0');
-				s_a8_bank3_q   <= (others => '0');
-				-- KONAMI RESET DEFAULTS ARE NOT ZERO (bug fix - USAS hung at
-				-- the Konami logo while MGEAR, same mapper and size, ran
-				-- fine). Real Konami mappers - and openMSX's RomKonami.cc /
-				-- RomKonamiSCC.cc, which both do
-				--     for (i : xrange(2,6)) bankSwitch(i, i-2);
-				-- - power up with the ROM's first 32KB mapped LINEARLY:
-				-- segments 0,1,2,3 across 0x4000/0x6000/0x8000/0xA000.
-				-- Resetting every register to 0 instead (as inherited from
-				-- MegaROM_ASCII16) makes segment 0 appear FOUR times, so any
-				-- game that relies on the power-on layout for a region it
-				-- has not explicitly banked yet reads the wrong code. Games
-				-- that set every bank themselves before use (MGEAR) are
-				-- unaffected, which is exactly the observed split.
-				s_k4_bank1_q   <= x"01";	-- 0x6000-0x7FFF (0x4000-0x5FFF is fixed segment 0)
-				s_k4_bank2_q   <= x"02";	-- 0x8000-0x9FFF
-				s_k4_bank3_q   <= x"03";	-- 0xA000-0xBFFF
-				s_kscc_bank0_q <= x"00";	-- 0x4000-0x5FFF (switchable on SCC, unlike Konami4)
-				s_kscc_bank1_q <= x"01";	-- 0x6000-0x7FFF
-				s_kscc_bank2_q <= x"02";	-- 0x8000-0x9FFF
-				s_kscc_bank3_q <= x"03";	-- 0xA000-0xBFFF
-			elsif s_multirom_en = '1' and s_cart_write_qualified = '1' then
-				case s_mr_mapper is
-					when "010" =>	-- ASCII16
-						if    s_A >= x"6000" and s_A <= x"67FF" then
-							s_a16_bank0_q <= D;
-						elsif s_A >= x"7000" and s_A <= x"77FF" then
-							s_a16_bank1_q <= D;
-						end if;
-					when "011" =>	-- ASCII8
-						if    s_A >= x"6000" and s_A <= x"67FF" then
-							s_a8_bank0_q <= D;
-						elsif s_A >= x"6800" and s_A <= x"6FFF" then
-							s_a8_bank1_q <= D;
-						elsif s_A >= x"7000" and s_A <= x"77FF" then
-							s_a8_bank2_q <= D;
-						elsif s_A >= x"7800" and s_A <= x"7FFF" then
-							s_a8_bank3_q <= D;
-						end if;
-					when "100" =>	-- Konami4 (bank0 fixed, has no register)
-						if    s_A >= x"6000" and s_A <= x"7FFF" then
-							s_k4_bank1_q <= D;
-						elsif s_A >= x"8000" and s_A <= x"9FFF" then
-							s_k4_bank2_q <= D;
-						elsif s_A >= x"A000" and s_A <= x"BFFF" then
-							s_k4_bank3_q <= D;
-						end if;
-					when "101" =>	-- Konami SCC
-						if    s_A >= x"5000" and s_A <= x"57FF" then
-							s_kscc_bank0_q <= D;
-						elsif s_A >= x"7000" and s_A <= x"77FF" then
-							s_kscc_bank1_q <= D;
-						elsif s_A >= x"9000" and s_A <= x"97FF" then
-							s_kscc_bank2_q <= D;
-						elsif s_A >= x"B000" and s_A <= x"B7FF" then
-							s_kscc_bank3_q <= D;
-						end if;
-					when others =>	-- plain ROMs have no bank registers
-						null;
-				end case;
-			end if;
-		end if;
-	end process;
-
-	-- ------------------------------------------------------------------------
 	-- ROM sub-slot: ASCII16 Flash boot (Nextor, flashbase 0x000000). DE0
 	-- onboard parallel Flash is 16-bit forced into 8-bit "byte mode"
 	-- (FL_BYTE_N='0'): FL_ADDR carries bits [22:1], the LSB (A-1) goes out on
@@ -1191,17 +842,13 @@ begin
 	s_flashbase <= x"000000";		-- FlashRAM address for the Nextor Operating System
 
 	-- Checks the address being accessed. Mirrors memory as per information in https://www.msx.org/wiki/MegaROM_Mappers#ASCII16_.28ASCII.29
-	-- MULTIROM takes priority: selected game's Flash base plus the
-	-- mapper-computed ROM-relative address (see the MULTIROM decode above).
-	s_rom_a(23 downto 0) <= (s_mr_flashbase + s_mr_rel_addr)                            when s_multirom_en = '1' else
-	                        s_flashbase + (rom_bank1_q(2 downto 0) & s_A(13 downto 0)) when s_sltsl_rom_en = '1' and (s_A(15 downto 14) = "01" or s_A(15 downto 14) = "11") else		-- Bank1
+	s_rom_a(23 downto 0) <= s_flashbase + (rom_bank1_q(2 downto 0) & s_A(13 downto 0)) when s_sltsl_rom_en = '1' and (s_A(15 downto 14) = "01" or s_A(15 downto 14) = "11") else		-- Bank1
                            s_flashbase + (rom_bank2_q(3 downto 0) & s_A(13 downto 0)) when s_sltsl_rom_en = '1' and (s_A(15 downto 14) = "10" or s_A(15 downto 14) = "00") else		-- Bank2:
 	                        (others => '-');
 
 	-- Excludes the SD card register window, which lives inside bank 1's
 	-- address range - Flash must not drive its outputs while it's accessed.
 	FL_CE_N <=
-		'0'	when s_mr_rd = '1'																								else		-- MULTIROM plain game
 		'0'	when s_A(15 downto 14) = "01" and s_sltsl_rom_en = '1' and RD_n = '0' and s_sdbridge_cs_s = '0' and s_addr_valid = '1'	else
 		'0'	when s_A(15 downto 14) = "10" and s_sltsl_rom_en = '1' and rom_bank2_q(3) = '1' and s_addr_valid = '1'					else		-- Only if bank > 7
 		'1';
@@ -1228,8 +875,7 @@ begin
 	-- after a sector read) while Nextor receives garbage and can never mount.
 	-- Keeping this term costs nothing and preserves the manual fix's intent
 	-- (no Flash/Mapper contention).
-	s_rom_rd_en <= '1' when s_mr_rd = '1' else		-- MULTIROM plain game (D-bus mux picks FL_DQ)
-	               '1' when s_addr_valid = '1'
+	s_rom_rd_en <= '1' when s_addr_valid = '1'
                     and s_sltsl_rom_en = '1'
                     and RD_n = '0'
                     and s_sdbridge_cs_s = '0'
@@ -1282,17 +928,7 @@ begin
 	-- Shared glitch-filtered write qualifier for ROM sub-slot register
 	-- writes (bank switch) - see declaration above for the rationale.
 	-- ------------------------------------------------------------------------
-	-- MULTIROM: s_sltsl_rom_en is deliberately forced low when SW(5)='1' (it
-	-- takes the whole Nextor/ASCII16 path out of circuit), so the multirom
-	-- MegaROM mappers need their own term here - without it the shared
-	-- qualifier would never fire in multirom mode and no bank register could
-	-- ever be written, i.e. a MegaROM would boot page 1 and then fail at its
-	-- first bank switch. Gated on s_mr_active so only addresses the selected
-	-- mapper actually maps can qualify.
-	s_cart_write_en <= '1' when s_sltsl_rom_en = '1' and WR_n = '0' else
-	                   '1' when s_multirom_en = '1' and SLTSL_n = '0' and s_addr_valid = '1'
-	                        and MREQ_n = '0' and WR_n = '0' and s_mr_active = '1' else
-	                   '0';
+	s_cart_write_en <= '1' when s_sltsl_rom_en = '1' and WR_n = '0' else '0';
 
 	process(CLOCK_50)
 	begin
@@ -1468,9 +1104,7 @@ begin
 	-- s_addr_valid gate: the port number comes from s_A(7 downto 2), which is
 	-- part of the same reconstructed address - a chimera can transiently read
 	-- as a mapper port access. See the gating note at s_sltsl_rom_en.
-	-- SW(5)='1' (MULTIROM) also removes the mapper I/O ports (FCh-FFh): a
-	-- plain cartridge must not answer any I/O port at all.
-	s_io_mapper_en    <= '1' when s_legacy_en = '1' and SW(8) = '0' and s_addr_valid = '1' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
+	s_io_mapper_en    <= '1' when SW(9) = '0' and SW(8) = '0' and s_addr_valid = '1' and IORQ_n = '0' and M1_n = '1' and s_A(7 downto 2) = "111111" else '0';
 
 	s_io_mapper_rd_en <= '1' when s_io_mapper_en = '1' and RD_n = '0' else '0';
 	s_io_mapper_wr_en <= '1' when s_io_mapper_en = '1' and WR_n = '0' else '0';
