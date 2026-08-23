@@ -1,0 +1,4 @@
+# Build artefacts from build.bat - the .rom files ARE committed, these are not.
+*.cim
+*.lst
+*.out
