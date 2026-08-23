@@ -2106,13 +2106,19 @@ begin
 	-- identical. This takes the MSX out of the loop: the FPGA drives the SRAM
 	-- itself, writes a pattern across 256KB, reads it back and counts errors.
 	--
-	-- Use: set SW(4)='1' and power on. Keep SW(9)='1' so the cart stays off the
-	-- MSX bus while testing. Then read:
+	-- This is INDEPENDENT of everything else: no MSX, no Nextor, no test ROMs,
+	-- no Flash. SW(8) and SW(1) have nothing to do with it.
+	--
+	-- Use: set SW(4)='1' and power on, or press KEY(0). Keep SW(9)='1' so the
+	-- cart stays off the MSX bus while testing. Results appear on the DE0's own
+	-- display, not on the MSX screen:
 	--   HEX3:HEX0 = mismatch count (0000 = SRAM and its wiring are good)
 	--   LEDG(9)   = test finished
 	--   LEDG(8)   = PASS (finished with zero mismatches)
-	-- SW(5) still selects the byte lane, so running this in both positions also
-	-- settles which lane is physically wired.
+	--
+	-- CORRECTED 2026-08-23: an earlier note here claimed SW(5) selects the byte
+	-- lane. It does not, and never did - SRAM_UB_N/SRAM_LB_N come from
+	-- bist_addr(18), so the test walks both lanes by itself. SW(5) is free.
 	--
 	-- The pattern is address-derived (low byte XOR high byte), so stuck ADDRESS
 	-- lines fail the test as well as stuck data lines - a constant pattern
