@@ -25,3 +25,6 @@
 *.qws  binary
 *.hex  binary
 *.dsk  binary
+
+# Shell scripts must keep LF endings - CRLF breaks the shebang under WSL
+*.sh text eol=lf
