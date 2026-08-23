@@ -6,56 +6,28 @@ it cannot be used as a reference.
 
 ---
 
-## ★ RESTART PLAN: make the from-source driver equal the working binary
+## DONE 2026-08-23: from-source driver now works
 
-**Status:** open. Baseline restored 2026-08-23 — core and ROM both back to the
-milestone and confirmed working on hardware.
+`SDMAPPER.ROM` builds from source and is confirmed on hardware — boots Nextor,
+FDISK creates partitions, device name shows. Committed as `b20cd53`.
 
-The recovered driver source (Nextor commit `6f9f5ac`) is an **older revision
-than the binary that works**, so a from-source build does not boot. This is a
-finite, enumerated gap, not a mystery. Disassembly of both drivers:
+The fix was porting three `DEV_RW` differences, found by disassembling the
+working binary and comparing routine sizes through the jump table:
 
-| Routine | Working binary | From-source |
-|---|---|---|
-| `DRV_INIT` | 527 B | 77 B (extra diagnostics — harmless) |
-| **`DEV_RW`** | **228 B** | **175 B** |
+1. **One single-block command per sector**, address recomputed as `base+E`,
+   instead of one command plus `SD_CMD_CONTINUE`.
+2. **A wait after every `SD_CMD`** (`SD_WAIT`, polls `SD_STATUS` bit 5). The old
+   code wrote `SD_CMD` and read `SD_DATA` immediately.
+3. **`ld b,c` on success** so `B` reports sectors transferred; falling out of
+   `djnz` left `B=0`.
 
-`DEV_RW` in the working binary has, and the source lacks:
+Still deferred, each wanting its own build and hardware test:
 
-- pre-transfer checks on `SD_STATUS` present/busy and `SD_ERRLO`/`SD_ERRHI`
-- `call 4519h` — address-setup subroutine (may handle SDSC byte-addressing vs
-  SDHC block-addressing; the working `DRV_INIT` diagnostics mention exactly that)
-- **`call 4539h` — a WAIT routine after EVERY `SD_CMD` write.** The source issues
-  the command then reads `SD_DATA` immediately. This is the critical omission.
-  The routine polls `SD_STATUS` bit 5 with an 8x256x256 timeout, Cy=1 on timeout.
-
-### Order of work — one change, one hardware test
-
-1. Port the `DEV_RW` wait and address-setup logic into `driver.mac`. **Test.**
-2. Only then re-apply the confirmed-good fixes below.
-3. Do **not** touch the switch map at the same time as driver logic — see
-   `feedback_rom_and_bitstream_flashed_separately` in memory.
-
-### Already confirmed good on hardware — keep these
-
-Committed in `Nextor_Driver/driver.mac`:
-
-1. **`LUN_INFO` total sectors** must be non-zero — `ld (ix+6),2` = `0x02000000`
-   = 16GB. Zero produces FDISK's *"there are no suitable logical units
-   available in the device"*.
-2. **`DEV_INFO` `ldir` direction** — it copies (HL)→(DE) and the operands were
-   reversed, so FDISK printed `1.` and 64 blanks. Needs `ex de,hl` first.
-3. Manufacturer string for `DEV_INFO` index 1.
-
-### Status bits — verified, do not guess again
-
-- bit 5 `sd_ready` = `rx_ready_q or tx_ready_q`, a **per-BYTE handshake**. Reads 0
-  outside a transfer. Correct only inside the post-command wait.
-- bit 2 `PRESENT` = `card_present_i` = **SW(0)**, a manual switch, not detection.
-- bit 3 `WPROT` = `write_protect_i` = **SW(2)**; the working driver returns
-  `.WPROT` if set.
-- `init_done_q` in `sdcard_bridge.vhd` is the real "card initialised" flag but is
-  wired only to **LEDG(2)**, not into `SD_STATUS`.
+- `LUN_INFO` write-protect flag from `SD_STATUS` bit 3 — correct, but adds an
+  `SW(2)` dependency that looks like a `DEV_RW` failure if the switch is on
+- `LUN_INFO` "removable" bit — separate item below
+- exposing `init_done_q` in `SD_STATUS` so card detection stops depending on
+  `SW(0)`, a manual switch
 
 ---
 
