@@ -730,15 +730,23 @@ LUN_INFO:
 	ld	(ix+4),0
 	ld	(ix+5),0
 	ld	(ix+6),2
-	;Feature flags: bit0 removable, bit1 read only, bit2 floppy,
-	;bit3 no automapping.
+	;Feature flags (Driver Development Guide):
+	;  bit0 removable, bit1 read only, bit2 floppy, bit3 no automapping
 	;
-	;DEFERRED 2026-08-23: driving bit 1 from SD_STATUS bit 3 (SW(2) on this
-	;core) is correct and is in BACKLOG.md, but it adds a switch dependency -
-	;with SW(2) ON, FDISK refuses to partition, which is easy to misread as a
-	;DEV_RW failure. Left at 0 so this build tests ONE thing: the DEV_RW
-	;rewrite.
-	ld	(ix+7),0
+	;Bit 1 follows SD_STATUS bit 3, which this core drives from SW(2). This
+	;tells Nextor UP FRONT that the medium is read-only, rather than letting it
+	;discover that when a write fails - DEV_RW already rejects writes with
+	;.WPROT, but only at the moment one is attempted.
+	;
+	;Note LD does not affect flags on the Z80, so the "ld a,0" between the AND
+	;and the JR Z is deliberate and the branch still tests the AND result.
+	ld	a,(SD_STATUS)
+	and	M_SDSTAT_WPROT
+	ld	a,0
+	jr	z,LUN_INFO_FLAGS
+	ld	a,00000010b		;bit1 = medium is read only
+LUN_INFO_FLAGS:
+	ld	(ix+7),a
 	ld	(ix+8),0		;cylinders = 0 (not applicable)
 	ld	(ix+9),0
 	ld	(ix+10),0		;heads = 0
