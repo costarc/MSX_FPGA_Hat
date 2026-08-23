@@ -1,173 +1,211 @@
-# Multi MegaROM Cartridge — MSX_FPGA_Hat PCB v2.1b
+# SDMapper V2.1b — MSX_FPGA_Hat PCB v2.1b
 
-A switch-selectable multi-ROM MSX cartridge for the **Terasic DE0** (Cyclone III
-EP3C16F484C6) on the **MSX_FPGA_Hat PCB v2.1b**. Holds 24 games in the DE0's
-onboard parallel Flash and presents any one of them to the MSX as a real
-cartridge — plain ROMs and MegaROMs alike — selected entirely with the DE0's
-slide switches. No reflashing to change games.
+Three designs in one bitstream for the **Terasic DE0** (Cyclone III
+EP3C16F484C6) on **MSX_FPGA_Hat PCB v2.1b**, selected entirely with the DE0's
+slide switches:
 
-## Status — validated on real hardware
+1. **SDMapper** — Nextor booting from Flash, SD card, SRAM Memory Mapper
+2. **MapperTest** — 9 diagnostic cartridges for bringing the mapper up
+3. **Multirom** — 24 switch-selectable games (plain, ASCII16, Konami4)
 
-Confirmed working on three machines:
+**One Flash image covers all three.** Flash once, then everything is switch
+selectable — no reflashing to move between Nextor, a tester, and games.
 
-| Machine | Result |
+---
+
+## Switch reference
+
+### Mode select
+
+| `SW(9)` | `SW(8)` | Mode |
+|:---:|:---:|---|
+| `0` | `0` | **SDMapper** — Nextor from `SDMAPPER.ROM`, SD card, RAM mapper |
+| `0` | `1` | **MapperTest** — diagnostic ROM chosen by `SW(3:0)` |
+| `1` | – | **Multirom** — game chosen by `SW(4:0)` |
+
+`SW(9)` is the master: `0` selects the SDMapper design (ROM + SD + RAM mapper +
+sub-slot expansion), `1` selects the plain-ROM/MegaROM game cartridge. The two
+are mutually exclusive — neither can touch the bus while the other owns it.
+
+### SDMapper mode — `SW(9)=0`
+
+| Switch | `0` | `1` |
+|---|---|---|
+| `SW(8)` | Boot Nextor (`SDMAPPER.ROM`) | Boot a MapperTest ROM |
+| `SW(7)` | SD register window **on** | SD register window **off** |
+| `SW(4)` | Normal | **SRAM BIST** (see below) |
+| `SW(3:0)` | — | MapperTest ROM index, when `SW(8)=1` |
+| `SW(2)` | SD write-protect flag reported to software | |
+| `SW(0)` | SD card-present flag reported to software | |
+
+The RAM mapper and its FCh–FFh ports are always live in this mode — they follow
+`SW(9)` and cannot be switched off independently.
+
+> ⚠️ Because FCh–FFh are always claimed here, a machine with its **own** Memory
+> Mapper (e.g. the Zemmix's internal 4096KB) will have two mappers answering the
+> same ports. Use multirom mode on such machines, or a machine without one.
+
+### Multirom mode — `SW(9)=1`
+
+`SW(4:0)` selects the game. RAM mapper, SD, sub-slot expansion and the FCh–FFh
+ports are all inert — the cartridge presents ROM only.
+
+| Idx | Game | Size | Mapper | Idx | Game | Size | Mapper |
+|----:|------|-----:|--------|----:|------|-----:|--------|
+| 0 | Castle Excellent | 32K | plain | 12 | Pac-Man | 16K | plain |
+| 1 | Elevator Action | 32K | plain | 13 | Rally-X | 16K | plain |
+| 2 | Galaga | 32K | plain | 14 | Kung-Fu | 16K | plain |
+| 3 | The Goonies | 32K | plain | 15 | Frogger | 8K | plain |
+| 4 | Gulkave | 32K | plain | 16 | Xevious | 256K | ASCII16 |
+| 5 | Gyrodine | 32K | plain | 17 | Fan Zone 2 | 256K | ASCII16 |
+| 6 | Lode Runner | 32K | plain | 18 | Ishtar | 256K | ASCII16 |
+| 7 | Zanac | 32K | plain | 19 | Androgynus | 256K | ASCII16 |
+| 8 | King's Master | 32K | plain | 20 | Nemesis / Gradius | 128K | Konami4 |
+| 9 | Road Fighter | 16K | plain | 21 | Penguin Adventure | 128K | Konami4 |
+| 10 | Hyper Rally | 16K | plain | 22 | Usas | 128K | Konami4 |
+| 11 | Avalanche | 16K | plain | 23 | Metal Gear | 128K | Konami4 |
+
+Indices 24–31 fall back to slot 0.
+
+### MapperTest ROMs — `SW(9)=0, SW(8)=1`
+
+Set `SW(7)=1` as well, so the SD register window is off and nothing else of ours
+is on the bus.
+
+| `SW(3:0)` | ROM | What it tests |
+|:---:|---|---|
+| 0 | `maptest` | Segment integrity **and aliasing** — writes all 32 segments, *then* re-reads all of them |
+| 1 | `testramrom` | RAM/ROM interaction |
+| 2 | `testramrom2` | RAM/ROM interaction, variant |
+| 3 | `porttest` | FCh–FFh segment registers |
+| 4 | `page0test` | Page 0 visibility |
+| 5 | `soaktest` | Sustained soak |
+| 6 | `soaktest_ei` | Sustained soak, interrupts enabled |
+| 7 | `ffffstress` | FFFF sub-slot-select stress |
+| **8** | **`testmapper`** | **Empirical mapper size + `00`/`FF`/`AA`/`55` patterns** |
+
+**Start with slot 8 (`testmapper`).** It measures the mapper's real size rather
+than trusting the register width — fingerprinting up to 256 segments and counting
+how many hold a distinct value before aliasing — then fills each detected segment
+with `00`/`FF` (stuck-at faults) and `AA`/`55` (adjacent-bit coupling). It writes
+only port FEh / page 2, never FCh/FDh/FFh, so it cannot disturb its own execution
+page or the stack, and it sizes third-party mappers correctly too.
+
+`maptest` (slot 0) is the other high-value one: its aliasing check writes *every*
+segment before re-reading *any*, so overlapping segments are caught. A
+write-then-immediately-read test would pass a badly aliased mapper.
+
+### SRAM BIST — `SW(4)=1`
+
+The FPGA drives the SRAM itself, writing an address-derived pattern across
+**256KB** and reading it back. **No MSX required** — this works with the machine
+powered off, which is deliberate: the BIST resets from `KEY(0)` alone rather than
+`s_reset`, because `s_reset` includes the MSX's `RESET_n` and that line sits low
+when the MSX is off, which would otherwise hold the test in permanent reset.
+
+Set `SW(4)=1`, keep `SW(9)=1` so the cart stays off the MSX bus, then power on.
+
+| Indicator | Meaning |
 |---|---|
-| Zemix BR | OK |
-| Panasonic FS-A1F | OK |
-| Canon V-25 | OK, except MSX2 titles needing >64KB VRAM (machine limitation, not a cartridge fault) |
+| `LEDG(9)` | BIST complete |
+| `LEDG(8)` | **PASS** — zero errors |
+| `HEX3..0` | Mismatch count (hex) |
 
-All 24 game slots play. Plain 8/16/32KB ROMs, ASCII16 MegaROMs and Konami4
-MegaROMs are all exercised.
+`SW(5)` selects the byte lane during the BIST, so running it in both positions
+also settles which lane is physically wired.
 
-Resource usage: **748 LE (5%)**, 345 registers, 1 PLL. Worst-case setup slack
-+13.5 ns on the 20 ns clock.
+The pattern is address-derived (low byte XOR high byte), so a stuck **address**
+line fails the test too — a constant pattern would pass with the address bus
+completely dead.
 
-## Switches
+This proves the SRAM and addon board independently of the MSX, which matters:
+a long-running mapper corruption in this project's history was eventually traced
+to a faulty SRAM addon board, not to logic. Run this before suspecting VHDL.
 
-| Switch | Function |
-|---|---|
-| `SW(9)` | **`1` = cartridge active** · `0` = silent (`/SLTSL` ignored, the MSX bypasses our slot entirely, as if no cart were fitted) |
-| `SW(4:0)` | Game index, `0`–`23` (see table) |
+### Unused
 
-> `SW(9)` is **inverted** relative to the SDMapper design this code descends
-> from, where `0` enabled the cart. Setting it wrong gives a clean boot to BASIC
-> with no cartridge detected — that is expected behaviour, not a fault.
+`SW(6)` — free. (It briefly held a Canon V-8 workaround that exposed RAM with no
+sub-slot check; removed as non-compliant. `SW(8)`'s old meaning, disabling the
+RAM mapper, is also gone.) `SW(5)` is free in normal operation and selects the
+BIST byte lane when `SW(4)=1`.
 
-Unused: `SW(8:5)`. The legacy SDMapper path (Nextor + RAM mapper + SD +
-sub-slot expansion) is present in the source but **permanently disabled** on
-this branch — see [Planned](#planned).
+---
 
-## Games
-
-| Idx | Game | Size | Mapper | Flash |
-|----:|------|-----:|--------|-------|
-| 0 | Castle Excellent | 32K | plain | `0x080000` |
-| 1 | Elevator Action | 32K | plain | `0x088000` |
-| 2 | Galaga | 32K | plain | `0x090000` |
-| 3 | The Goonies | 32K | plain | `0x098000` |
-| 4 | Gulkave | 32K | plain | `0x0A0000` |
-| 5 | Gyrodine | 32K | plain | `0x0A8000` |
-| 6 | Lode Runner | 32K | plain | `0x0B0000` |
-| 7 | Zanac | 32K | plain | `0x0B8000` |
-| 8 | King's Master | 32K | plain | `0x0C0000` |
-| 9 | Road Fighter | 16K | plain | `0x0C8000` |
-| 10 | Hyper Rally | 16K | plain | `0x0D0000` |
-| 11 | Avalanche | 16K | plain | `0x0D8000` |
-| 12 | Pac-Man | 16K | plain | `0x0E0000` |
-| 13 | Rally-X | 16K | plain | `0x0E8000` |
-| 14 | Kung-Fu | 16K | plain | `0x0F0000` |
-| 15 | Frogger | 8K | plain | `0x0F8000` |
-| 16 | Xevious | 256K | ASCII16 | `0x100000` |
-| 17 | Fan Zone 2 | 256K | ASCII16 | `0x140000` |
-| 18 | Ishtar | 256K | ASCII16 | `0x180000` |
-| 19 | Androgynus | 256K | ASCII16 | `0x1C0000` |
-| 20 | Nemesis / Gradius | 128K | Konami4 | `0x200000` |
-| 21 | Penguin Adventure | 128K | Konami4 | `0x220000` |
-| 22 | Usas | 128K | Konami4 | `0x240000` |
-| 23 | Metal Gear | 128K | Konami4 | `0x260000` |
-
-Indices 24–31 are unused and fall back to slot 0.
-
-## Flash layout
+## Flash map
 
 ```
-0x000000  128KB   System ROM (SDMAPPER.ROM) — reserved for the planned Nextor boot
-0x020000  384KB   free
-0x080000  512KB   PLAIN games    16 slots × 32KB     → index 0–15
-0x100000 1024KB   ASCII16 games   4 slots × 256KB    → index 16–19
-0x200000  512KB   Konami4 games   4 slots × 128KB    → index 20–23
-                  ────────────────────────────────
-                  2.5 MB total (4 MB device)
+0x000000  128KB   SDMAPPER.ROM (Nextor)          -> SW(9)=0, SW(8)=0
+0x020000  128KB   free
+0x040000  256KB   MapperTest  16 slots x 16KB    -> SW(9)=0, SW(8)=1, SW(3:0)
+0x080000  512KB   plain games 16 slots x 32KB    -> SW(9)=1, SW(4:0)=0-15
+0x100000 1024KB   ASCII16      4 slots x 256KB   -> SW(9)=1, SW(4:0)=16-19
+0x200000  512KB   Konami4      4 slots x 128KB   -> SW(9)=1, SW(4:0)=20-23
+                  ─────────────────────────────
+                  2.5 MB used of a 4 MB device
 ```
 
 Every region base is a power of two and every slot a fixed power-of-two size, so
-the FPGA computes the Flash address by **bit concatenation plus one add** — no
-per-game lookup table of bases. Smaller ROMs are zero-padded into their slot, so
-the stride stays uniform regardless of a game's real size.
+the FPGA computes Flash addresses by bit concatenation — no adders, no per-game
+lookup table. Smaller ROMs are zero-padded into their slot.
 
-**The FPGA game table and this layout must agree.** If you change one, change the
-other: the table lives in the `MULTIROM` section of `SDMapper_Top.vhd`, the
-layout in `Tools/build_multirom.py`.
+**The FPGA tables and this layout must agree.** Game table and `s_flashbase` live
+in `SDMapper_Top.vhd`; the layout lives in `Tools/build_multirom.py`.
+
+---
 
 ## Building
 
-### 1. Flash image
+**Flash image:**
 
 ```bash
 cd Tools
-python build_multirom.py -o DE1ROMs.bin
+python build_multirom.py -o DE1ROMs.bin --rom-dir ../MapperTest --rom-dir <your-rom-dir>
 ```
 
-Searches `MSX_FPGA_HAT_ROMS/` and `gameroms/` by default; override or add paths
-with `--rom-dir`. Missing ROMs are reported and their slot left as `0xFF`
-(erased Flash) so a partial set still builds. The script prints the full slot
-map it produced — check it against the table above.
+It prints the full slot map it produced — check it against the tables above.
+Missing ROMs are reported and their slot left as `0xFF`, so a partial set still
+builds. Write the result to the DE0 parallel Flash **at offset 0** with the DE0
+Control Panel.
 
-Write the resulting image to the DE0's **parallel Flash at offset 0** using the
-Altera/Terasic DE0 Control Panel.
-
-### 2. Bitstream
+**Bitstream:**
 
 ```bash
 quartus_sh --flow compile SDMapper_Top
 quartus_pgm -c "USB-Blaster [USB-0]" -m JTAG -o "p;output_files/SDMapper_Top.sof"
 ```
 
-## How it works
+---
 
-The MSX address bus reaches the FPGA time-multiplexed over 8 shared pins (low
-byte via U2, high byte via U3), so it is reconstructed into `s_A` by a capture
-state machine; `s_addr_valid` marks when both halves come from the same bus
-cycle, and **every decode gates on it**. Reading `s_A` while it is low risks a
-chimera address — one byte from this cycle, one from the last.
+## Status
 
-Reads are answered combinationally: `s_mr_rd` qualifies slot select, address
-validity, `/MREQ`, `/RD` and the selected mapper's own page decode, then drives
-`D` straight from `FL_DQ`. Bank-switch writes re-latch `D` **continuously** while
-the write is qualified rather than sampling once at the end — the Z80 releases
-the data bus shortly after `/WR` rises, so a trailing-edge sample captures
-floating noise. That distinction caused a real bug here (MegaROMs booted, then
-showed garbage once bank-switched content loaded).
+| Part | State |
+|---|---|
+| Multirom games | ✅ Validated — 24 games on Zemix BR, Panasonic FS-A1F, Canon V-25 |
+| Nextor boot from Flash | ✅ Boots |
+| SD card | ✅ Verified read **and** write on FS-A1F — a file on a card in the DE0 was renamed from Nextor, which no other interface's driver could have done |
+| SRAM hardware | ✅ BIST passes over 256KB, zero errors |
+| **RAM mapper** | ❌ **Not working** — Nextor does not load `NEXTOR.SYS` |
+| Konami SCC / ASCII8 | ⚠️ Implemented, never exercised (no title in the table uses them). SCC *audio* not implemented |
 
-Konami bank registers reset to segments **0,1,2,3**, not zero — real hardware
-powers up with the first 32KB mapped linearly. Resetting all to 0 makes segment 0
-appear four times; games that bank every region explicitly survive it, games that
-rely on the power-on layout hang. That was the Usas-hangs-but-Metal-Gear-works
-bug.
+**Machine baseline: Panasonic FS-A1F.** The Zemmix is not usable as a reference —
+with only an MFRSCC+SD fitted and no DE0 involved at all, it boots roughly once in
+several attempts, so its failures cannot be attributed to this design.
 
-Konami4 decodes only `D0–D3` of a bank write, Konami SCC only `D0–D5`. Real
-mappers ignore the upper bits, so games leave them set — using the unmasked byte
-computes a wildly out-of-range Flash address.
+### The open problem
 
-## Limitations
-
-- **Konami SCC** banking is implemented but **untested** — no SCC title is in the
-  current game table. SCC *audio* is not implemented at all; only banking.
-- **ASCII8** is implemented but unused by the current table, so also untested.
-- Canon V-25 (64KB VRAM) cannot display MSX2 titles that require 128KB.
-- Two 32KB ROMs cannot both live in one plain slot — the slot stride is 32KB.
-
-## Planned
-
-`SW(9)=0` currently only silences the cartridge. The intent is:
+The SRAM passes its BIST and the SD card works, yet Nextor cannot load
+`NEXTOR.SYS`. Nextor needs mapped RAM, so the fault lies somewhere on the path
+the BIST deliberately bypasses:
 
 ```
-SW(9)=0  →  boot Nextor, the first ROM in Flash (0x000000)
-SW(9)=1  →  boot the games (working today)
+MSX bus → A_MUX capture → exp_slot subslot → segment registers → SRAM
 ```
 
-The legacy SDMapper logic (Nextor ROM, RAM mapper, SD card, sub-slot expansion)
-is retained in `SDMapper_Top.vhd` but disabled via `s_legacy_en = '0'`, so it can
-be re-enabled for this. The `Multi_Cartridge_v2.1b` branch still carries both
-paths, selectable with `SW(5)`.
+The leading suspect is **sub-slot visibility**: our RAM sits behind sub-slot 1 of
+an expanded slot, so Nextor must navigate expanded-slot selection to reach it —
+unlike an ordinary mapper cartridge in a plain slot. The MapperTest ROMs exist to
+isolate exactly this, which is why they run in SDMapper mode with the mapper and
+sub-slot expansion live rather than in multirom mode.
 
-## Lineage
-
-Descends from `SDMapper_V2.1b` at commit `7fcb3c3` — the last commit before a
-100 MHz address-capture redesign that introduced a still-unresolved regression.
-Mapper decode is ported in structure from `MegaROM_ASCII16` in this repo, a
-multi-mapper simulator already confirmed on hardware.
-
-Entity and files are still named `SDMapper_Top` — the design is genuinely
-SDMapper with a multirom mode built on top, and renaming validated hardware
-carries no benefit worth the risk.
+Note also that one earlier record has this mapper validated at 31/32 segments
+byte-perfect, so the datapath may well be sound and the fault structural.

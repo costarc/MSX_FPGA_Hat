@@ -76,37 +76,78 @@
 -- switch) shares one glitch-filtered qualifier (s_cart_write_qualified) and
 -- re-latches continuously instead.
 --
--- STATUS: compiled and GHDL-simulated against this integration's own logic;
--- NOT YET tested on real hardware as of this pivot. Card presence/write-
--- protect are still manual (SW(0)/SW(2) - this board has no physical
--- card-detect sensing).
+-- STATUS (2026-08-22): validated on real hardware except the RAM mapper.
+--   Multirom games  - OK, 24 titles on Zemix BR, Panasonic FS-A1F, Canon V-25.
+--   Nextor from Flash - boots.
+--   SD card         - read AND write verified on the FS-A1F.
+--   SRAM hardware   - BIST passes over all 512KB, zero errors.
+--   RAM mapper      - NOT WORKING: Nextor does not load NEXTOR.SYS. Since the
+--                     BIST passes, the fault is on the path the BIST bypasses:
+--                     MSX bus -> A_MUX capture -> exp_slot subslot -> segment
+--                     registers -> SRAM. Sub-slot visibility is the leading
+--                     suspect. See MapperTest/ for the diagnostic ROMs.
+-- Card presence/write-protect are still manual (SW(0)/SW(2) - this board has
+-- no physical card-detect sensing).
+-- Baseline machine is the Panasonic FS-A1F; the Zemmix is not a usable
+-- reference (it boots unreliably even with no DE0 involved at all).
 -- --------------------------------------------------------------------------------------------------------------------------------------
 --
 -- HOW TO USE THIS BOARD
 -- --------------------------------------------------------------------------------------------------------------------------------------
 -- Switches (SW):
---   SW(9)    - Board mode select:
---                '0' = SDMapper mode (Nextor + Memory Mapper enabled - this
---                      file's whole design). This cartridge responds to
---                      /SLTSL-based memory access (ROM, RAM/mapper, and the
---                      slot-expansion register at FFFF) AND the mapper I/O
---                      ports (FC-FF) are decoded.
---                '1' = MegaROM emulation mode (RESERVED FOR FUTURE USE - not
---                      implemented in this file yet). SDMapper (ROM, RAM/
---                      mapper, mapper I/O ports, the FFFF slot-expansion
---                      register) is entirely disabled/silent on the bus in
---                      this mode, freeing it up for a future MegaROM
---                      emulation core (see MegaROM_ASCII16/MSX_FPGA_Top.vhd)
---                      to be merged into this same file and taken live here.
---   SW(8)    - Unused/free. (Briefly used as a RAM-mapper disable gate;
---              removed 2026-08-22 so the mapper always tracks SW(9).)
---   SW(6)    - Unused/free. (Briefly used for a Canon V-8 workaround that
---              exposed RAM without a sub-slot check; removed 2026-08-22 as
---              non-compliant.)
+-- ONE Flash image covers every mode below - no reflashing to move between
+-- Nextor, a diagnostic ROM and the games. See README.md for the full tables.
+--
+--   SW(9)    - Board mode select. Picks ONE of two complete, mutually
+--              exclusive designs; there is no silent mode any more.
+--                '0' = SDMapper mode (Nextor + Memory Mapper + SD + sub-slot
+--                      expansion - this file's original design). Responds to
+--                      /SLTSL memory access (ROM, RAM/mapper, and the slot-
+--                      expansion register at FFFF) AND decodes the mapper I/O
+--                      ports (FC-FF).
+--                '1' = Multirom mode. Switch-selected cartridge from Flash,
+--                      game index on SW(4:0) - plain / ASCII16 / Konami4.
+--                      Validated on hardware. ROM, RAM/mapper, SD, the FFFF
+--                      register and the FC-FF ports are all inert here.
+--   SW(8)    - SDMapper mode only: ROM image select.
+--                '0' = Nextor, SDMAPPER.ROM at Flash 0x000000
+--                '1' = MapperTest, SW(3:0) picks one of 16 slots at 0x040000
+--   SW(7)    - SDMapper mode only: '1' disables the SD register window
+--              (7B00-7B08), so no WAIT_n can ever be asserted. Set this when
+--              running the MapperTest ROMs - it keeps everything except ROM
+--              and the RAM mapper off the bus.
+--   SW(4)    - '1' runs the SRAM built-in self test over 256KB. Entirely
+--              internal to the FPGA and works with the MSX powered OFF.
+--              Results on LEDG(9)=done, LEDG(8)=pass, HEX3..0=mismatch count.
+--              Keep SW(9)='1' so the cart stays off the MSX bus.
+--   SW(4:0)  - Multirom mode: game index 0-23 (24-31 fall back to 0).
+--   SW(3:0)  - SDMapper mode with SW(8)='1': MapperTest ROM index 0-15.
+--              Slot 8 is 'testmapper', the most informative one - it measures
+--              how many mapper segments the MSX can actually see.
+--   SW(5)    - Selects the BIST byte lane when SW(4)='1'; free otherwise.
+--   SW(6)    - Unused/free. (Briefly held a Canon V-8 workaround that exposed
+--              RAM without a sub-slot check; removed 2026-08-22 as non-
+--              compliant. SW(8)'s old meaning, a RAM-mapper disable gate, was
+--              removed the same day - the mapper now always tracks SW(9).)
 --   SW(2)    - SD card 1 (onboard microSD) write-protect flag, reported to
 --              software via the status register.
 --   SW(0)    - SD card 1 (onboard microSD) present flag. This board has no
 --              physical card-detect sensing, so presence is set manually.
+--
+-- NOTE: in SDMapper mode the FC-FF ports are ALWAYS claimed - they follow
+-- SW(9) and can no longer be switched off. On a machine with its own Memory
+-- Mapper (e.g. the Zemmix's internal 4096KB) two mappers then answer the same
+-- ports. Use multirom mode there, or a machine without one.
+--
+-- Flash layout (built by Tools/build_multirom.py - KEEP THE TWO IN SYNC):
+--   0x000000  128KB  SDMAPPER.ROM (Nextor)       SW(9)=0, SW(8)=0
+--   0x020000  128KB  free
+--   0x040000  256KB  MapperTest 16 x 16KB        SW(9)=0, SW(8)=1, SW(3:0)
+--   0x080000  512KB  plain      16 x 32KB        SW(9)=1, SW(4:0)=0-15
+--   0x100000 1024KB  ASCII16     4 x 256KB       SW(9)=1, SW(4:0)=16-19
+--   0x200000  512KB  Konami4     4 x 128KB       SW(9)=1, SW(4:0)=20-23
+-- Every base is a power of two and every slot a fixed power-of-two size, so
+-- the Flash address is pure bit concatenation - no adders, no lookup table.
 --
 -- Pushbuttons (KEY):
 --   KEY(0)   - Manual reset. Combined with the MSX's own RESET_n line - either
@@ -358,8 +399,62 @@ architecture bevioural of SDMapper_TOP is
 	signal bus_req_meta, bus_req_sync, bus_req_sync_d : std_logic;
 	signal addr_capture_trigger : std_logic;
 
-	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_CAP, S_GUARD, S_HIGH_EN, S_HIGH_CAP);
+	type addr_capture_state_t is (S_IDLE, S_LOW_EN, S_LOW_WAIT, S_LOW_CAP,
+	                              S_GUARD, S_HIGH_EN, S_HIGH_WAIT, S_HIGH_CAP);
 	signal addr_capture_state : addr_capture_state_t := S_IDLE;
+
+	-- ------------------------------------------------------------------------
+	-- A_MUX SETTLE TIME (2026-08-22) - the fix for the FFFFh dropped writes.
+	--
+	-- The capture used to enable a '245 and sample it on the VERY NEXT clock,
+	-- giving the whole round trip just 20ns:
+	--     FPGA tCO (~5ns) -> trace (~1ns) -> 74LVC245 output-enable time
+	--     (5-12ns) -> trace back (~1ns) -> FPGA input setup (~2-3ns)
+	-- Worst case is 20-25ns, so the sample sat exactly ON the boundary: mostly
+	-- correct, occasionally not, varying with temperature, voltage and data
+	-- pattern. That is why it looked statistical rather than broken.
+	--
+	-- GHDL (Simulation/tb_ffff.vhd) shows the behaviour is a CLIFF, not a
+	-- gradient - with a 25ns round trip and no settle time, 997 of 1000 writes
+	-- to FFFFh are dropped; with one extra clock, 0 of 1000:
+	--     round trip 15ns, 20ns sample -> 1000/1000 accepted
+	--     round trip 25ns, 20ns sample ->    3/1000 accepted
+	--     round trip 25ns, 40ns sample -> 1000/1000 accepted
+	-- A marginal-but-not-violated path is exactly what produces the few-percent
+	-- drop rate seen on hardware.
+	--
+	-- Why FFFFh alone showed it: the mapper ports decode only s_A(7 downto 2),
+	-- six bits of ONE byte, and the RAM tests write and read through the SAME
+	-- address so a bad capture cancels itself. FFFFh must match all sixteen
+	-- bits exactly, so a single wrong byte means we never see the access -
+	-- dropped, never corrupted, which is precisely what ffffstress reports.
+	--
+	-- 2 extra clocks per byte puts the sample at 60ns, ~3x the worst-case path.
+	-- Cost: capture latency 5 -> 9 states (100ns -> 180ns after the trigger).
+	-- The budget is ~479ns (WR_n falls 279ns after MREQ_n and stays low a
+	-- further 279ns, and only 4 clocks of overlap are needed), so this stays
+	-- comfortable. Raise it if the round-trip path ever gets longer.
+	-- ------------------------------------------------------------------------
+	-- 2026-08-22: 2 (sample at 60ns) fixed the FFFFh drops on hardware -
+	-- ffffstress went from ~3300 dropped to ZERO - but made the MapperTest
+	-- ROMs black-screen on boot, where all nine ran fine before. Games
+	-- (multirom, which bypasses exp_slot entirely) were unaffected either way.
+	-- The mechanism for the boot regression is NOT understood; the arithmetic
+	-- says 240ns of capture latency against a ~700ns read deadline is
+	-- comfortable, so something else is being disturbed.
+	-- 1 (sample at 40ns) is the least margin the simulation still shows as
+	-- sufficient for a 25ns round trip, and halves the added latency.
+	-- SWITCH-SELECTABLE (2026-08-22) so the settle time can be swept on real
+	-- hardware without a recompile per attempt. SW(6:5) picks 1..4 clocks:
+	--   00 -> 1 clock  = 40ns sample   (boots; still drops with RAM active)
+	--   01 -> 2 clocks = 60ns sample   (ZERO drops, but boot went marginal)
+	--   10 -> 3 clocks = 80ns
+	--   11 -> 4 clocks = 100ns
+	-- PROVEN: the drops are writes where the FFFFh window NEVER OPENED - the
+	-- captured address was not FFFFh. Window fragmentation measured exactly
+	-- 0000 on hardware, so exp_slot and its 4-clock filter are cleared.
+	signal AMUX_SETTLE_CLOCKS : integer range 1 to 4 := 1;
+	signal   settle_cnt         : integer range 0 to 7 := 0;
 
 	-- ------------------------------------------------------------------------
 	-- s_addr_valid: '1' only while s_A holds a COMPLETE, self-consistent
@@ -413,6 +508,82 @@ architecture bevioural of SDMapper_TOP is
 	signal s_expn_q		: std_logic_vector(7 downto 0);
 	signal s_sltsl_rom_en	: std_logic;
 	signal s_sltsl_ram_en	: std_logic;
+
+	-- ------------------------------------------------------------------------
+	-- DIAGNOSTIC (2026-08-22): ffffstress reports drops ONLY when page 3 is on
+	-- sub-slot 1 (our RAM) - base FFFF 0x50/0x53 drop ~3200, base 0x00 drops
+	-- zero, 5 runs, no exceptions. But the test infers "dropped" by reading
+	-- FFFFh back, and "got == previous" is equally what a mis-READ looks like:
+	-- if the capture misses on a read, s_ffff_slt is '0', the sub-slot register
+	-- is not selected, and with RAM in page 3 the SRAM answers instead.
+	--
+	-- So count the write windows WE actually recognise. Compare against the
+	-- number of writes the test performed:
+	--   counts match   -> every write landed; the READ path is at fault
+	--   count is lower -> writes really are being missed; the capture is
+	-- Shown on HEX3..0 with SW(6)='1' (SW(6) is otherwise unused).
+	-- ------------------------------------------------------------------------
+	signal s_ffff_wr_win	: std_logic;
+	signal s_ffff_wr_win_q	: std_logic := '0';
+	signal s_ffff_rd_win	: std_logic;
+	signal s_ffff_rd_win_q	: std_logic := '0';
+	signal s_addr_valid_q	: std_logic := '0';
+	-- A real Z80 cycle boundary leaves the bus idle >= 1 T-state (14 clocks at
+	-- 50MHz). Anything shorter than this before a trigger is noise, not a bus
+	-- cycle. 8 is a deliberately conservative threshold - well under a genuine
+	-- gap, well over any plausible glitch.
+	constant SPUR_GAP_CLOCKS : std_logic_vector(4 downto 0) := "01000";
+	-- Minimum idle gap a capture trigger must be preceded by. Below this it
+	-- cannot be a Z80 bus cycle - see the note at addr_capture_trigger.
+	constant MIN_TRIGGER_GAP : std_logic_vector(4 downto 0) := "00100";	-- 4 clocks = 80ns
+	signal bus_req_high_len	: std_logic_vector(4 downto 0) := (others => '0');
+	signal dbg_spur_cnt		: std_logic_vector(15 downto 0) := (others => '0');
+	signal dbg_min_gap		: std_logic_vector(4 downto 0) := (others => '1');
+	-- FFFFh write-window instrumentation. exp_slot commits only if the window
+	-- holds for 4 unbroken clocks, so counting how many windows OPEN and how
+	-- many are rejected as TOO SHORT separates the last two hypotheses:
+	--   short ~= drop count -> the window fragments (chopped)
+	--   short ~= 0          -> the window never opens: s_A is not FFFFh, so
+	--                          the address capture itself is corrupted
+	signal ffff_win_len		: std_logic_vector(3 downto 0) := (others => '0');
+	signal dbg_win_opened	: std_logic_vector(15 downto 0) := (others => '0');
+	signal dbg_win_short	: std_logic_vector(15 downto 0) := (others => '0');
+	-- Symmetric counter for FFFFh READ windows. ffffstress does exactly one
+	-- write AND one read per iteration, so if reads open far fewer windows
+	-- than writes, the "dropped" writes are actually mis-READS: with the
+	-- capture missing, s_ffff_slt is '0', the sub-slot register is not
+	-- selected, and with RAM in page 3 the SRAM answers FFFFh instead.
+	signal dbg_rd_opened	: std_logic_vector(15 downto 0) := (others => '0');
+	-- Splits the remaining space in half. For every read cycle in OUR slot,
+	-- did s_addr_valid ever assert while RD_n was low?
+	--   dbg_rd_late  large -> the capture does not finish inside the read
+	--                         cycle: a TIMING problem
+	--   dbg_rd_late  ~0    -> the capture finishes but with the WRONG address:
+	--                         a DATA/decode problem
+	signal rd_active		: std_logic := '0';
+	signal rd_saw_valid		: std_logic := '0';
+	signal dbg_rd_late		: std_logic_vector(15 downto 0) := (others => '0');
+	signal dbg_rd_total		: std_logic_vector(15 downto 0) := (others => '0');
+	-- DIRECT CAPTURE MEASUREMENT (2026-08-22). Writes to FFFFh are recognised
+	-- 100% of the time, and between "ld (0FFFFh),a" and "ld a,(0FFFFh)" every
+	-- intervening access is in PAGE 1 (opcode + operands from our ROM). So the
+	-- first PAGE 3 read after a recognised FFFFh write IS the read-back.
+	-- Latching s_A there shows literally what we captured instead of FFFFh:
+	--   FFFE / FEFF / BFFF ... -> single-bit corruption on the A_MUX capture
+	--   an unrelated address   -> we captured a different cycle entirely
+	--   count 0000             -> the capture is fine and the fault is later
+	signal ffff_rd_armed	: std_logic := '0';
+	-- Count reads after the FFFFh write instead of pattern-matching the
+	-- address. "ld (0FFFFh),a / ld a,(0FFFFh)" always produces exactly:
+	--   1 = M1 fetch of 3A, 2 = operand lo, 3 = operand hi, 4 = the FFFFh read
+	-- all in our slot. Latching s_A on the 4th read is unbiased: it does not
+	-- assume the capture landed anywhere in particular, which is what made the
+	-- previous page-3-only version undercount.
+	signal ffff_rd_cnt		: std_logic_vector(2 downto 0) := (others => '0');
+	signal rd_n_q			: std_logic := '1';
+	signal dbg_bad_addr		: std_logic_vector(15 downto 0) := (others => '0');
+	signal dbg_bad_cnt		: std_logic_vector(15 downto 0) := (others => '0');
+	signal dbg_ffff_wr_cnt	: std_logic_vector(15 downto 0) := (others => '0');
 
 	-- Sticky "sub-slot was ever genuinely read" latches - the key real-
 	-- hardware bring-up diagnostic for this integration (see header note).
@@ -771,6 +942,34 @@ begin
 		end if;
 	end process;
 
+	-- ------------------------------------------------------------------------
+	-- GLITCH-REJECTING TRIGGER (2026-08-22) - the root-cause fix.
+	--
+	-- MEASURED ON HARDWARE: the shortest idle gap before a capture trigger was
+	-- ONE CLOCK (20ns), seen hundreds of times (the counter saturated). The
+	-- shortest gap a Z80 can physically produce is the M1 opcode-fetch/refresh
+	-- pair at about half a T-state - ~140ns, seven clocks at 50MHz. A 20ns gap
+	-- is therefore not a bus cycle at all: it is a glitch on MREQ_n or IORQ_n,
+	-- which reach this trigger RAW and unfiltered.
+	--
+	-- Each phantom trigger cleared s_addr_valid in the middle of a real access.
+	-- That collapsed s_ffff_slt, which chopped exp_slot's write window; since
+	-- exp_slot needs 4 UNBROKEN clocks and restarts its counter whenever the
+	-- window closes, the write was silently discarded and the sub-slot register
+	-- kept its previous value. Hence "dropped, never corrupt", and hence the
+	-- drops appearing only when our SRAM is selected and switching hard - the
+	-- noise source.
+	--
+	-- Rejecting a trigger that arrives sooner than any real Z80 gap is not a
+	-- statistical filter: it discards events that are physically impossible on
+	-- this bus. 4 clocks (80ns) sits well above the observed 1-3 clock glitches
+	-- and well below the 7-clock genuine minimum.
+	-- ------------------------------------------------------------------------
+	-- REVERTED 2026-08-22: the MIN_TRIGGER_GAP filter is REMOVED. Rejecting a
+	-- trigger does not make the design ignore that cycle - it leaves the
+	-- PREVIOUS address still marked valid, so the stale address gets decoded
+	-- against the new cycle. Measured: drops 3,749 -> 3,847 and reads opening
+	-- a window 55,706 -> 52,307 when the filter was added. It made it worse.
 	addr_capture_trigger <= bus_req_sync_d and not bus_req_sync;
 
 	process(CLOCK_50)
@@ -781,6 +980,7 @@ begin
 				U2OE_n <= '1';
 				U3OE_n <= '1';
 				s_addr_valid <= '0';
+				settle_cnt   <= 0;
 			elsif addr_capture_trigger = '1' then
 				-- Preemption always disables both OEs explicitly first,
 				-- guaranteeing at least one dead cycle before S_LOW_EN's own
@@ -789,35 +989,83 @@ begin
 				addr_capture_state <= S_LOW_EN;
 				U2OE_n <= '1';
 				U3OE_n <= '1';
+				settle_cnt <= 0;
 				-- A new bus cycle invalidates the previous address IMMEDIATELY:
 				-- from here until S_HIGH_CAP completes, s_A is a mix of old and
 				-- new bytes and must not be decoded by anything (see the
 				-- s_addr_valid declaration for the failure this caused).
 				s_addr_valid <= '0';
 			else
+				-- ------------------------------------------------------------
+				-- CYCLE-SCOPED VALIDITY (2026-08-22) - the real fix.
+				--
+				-- MEASURED: during 6,417 of 65,536 FFFFh read-backs, s_A held
+				-- 0x40E0 - an address in PAGE 1, our ROM code region - while
+				-- s_addr_valid was '1'. A stale address from an earlier cycle
+				-- was being decoded as if it belonged to the current one.
+				--
+				-- Cause: s_addr_valid was cleared ONLY by addr_capture_trigger,
+				-- so it meant "the last capture finished", not "this address
+				-- belongs to the cycle happening now". Miss a trigger for any
+				-- reason and the old address stays valid indefinitely.
+				--
+				-- Fix: the bus going idle (MREQ_n and IORQ_n both high) ends
+				-- the cycle that the captured address belonged to, so validity
+				-- dies with it. A new cycle then cannot be decoded until its
+				-- OWN capture completes. If a trigger is missed we now simply
+				-- do not answer, instead of answering with the wrong address.
+				-- ------------------------------------------------------------
+				if bus_req_sync = '1' then
+					s_addr_valid <= '0';
+				end if;
+
 				case addr_capture_state is
 					when S_IDLE =>
 						U2OE_n <= '1';
 						U3OE_n <= '1';
+
 					when S_LOW_EN =>
 						U2OE_n <= '0';		-- enable low address byte (A0-A7)
 						U3OE_n <= '1';
-						addr_capture_state <= S_LOW_CAP;
+						settle_cnt <= 1;
+						addr_capture_state <= S_LOW_WAIT;
+
+					-- Let the '245 finish turning on before believing it.
+					-- See AMUX_SETTLE_CLOCKS for why this state exists.
+					when S_LOW_WAIT =>
+						if settle_cnt >= AMUX_SETTLE_CLOCKS then
+							addr_capture_state <= S_LOW_CAP;
+						else
+							settle_cnt <= settle_cnt + 1;
+						end if;
+
 					when S_LOW_CAP =>
 						s_A(7 downto 0) <= A_MUX;
 						addr_capture_state <= S_GUARD;
+
 					when S_GUARD =>
 						U2OE_n <= '1';
 						U3OE_n <= '1';
 						addr_capture_state <= S_HIGH_EN;
+
 					when S_HIGH_EN =>
 						U2OE_n <= '1';
 						U3OE_n <= '0';		-- enable high address byte (A8-A15)
-						addr_capture_state <= S_HIGH_CAP;
+						settle_cnt <= 1;
+						addr_capture_state <= S_HIGH_WAIT;
+
+					when S_HIGH_WAIT =>
+						if settle_cnt >= AMUX_SETTLE_CLOCKS then
+							addr_capture_state <= S_HIGH_CAP;
+						else
+							settle_cnt <= settle_cnt + 1;
+						end if;
+
 					when S_HIGH_CAP =>
 						s_A(15 downto 8) <= A_MUX;
 						s_addr_valid <= '1';	-- both bytes now from the same cycle: s_A is safe to decode
 						addr_capture_state <= S_IDLE;
+
 					when others =>
 						addr_capture_state <= S_IDLE;
 				end case;
@@ -841,7 +1089,189 @@ begin
 	-- failure"); this makes that impossible rather than order-dependent.
 	-- MULTIROM: a plain cartridge is NOT sub-slot expanded, so the FFFF
 	-- subslot register must not exist at all in that mode.
+	AMUX_SETTLE_CLOCKS <= 1 when SW(6 downto 5) = "00" else
+	                      2 when SW(6 downto 5) = "01" else
+	                      3 when SW(6 downto 5) = "10" else
+	                      4;
+
 	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' and s_legacy_en = '1' else '0';
+
+	-- The qualifiers exp_slot uses for its write and read windows at FFFFh.
+	s_ffff_wr_win <= '1' when s_ffff_slt = '1' and WR_n = '0' and SLTSL_n = '0' else '0';
+	s_ffff_rd_win <= '1' when s_ffff_slt = '1' and RD_n = '0' and SLTSL_n = '0' else '0';
+
+	-- ------------------------------------------------------------------------
+	-- MID-CYCLE INVALIDATION COUNTER (2026-08-22)
+	--
+	-- s_addr_valid is cleared by addr_capture_trigger, i.e. on EVERY falling
+	-- edge of (MREQ_n and IORQ_n) - and those two are used RAW, with no glitch
+	-- filtering at all (WonderTANG pinfilters its equivalents). A glitch on
+	-- either pin therefore fires a spurious capture, tears s_addr_valid down
+	-- and, with it, s_ffff_slt - CHOPPING an in-progress write window. exp_slot
+	-- requires 4 unbroken clocks (exp_wr_len >= "0100") and resets that counter
+	-- whenever the window closes, so a chopped window is silently discarded:
+	-- dropped, never corrupt, previous value retained.
+	--
+	-- A legitimate trigger NEVER happens while RD_n or WR_n is already low -
+	-- the Z80 asserts MREQ/IORQ before RD/WR, not during. So any invalidation
+	-- counted here is spurious BY DEFINITION, and this measurement is not
+	-- ambiguous the way the write/read difference was.
+	--
+	--   stays ~0    -> no spurious triggers; fragmentation theory is WRONG
+	--   grows       -> confirmed, and the fix is to hold the captured address
+	--                  for the whole cycle instead of letting a re-trigger
+	--                  clobber it (plus filtering MREQ_n/IORQ_n).
+	--
+	-- CORRECTED (2026-08-22): the first version of this counter tested
+	-- "s_addr_valid torn down while RD_n or WR_n is low". That was WRONG and
+	-- counted normal operation: the Z80 asserts MREQ_n and RD_n essentially
+	-- together, and our trigger is delayed 3 synchroniser clocks, so a
+	-- perfectly legitimate read ALWAYS re-triggers with RD_n already low. The
+	-- display spun far too fast to read, which is what exposed the error.
+	--
+	-- The sound discriminator is the GAP BEFORE the trigger. A real bus cycle
+	-- leaves (MREQ_n and IORQ_n) high for at least one T-state (279ns = 14
+	-- clocks at 50MHz) between accesses. A noise glitch produces a falling
+	-- edge preceded by a high period of only a clock or two. Anything under
+	-- SPUR_GAP_CLOCKS cannot be a real Z80 cycle boundary.
+	-- ------------------------------------------------------------------------
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				bus_req_high_len <= (others => '0');
+				dbg_spur_cnt     <= (others => '0');
+				dbg_min_gap      <= (others => '1');
+				dbg_ffff_wr_cnt  <= (others => '0');
+				s_ffff_wr_win_q  <= '0';
+				s_ffff_rd_win_q  <= '0';
+				ffff_win_len     <= (others => '0');
+				dbg_win_opened   <= (others => '0');
+				dbg_win_short    <= (others => '0');
+				dbg_rd_opened    <= (others => '0');
+				rd_active        <= '0';
+				rd_saw_valid     <= '0';
+				dbg_rd_late      <= (others => '0');
+				dbg_rd_total     <= (others => '0');
+				ffff_rd_armed    <= '0';
+				ffff_rd_cnt      <= (others => '0');
+				rd_n_q           <= '1';
+				dbg_bad_addr     <= (others => '0');
+				dbg_bad_cnt      <= (others => '0');
+			else
+				-- how long has the bus been idle before this trigger?
+				if bus_req_sync = '1' then
+					if bus_req_high_len /= "11111" then
+						bus_req_high_len <= bus_req_high_len + 1;
+					end if;
+				elsif addr_capture_trigger = '1' then
+					bus_req_high_len <= (others => '0');
+				end if;
+
+				-- THRESHOLD-FREE MEASUREMENT (2026-08-22): record the SHORTEST
+				-- idle gap ever seen before a trigger, and count how many were
+				-- shorter than a Z80 can produce.
+				--
+				-- A fixed threshold was the wrong tool: the previous version
+				-- used 8 clocks, but in an M1 cycle the Z80 asserts MREQ_n
+				-- TWICE - opcode fetch, then refresh - separated by only about
+				-- half a T-state (~140ns = 7 clocks). That sits right on the
+				-- threshold, so ordinary instruction fetches were very likely
+				-- being counted as noise.
+				--
+				-- The minimum needs no assumption at all:
+				--   min settles at ~7  -> that is the M1/refresh pair; the
+				--                         shortest real gap, and NO noise
+				--   min drops to 1-3   -> shorter than any Z80 gap; genuine
+				--                         glitches on MREQ_n / IORQ_n
+				-- Minimum gap among ACCEPTED triggers. Healthy value is 7 - the
+				-- M1 opcode-fetch/refresh pair, the shortest gap a Z80 makes.
+				if addr_capture_trigger = '1' then
+					if bus_req_high_len < dbg_min_gap then
+						dbg_min_gap <= bus_req_high_len;
+					end if;
+				end if;
+
+				-- Count the glitches the filter REJECTS. This must be measured
+				-- on the RAW edge, not on addr_capture_trigger: the trigger is
+				-- now gated by MIN_TRIGGER_GAP, so counting it could only ever
+				-- yield zero and told us nothing about how much noise is
+				-- actually arriving.
+				if bus_req_sync_d = '1' and bus_req_sync = '0'
+				   and bus_req_high_len < MIN_TRIGGER_GAP then
+					dbg_spur_cnt <= dbg_spur_cnt + 1;
+				end if;
+
+				-- Watch the FFFFh write window directly: how long does it
+				-- actually stay open? exp_slot needs 4 unbroken clocks.
+				s_ffff_wr_win_q <= s_ffff_wr_win;
+				if s_ffff_wr_win = '1' then
+					if s_ffff_wr_win_q = '0' then
+						ffff_win_len   <= "0001";
+						dbg_win_opened <= dbg_win_opened + 1;
+					elsif ffff_win_len /= "1111" then
+						ffff_win_len <= ffff_win_len + 1;
+					end if;
+				elsif s_ffff_wr_win_q = '1' then
+					if ffff_win_len < "0100" then
+						dbg_win_short <= dbg_win_short + 1;
+					end if;
+				end if;
+
+				-- Arm on a recognised FFFFh write; disarm on the next page-3
+				-- read, recording the address we captured for it.
+				rd_n_q <= RD_n;
+
+				if s_ffff_wr_win = '0' and s_ffff_wr_win_q = '1' then
+					ffff_rd_armed <= '1';
+					ffff_rd_cnt   <= (others => '0');
+				elsif ffff_rd_armed = '1' and s_sltsl_en = '1'
+				      and RD_n = '1' and rd_n_q = '0' then
+					-- a read cycle in our slot just ENDED; the capture for it
+					-- has certainly completed by now
+					if ffff_rd_cnt = "011" then		-- this was the 4th = the read-back
+						ffff_rd_armed <= '0';
+						if s_A /= x"FFFF" then
+							dbg_bad_addr <= s_A;
+							dbg_bad_cnt  <= dbg_bad_cnt + 1;
+						end if;
+					else
+						ffff_rd_cnt <= ffff_rd_cnt + 1;
+					end if;
+				end if;
+
+				-- Track every read cycle in our slot: did the address capture
+				-- ever complete while RD_n was still low?
+				if s_sltsl_en = '1' and RD_n = '0' then
+					if rd_active = '0' then
+						rd_active    <= '1';
+						rd_saw_valid <= s_addr_valid;
+						dbg_rd_total <= dbg_rd_total + 1;
+					elsif s_addr_valid = '1' then
+						rd_saw_valid <= '1';
+					end if;
+				elsif rd_active = '1' then
+					rd_active <= '0';
+					if rd_saw_valid = '0' then
+						dbg_rd_late <= dbg_rd_late + 1;
+					end if;
+				end if;
+
+				-- Count FFFFh READ windows the same way.
+				s_ffff_rd_win_q <= s_ffff_rd_win;
+				if s_ffff_rd_win = '1' and s_ffff_rd_win_q = '0' then
+					dbg_rd_opened <= dbg_rd_opened + 1;
+				end if;
+
+				-- SW(5)=0 -> windows REJECTED as too short
+				-- SW(5)=1 -> windows OPENED at all
+				-- KEY(1) held freezes the display.
+				if KEY(1) = '1' then
+					dbg_ffff_wr_cnt <= dbg_win_short;
+				end if;
+			end if;
+		end if;
+	end process;
 	-- SYSTEMATIC s_addr_valid GATING (2026-08-16).
 	--
 	-- This board reconstructs the address from the time-multiplexed A_MUX, so
@@ -1975,7 +2405,36 @@ begin
 	-- (MSX->FPGA) - CORRECTED polarity, see header note (MegaROM_ASCII16's
 	-- real-hardware milestone found this backwards in every earlier version of
 	-- this file). Default '1' (listen) covers every write path and idle.
-	U1_DIR <= '0' when s_sltsl_en = '1' and RD_n = '0'        else
+	-- ------------------------------------------------------------------------
+	-- s_addr_valid GATE (2026-08-22) - the fix for the FFFFh read failures.
+	--
+	-- MEASURED: of 65,536 FFFFh accesses, 100% of WRITES opened a decode window
+	-- (the counter wrapped exactly once: 65,536 + 43 BIOS writes = 0x002B) but
+	-- only 55,706 READS did - 9,830 reads, 15%, where the captured address was
+	-- never FFFFh. Writes 100%, reads 85%.
+	--
+	-- The asymmetry is caused right here. This used to turn the transceiver
+	-- toward the MSX on RAW SLTSL_n and RD_n, so the instant the machine
+	-- selected our slot for a read we began DRIVING eight data pins - while the
+	-- A_MUX address capture was still sampling. Eight outputs switching hard
+	-- through the critical window corrupted the capture. On a WRITE the
+	-- transceiver stays in listen mode, nothing switches, and the capture is
+	-- clean - which is exactly the 100%/85% split that was measured.
+	--
+	-- It also explains why the drops tracked RAM being selected in page 3
+	-- (constant stack reads from our slot = constant turnarounds) and why the
+	-- A_MUX settle time never helped: the disturbance spans the whole window,
+	-- so no sampling point inside it is safe.
+	--
+	-- Holding the transceiver in listen until the address is captured costs
+	-- nothing: we cannot know what to drive before we know the address. The
+	-- Z80 samples read data at the end of T3, ~508ns after MREQ_n falls, and
+	-- the capture completes at ~200ns, leaving ~300ns to drive.
+	-- ------------------------------------------------------------------------
+	-- REVERTED 2026-08-22: gating this on s_addr_valid did NOT help. Reads
+	-- opening a window went 55,706 -> 52,307 and drops 3,749 -> 3,847, so the
+	-- transceiver-turnaround theory is disproved. Kept as originally written.
+	U1_DIR <= '0' when s_sltsl_en = '1' and RD_n = '0' else
 	          '0' when s_io_mapper_rd_en = '1'                else	-- already /RD-qualified
 	          '1';
 
@@ -2033,8 +2492,20 @@ begin
 	--   HEX3:HEX2 = error_o(7 downto 0) - non-zero means the core faulted
 	--   HEX1:HEX0 = completed SD_DATA byte transfers (wraps at 256)
 	-- error_o(15 downto 8) is still readable by software at SD_ERRHI.
-	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else dbg_sd_data_cnt(3 downto 0);
-	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else dbg_sd_data_cnt(7 downto 4);
+	-- SW(6)='1' shows the count of FFFFh write windows this design recognised
+	-- (see dbg_ffff_wr_cnt) so it can be compared with what ffffstress thinks
+	-- it wrote. SW(4) (BIST) still takes priority.
+	-- KEY(1) held shows the count of FFFFh writes we FAILED to recognise
+	-- (windows that never opened); released shows the normal SD counter.
+	-- KEY(2) held -> FFFFh READ  windows opened
+	-- KEY(1) held -> FFFFh WRITE windows opened
+	-- neither      -> normal SD/exp_reg display
+	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else
+	             dbg_bad_cnt(3 downto 0) when KEY(2) = '0' else
+	             dbg_bad_addr(3 downto 0)  when KEY(1) = '0' else dbg_sd_data_cnt(3 downto 0);
+	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else
+	             dbg_bad_cnt(7 downto 4) when KEY(2) = '0' else
+	             dbg_bad_addr(7 downto 4)  when KEY(1) = '0' else dbg_sd_data_cnt(7 downto 4);
 	-- HEX3:HEX2 now shows SD_DEBUG (register 9) - the last trace marker the
 	-- driver wrote. The error code has read 00 on every recent run, whereas
 	-- the open question is which driver entry point Nextor reaches, and a
@@ -2048,8 +2519,12 @@ begin
 	-- subslot routing this register controls. Expect a stable, sensible value
 	-- (each 2-bit field selects a subslot per page); garbage or a value that
 	-- changes when it should not is the fault.
-	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else dbg_exp_reg(3 downto 0);
-	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else dbg_exp_reg(7 downto 4);
+	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else
+	             dbg_bad_cnt(11 downto 8) when KEY(2) = '0' else
+	             dbg_bad_addr(11 downto 8)  when KEY(1) = '0' else dbg_exp_reg(3 downto 0);
+	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else
+	             dbg_bad_cnt(15 downto 12) when KEY(2) = '0' else
+	             dbg_bad_addr(15 downto 12)  when KEY(1) = '0' else dbg_exp_reg(7 downto 4);
 
 	LEDG(9)          <= bist_done when SW(4) = '1' else s_rom_subslot_ever_q;
 	LEDG(8)          <= '1' when (SW(4) = '1' and bist_done = '1' and bist_errors = x"0000") else
