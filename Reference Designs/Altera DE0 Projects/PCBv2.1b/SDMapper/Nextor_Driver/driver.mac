@@ -206,16 +206,33 @@ DRV_INIT:
 	;sdcard_bridge.vhd) - same shape as the abandoned protocol's
 	;WAIT_RESP-style loops, just watching a different bit. ~300ms bound
 	;(256 outer * 256 inner iterations, a handful of T-states each).
+	;Wait for sd_ready to ASSERT, not merely for busy to clear.
+	;
+	;BUG (2026-08-23): this waited on SDSTAT_BUSY clearing, with one 256x256
+	;loop - about 220ms at 3.58MHz. The SD specification allows a card up to
+	;ONE SECOND to complete ACMD41 from cold, so a cold boot fell through
+	;before the card was ready and reported "SD Card not detected", while the
+	;very next warm reboot found it already initialised and worked. Classic
+	;works-on-the-second-try timing bug.
+	;
+	;Now polls READY with a ~1.8s budget (8 x ~220ms), which clears the
+	;spec's 1s worst case with margin. Falling through on timeout is safe:
+	;the caller treats "not ready" as no card, prints, and returns so the MSX
+	;carries on booting.
+	ld	d,8
+DRV_INIT_WAIT_OUTER:
 	ld	b,0
 DRV_INIT_WAIT:
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_BUSY,a
-	jr	z,DRV_INIT_WAITDONE
+	bit	SDSTAT_READY,a
+	jr	nz,DRV_INIT_WAITDONE	;ready - stop waiting
 	ld	c,0
 DRV_INIT_WAIT_INNER:
 	dec	c
 	jr	nz,DRV_INIT_WAIT_INNER
 	djnz	DRV_INIT_WAIT
+	dec	d
+	jr	nz,DRV_INIT_WAIT_OUTER
 DRV_INIT_WAITDONE:
 
 	ld	a,(SD_STATUS)
