@@ -344,6 +344,22 @@ DEV_RW:
 	cp	1
 	jp	nz,DEV_RW_BADDEV
 
+	;Fail fast if there is no usable card.
+	;
+	;BUG (2026-08-23): nothing checked this, so with no card inserted we fell
+	;straight into the 512-byte SD_DATA loop below. SD_DATA is WAIT_n-gated,
+	;so every byte stalls the Z80 until the bridge's ~10ms timeout - about 5
+	;seconds per sector, and Nextor retries. On hardware that looked like a
+	;hang on a blue screen: the driver had already printed "SD Card not
+	;detected" and returned, but the machine still never reached its internal
+	;Apps ROM because the first read pinned it here.
+	;
+	;DEV_STATUS reporting the device unavailable is not enough on its own -
+	;Nextor may still issue a read - so the transfer path needs its own guard.
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_READY,a
+	jp	z,DEV_RW_NOTREADY
+
 	ld	a,b
 	or	a
 	jr	nz,DEV_RW_HASCOUNT
@@ -458,6 +474,13 @@ DEV_RW_WPROTERR:
 DEV_RW_BADDEV:
 	pop	af
 	ld	a,.IDEVL
+	ld	b,0
+	ret
+
+	;Reached with the entry "push af" still on the stack - balance it.
+DEV_RW_NOTREADY:
+	pop	af
+	ld	a,.NRDY
 	ld	b,0
 	ret
 
@@ -596,6 +619,13 @@ LUN_INFO:
 	ld	a,b
 	cp	1
 	jr	nz,LUN_INFO_ERR
+
+	;No usable card means no logical unit. Without this we advertised a
+	;perfectly healthy 16GB block device with nothing in the slot, which is
+	;how a missing card ended up being read from at all.
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_READY,a
+	jr	z,LUN_INFO_ERR
 
 	push	hl
 	pop	ix
