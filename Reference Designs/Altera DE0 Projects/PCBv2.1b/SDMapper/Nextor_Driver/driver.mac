@@ -22,8 +22,8 @@ DRV_START:
 ;Driver type: 0 for drive-based, 1 for device-based
 DRV_TYPE	equ	1
 
-;Hot-plug devices support: this board has no physical card-detect sensing
-;(SW(0) is a manual switch), so no real hot-plug support.
+;Hot-plug devices support: this board has no physical card-detect sensing,
+;so no real hot-plug support.
 DRV_HOTPLUG	equ	0
 
 DEBUG	equ	0
@@ -56,7 +56,7 @@ SD_ADDR1	equ	7B02h	;W: block address bits 15:8
 SD_ADDR2	equ	7B03h	;W: block address bits 23:16
 SD_ADDR3	equ	7B04h	;W: block address bits 31:24 (SDHC card - block number, not byte address)
 SD_CMD		equ	7B05h	;W: bit7=reset pulse, bit1=write pulse, bit0=read pulse, bit2=continue
-SD_STATUS	equ	7B06h	;R: bit0=busy, bit1=error, bit2=present, bit3=write-protect, bit4=bridge timeout
+SD_STATUS	equ	7B06h	;R: bit0=busy, bit1=error, bit2=present(hardwired 1), bit3=write-protect, bit4=timeout, bit5=ready
 SD_ERRLO	equ	7B07h	;R: SdCardCtrl's error_o(7:0), for diagnostics
 SD_ERRHI	equ	7B08h	;R: SdCardCtrl's error_o(15:8), for diagnostics
 
@@ -70,6 +70,13 @@ SDSTAT_ERROR	equ	1
 SDSTAT_PRESENT	equ	2
 SDSTAT_WPROT	equ	3
 SDSTAT_TIMEOUT	equ	4
+;Bit 5 = sd_ready: the XESS core completed CMD0/CMD8/ACMD41 successfully, i.e.
+;a card is genuinely present AND initialised. This is the ONLY trustworthy
+;"is there a usable card" signal. SDSTAT_PRESENT (bit 2) comes from
+;card_present_i, which SDMapper_Top.vhd hardwires to '1' - the board has no
+;card-detect sensing - so it is ALWAYS set and must never be used to decide
+;whether a card exists.
+SDSTAT_READY	equ	5
 
 M_SDSTAT_BUSY		equ	(1 SHL SDSTAT_BUSY)
 M_SDSTAT_ERROR		equ	(1 SHL SDSTAT_ERROR)
@@ -214,18 +221,22 @@ DRV_INIT_WAITDONE:
 	ld	a,(SD_STATUS)
 	ld	c,a			;save status for the checks below
 
-	bit	SDSTAT_PRESENT,c
+	;Decide on sd_ready, not on SDSTAT_PRESENT (hardwired '1' - see the
+	;equates). No card, or a card that failed to initialise, both land here
+	;and must return cleanly so Nextor hands control back and the MSX
+	;carries on booting.
+	bit	SDSTAT_READY,c
 	jr	z,DRV_INIT_NOCARD
 
 	bit	SDSTAT_BUSY,c
-	jr	nz,DRV_INIT_FAIL	;still busy after the wait above - treat as failure
+	jr	nz,DRV_INIT_NOCARD	;still busy after the wait - no usable card
 
 	ld	a,(SD_ERRLO)
 	or	a
-	jr	nz,DRV_INIT_FAIL
+	jr	nz,DRV_INIT_NOCARD
 	ld	a,(SD_ERRHI)
 	or	a
-	jr	nz,DRV_INIT_FAIL
+	jr	nz,DRV_INIT_NOCARD
 
 	ld	de,OK_S
 	call	PRINT
@@ -233,11 +244,6 @@ DRV_INIT_WAITDONE:
 
 DRV_INIT_NOCARD:
 	ld	de,NOCARD_S
-	call	PRINT
-	ret
-
-DRV_INIT_FAIL:
-	ld	de,FAIL_S
 	call	PRINT
 	ret
 
@@ -521,9 +527,8 @@ DEV_INFO_ERR2:
 ;Output:  A = 0 not available/invalid, 1 available unchanged,
 ;             2 available changed, 3 available unknown-change
 ;
-; This board has no physical card-detect sensing (SW(0) is a manual
-; switch), so no real hot-plug/change tracking - always "unchanged" while
-; SW(0) reports the card present.
+; This board has no physical card-detect sensing, so no real hot-plug/change
+; tracking - always "unchanged" while the card reports ready.
 
 DEV_STATUS:
 	or	a
@@ -534,9 +539,18 @@ DEV_STATUS:
 	cp	2
 	jr	nc,DEV_STATUS_NA
 
+	;Report the device available ONLY if the card actually initialised.
+	;
+	;This used to test SDSTAT_PRESENT, which is hardwired '1', so the device
+	;was always reported available. With no card inserted Nextor believed it,
+	;issued a read, and the machine HUNG at boot. Testing sd_ready instead
+	;makes Nextor skip the device and carry on booting.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_PRESENT,a
+	bit	SDSTAT_READY,a
 	jr	z,DEV_STATUS_NA
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_ERROR,a
+	jr	nz,DEV_STATUS_NA
 
 	ld	a,1
 	ret
@@ -673,9 +687,7 @@ INFO_S:
 OK_S:
 	db	"SD card ready",13,10,0
 NOCARD_S:
-	db	"No SD card detected",13,10,0
-FAIL_S:
-	db	"SD card initialization failed - check HEX/LEDG",13,10,0
+	db	"SD Card not detected",13,10,0
 
 ;DEV_INFO strings. Nextor gives a 64-byte buffer, blank-padded by the caller
 ;above, so these need no terminator and must not exceed 64 characters.
