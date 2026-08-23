@@ -24,13 +24,45 @@ mknexrom nextor_base.dat SDMAPPER.ROM /d:<MISSING>.bin /m:<have this>.bin
   7B00–7B08, visible only when `rom_bank1_q = 7`. `mknexrom` only embeds a
   `.bin` you supply; it cannot generate one.
 
-Two routes:
+### Checked 2026-08-23: the obvious candidate does NOT match our hardware
 
-1. **Obtain Belavenuto's SD Mapper driver source.** This design descends from
-   his SD Mapper and that project is open source, so a driver matching the
-   7B00–7B08 convention already exists.
-2. **Write `DRIVER.MAC` for the interface**, using `MegaFlashRomSD` as the
-   model — also an SD driver on a Flash cartridge.
+`github.com/fbelavenuto/msxsdmapperv2/blob/master/driver/DRIVER.ASM` is the
+right family — ASCII16, registers enabled only at page 7, same as ours — but a
+**different register map**:
+
+| | fbelavenuto SD Mapper v2 | our `sdcard_bridge.vhd` |
+|---|---|---|
+| Data | `7B00`–`7EFF`, raw SPI | `7B00` `SD_DATA` |
+| Control / status | `7FF0` | offset 6 → `7B06` `SD_STATUS` |
+| Timer | `7FF1` | — |
+| Errors | — | `7B07` / `7B08` `SD_ERRLO` / `SD_ERRHI` |
+| Model | raw SPI byte shifting | byte-level bridge over the XESS `SdCardCtrl` core |
+
+`SDMapper_Top.vhd` decodes only `7B00`–`7B0F` (`s_A(15 downto 8) = x"7B"` and
+`s_A(7 downto 4) = x"0"`), so **`7FF0`/`7FF1` are not decoded at all** and that
+driver would read ROM bytes when polling `SPISTATUS`.
+
+Consequence: since the SD card demonstrably works, the driver inside the current
+`SDMAPPER.ROM` **already speaks our custom register map** — it is a bespoke
+driver written for this design, not the stock one. `sdcard_bridge.vhd`'s own
+header calls the raw-SPI protocol "now abandoned".
+
+`github.com/Konamiman/Nextor` (already cloned at `Dev/github/Nextor`) supplies
+the kernel, base and `mknexrom`, but contains no SD Mapper driver either.
+
+### Two routes
+
+1. **Adopt fbelavenuto's driver and change the FPGA to match it** — implement
+   raw SPI at `7B00`–`7EFF`, control/status at `7FF0`, timer at `7FF1`. More
+   VHDL work, but it lands on a maintained open-source stack where both halves
+   are public and proven together.
+2. **Keep our bridge and write `DRIVER.MAC` for our map** —
+   `SD_DATA`/`SD_STATUS`/`SD_ERRLO`/`SD_ERRHI`. `MegaFlashRomSD` is the closest
+   model in the Nextor tree.
+
+**This bears on the Nextor write bug below.** If that bug is in the driver
+rather than the VHDL, route 2 cannot fix it without the source, while route 1
+would replace the driver wholesale and likely take the bug with it.
 
 Worth doing: until then a single corrupted file loses the ability to boot
 Nextor on this design, and the driver cannot be modified or fixed.
