@@ -184,26 +184,25 @@ medium rather than at partition time.
 
 ---
 
-## Fix the write bug in Nextor
+## DONE 2026-08-23: the Nextor write bug is fixed
 
-**Status:** open — reported 2026-08-23, details not yet captured.
+Writes confirmed working on hardware — FDISK creates partitions and file writes
+from within Nextor succeed. This had been open since before the driver work.
 
-Nextor now boots on `SDMapper_V2.1b` and `testrun.com` run from inside it
-detects 512KB and passes, but a bug remains on the **write** path.
+It was fixed by the `DEV_RW` rewrite (`4c9ba48`), not by anything aimed at it
+directly. The most likely cause is the missing **wait after every `SD_CMD`**:
+without it the driver began pushing bytes into `SD_DATA` before the core was
+ready to accept them, which hurts writes more than reads — a read that starts
+early stalls on `WAIT_n` and recovers, whereas a write that starts early can
+lose the leading bytes of the block.
 
-Needs pinning down before any code changes:
+Honest caveat: the exact mechanism was never isolated. The rewrite changed three
+things at once (per-sector single-block commands, the post-command wait, and the
+`B` return value) and writes worked afterwards. If write problems ever resurface,
+`SD_WAIT` is the first place to look.
 
-- What operation fails — file write, file create, directory update, format?
-- Does it corrupt, fail cleanly with an error, or hang?
-- Does it reproduce on a freshly partitioned card?
-- Does the SD card content afterwards look wrong when read on a PC?
-
-Worth knowing that SD **write** was previously verified end to end: a file on a
-card physically in the DE0 was renamed from Nextor, which no other interface's
-driver could have done. So the low-level SD write path works; the fault is
-likely higher up.
-
-Related: `SDMapper_V2.1b/`, `sdcard_bridge.vhd`, `sdcard_xess.vhd`.
+Low-level SD write was always sound — a file on a card in the DE0 was renamed
+from Nextor months ago — so the fault was in the driver, as suspected.
 
 ---
 
