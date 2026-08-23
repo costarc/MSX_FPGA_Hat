@@ -97,6 +97,37 @@ Build details are in
 
 ---
 
+## Review: should LUN_INFO report the medium as REMOVABLE?
+
+**Status:** open, deliberately deferred.
+
+`LUN_INFO` byte +7 bit 0 means "the medium is removable". We currently leave it
+**0**, even though an SD card arguably *is* removable and the driver already
+declares `DRV_HOTPLUG equ 1`.
+
+It was left out on purpose rather than overlooked: setting it changes Nextor's
+medium-change handling, and stacking that onto a design that had only just
+started booting would have muddied the test of the three `LUN_INFO`/`DEV_INFO`
+fixes landed at the same time. It wants its own build and its own hardware test.
+
+Flag layout, from the Driver Development Guide:
+
+```
++7 (1): bit 0: 1 if the medium is removable
+        bit 1: 1 if the medium is read only     <- now driven by SW(0)
+        bit 2: 1 if the logical unit is a floppy disk drive
+        bit 3: 1 if the logical unit should not be used for automapping
+```
+
+Worth checking before changing it: whether Nextor then re-validates the medium
+on every access, and what that does to performance and to the card-swap
+behaviour. `SunriseIDE` and `Flashjacks` both set this byte to 0, but they are
+fixed media, so neither is a useful precedent for an SD card.
+
+Related: `Nextor_Driver/driver.mac`, `LUN_INFO`.
+
+---
+
 ## Report the REAL SD card identity and capacity
 
 **Status:** open. Needs an FPGA change, not just a driver change.
