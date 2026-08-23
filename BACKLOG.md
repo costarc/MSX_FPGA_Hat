@@ -6,6 +6,27 @@ it cannot be used as a reference.
 
 ---
 
+## DONE 2026-08-23: write protect works, both halves
+
+`SW(2)` -> `write_protect_i` -> `SD_STATUS` bit 3, and both consumers are
+confirmed on hardware:
+
+- **`DEV_RW`** rejects every write with `.WPROT` — immediate, no reboot needed,
+  because it re-reads `SD_STATUS` on each write
+- **`LUN_INFO`** byte +7 bit 1 reports the medium read-only, so FDISK declines
+  the device up front rather than failing at "write changes to disk"
+
+**Diagnostic note:** *"there are no suitable logical units available in the
+device"* now has **two** causes — total sectors reported as 0, and a read-only
+medium. Check `SW(2)` before chasing the size field.
+
+Caveat: `LUN_INFO` is only read when Nextor asks, and with `DRV_HOTPLUG equ 0`
+and `DEV_STATUS` always returning "available, unchanged", nothing prompts a
+re-query. Flipping `SW(2)` mid-session changes `DEV_RW` behaviour immediately but
+not Nextor's cached view. Set the switch before power-on.
+
+---
+
 ## DONE 2026-08-23: from-source driver now works
 
 `SDMAPPER.ROM` builds from source and is confirmed on hardware — boots Nextor,
@@ -23,8 +44,6 @@ working binary and comparing routine sizes through the jump table:
 
 Still deferred, each wanting its own build and hardware test:
 
-- `LUN_INFO` write-protect flag from `SD_STATUS` bit 3 — correct, but adds an
-  `SW(2)` dependency that looks like a `DEV_RW` failure if the switch is on
 - `LUN_INFO` "removable" bit — separate item below
 - exposing `init_done_q` in `SD_STATUS` so card detection stops depending on
   `SW(0)`, a manual switch
