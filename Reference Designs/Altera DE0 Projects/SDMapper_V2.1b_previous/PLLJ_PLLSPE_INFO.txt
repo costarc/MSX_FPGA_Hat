@@ -1,5 +1,0 @@
-PLL_Name	clock_25mhz:clock_25mhz_inst|altpll:altpll_component|clock_25mhz_altpll:auto_generated|pll1
-PLLJITTER	30
-PLLSPEmax	84
-PLLSPEmin	-53
-
