@@ -6,6 +6,40 @@ it cannot be used as a reference.
 
 ---
 
+## Make SDMAPPER.ROM buildable from source
+
+**Status:** open.
+
+`SDMAPPER.ROM` currently exists only as a binary, recovered from a Flash image.
+It cannot be rebuilt from what is in these repositories — but it is not
+unrecreatable in principle, and the gap is exactly one file.
+
+```
+mknexrom nextor_base.dat SDMAPPER.ROM /d:<MISSING>.bin /m:<have this>.bin
+```
+
+- `/m:` **solved** — `drivers/StandaloneASCII16/chgbnk.mac`, the ASCII16
+  bank-switching code, which is what this cartridge is.
+- `/d:` **missing** — the disk driver for this cartridge's SD register window at
+  7B00–7B08, visible only when `rom_bank1_q = 7`. `mknexrom` only embeds a
+  `.bin` you supply; it cannot generate one.
+
+Two routes:
+
+1. **Obtain Belavenuto's SD Mapper driver source.** This design descends from
+   his SD Mapper and that project is open source, so a driver matching the
+   7B00–7B08 convention already exists.
+2. **Write `DRIVER.MAC` for the interface**, using `MegaFlashRomSD` as the
+   model — also an SD driver on a Flash cartridge.
+
+Worth doing: until then a single corrupted file loses the ability to boot
+Nextor on this design, and the driver cannot be modified or fixed.
+
+Build details are in
+`Reference Designs/Altera DE0 Projects/PCBv2.1b/SDMapper/Tools/README.md`.
+
+---
+
 ## Fix the write bug in Nextor
 
 **Status:** open — reported 2026-08-23, details not yet captured.

@@ -38,18 +38,39 @@ maps it with `s_flashbase = 0x000000` and the ASCII16 bank registers at
 
 ## 2. Building `SDMAPPER.ROM`
 
-### Important: the current ROM was not built here
+### What is missing, precisely
 
-The Nextor source tree at `C:\Users\roniv\Dev\github\Nextor` contains drivers
-for `SunriseIDE`, `StandaloneASCII8`, `StandaloneASCII16`, `MegaFlashRomSD`,
-`Flashjacks` and `OCM` — **there is no SDMapper driver**. The `SDMAPPER.ROM`
-currently in the Flash image was obtained pre-built, not produced from source in
-either repository.
+The build tooling is all here — `mknexrom` and `Nextor-2.1.2.base.dat` — and
+half the driver side is solved too. What is missing is one file:
 
-So the steps below describe how a Nextor ROM *is* built. Regenerating **this**
-one additionally needs the SD Mapper disk driver, which is not present. Until
-that driver exists, treat the existing `SDMAPPER.ROM` as an irreplaceable
-binary — keep a backup.
+```
+mknexrom nextor_base.dat SDMAPPER.ROM /d:<MISSING>.bin /m:<have this>.bin
+```
+
+- **`/m:` — solved.** `drivers/StandaloneASCII16/chgbnk.mac` is the correct
+  bank-switching code: this cartridge is ASCII16, with its bank registers at
+  6000–67FF / 7000–77FF.
+- **`/d:` — missing.** The disk driver, i.e. the hardware-specific code that
+  drives *this* cartridge's SD register window at 7B00–7B08 (visible only when
+  `rom_bank1_q = 7`). `mknexrom` cannot synthesise this; it only embeds a `.bin`
+  you supply.
+
+The Nextor tree has drivers for `SunriseIDE`, `StandaloneASCII8`,
+`StandaloneASCII16`, `MegaFlashRomSD`, `Flashjacks` and `OCM` — none targets
+that interface.
+
+So `SDMAPPER.ROM` is not unrecreatable in principle, it is **unbuildable from
+what is in these repositories**. Two routes to fixing that:
+
+1. **Obtain Belavenuto's SD Mapper driver source.** This design descends from
+   his SD Mapper, and that project is open source, so the driver that matches
+   the 7B00–7B08 register convention already exists somewhere.
+2. **Write `DRIVER.MAC` for the interface.** `MegaFlashRomSD` is the closest
+   model — also an SD-card driver on a Flash cartridge.
+
+Until one of those happens, the committed `SDMAPPER.ROM` in this folder is the
+only copy. It was recovered from the Flash image before that scratch folder was
+deleted; it is tracked with `git add -f` because `*.rom` is gitignored.
 
 ### Toolchain
 
