@@ -587,7 +587,28 @@ LUN_INFO:
 	ld	(ix+4),0
 	ld	(ix+5),0
 	ld	(ix+6),2
-	ld	(ix+7),0		;not removable, not read-only, not a floppy
+	;Feature flags (Driver Development Guide):
+	;  bit0 = removable, bit1 = read only, bit2 = floppy,
+	;  bit3 = exclude from automapping
+	;
+	;Bit 1 now follows SD_STATUS bit 3, which SDMapper_Top.vhd drives from
+	;SW(2). This byte used to be hardcoded to 0, so the switch reached the
+	;register and NOTHING ever read it - SW(2) did nothing at all.
+	;
+	;The switch is the only write-protect available on this hardware. A
+	;full-size SD card's slider is purely mechanical, read by a switch in the
+	;socket - the card has no electrical knowledge of it - and microSD, which
+	;is what this board takes, has no slider at all. The CSD register does
+	;carry PERM_WRITE_PROTECT/TMP_WRITE_PROTECT, but reading it needs CMD9,
+	;which the XESS core never issues, and those bits are effectively always
+	;zero on consumer cards anyway.
+	ld	a,(SD_STATUS)
+	and	00001000b		;bit3 = write protect
+	ld	a,0
+	jr	z,LUN_INFO_FLAGS
+	ld	a,00000010b		;bit1 = medium is read only
+LUN_INFO_FLAGS:
+	ld	(ix+7),a
 	ld	(ix+8),0		;cylinders = 0 (not applicable)
 	ld	(ix+9),0
 	ld	(ix+10),0		;heads = 0
