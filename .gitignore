@@ -29,3 +29,6 @@ MSX_FPGA_Hat-backups/
 bisect_sof/
 *.qws
 work-obj08.cf
+
+# Flash image built by build_multirom.py - rebuildable, 2.5MB
+DE1ROMs.bin

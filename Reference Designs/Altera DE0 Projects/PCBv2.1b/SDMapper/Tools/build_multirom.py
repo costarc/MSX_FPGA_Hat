@@ -37,6 +37,31 @@ import sys
 
 KB = 1024
 
+# =============================================================================
+#  WHERE TO LOOK FOR ROMs  -  edit these
+# =============================================================================
+# Searched in order, first match wins. The first two resolve relative to THIS
+# FILE rather than the current directory, so the script works from anywhere.
+# Forward slashes are fine on Windows.
+#
+# --rom-dir ADDS a directory to this list, it does not replace it, so a bare
+#     python build_multirom.py -o DE1ROMs.bin
+# already finds everything. Use --rom-dir only for one-offs.
+#
+# RUN THIS ON WINDOWS, not in WSL: it is pure Python with no Linux dependency,
+# and WSL has no python. Only build_sdmapper_rom.sh needs WSL, because N80 and
+# mknexrom are Linux ELF binaries.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+
+GAME_ROM_DIR = "C:/Users/roniv/Dev/MSX/gameroms"   # all 24 game ROMs
+
+DEFAULT_ROM_DIRS = [
+    _HERE,                                     # SDMAPPER.ROM - built here
+    os.path.join(_HERE, "..", "MapperTest"),   # testmapper, ffffstress
+    GAME_ROM_DIR,                              # the games
+]
+# =============================================================================
+
 # --- region bases (must stay power-of-2 aligned; see note above) -------------
 SYSTEM_BASE  = 0x000000
 TEST_BASE    = 0x040000
@@ -137,12 +162,6 @@ KONAMI8_GAMES = [
     ("MGEAR.ROM",   128 * KB),
 ]
 
-DEFAULT_ROM_DIRS = [
-    r"C:\Users\roniv\Dev\MSX\MSX_FPGA_HAT_ROMS",
-    r"C:\Users\roniv\Dev\MSX\gameroms",
-]
-
-
 def find_rom(name, rom_dirs):
     """Locate a ROM case-insensitively across the search directories."""
     for d in rom_dirs:
@@ -188,10 +207,11 @@ def main():
     ap = argparse.ArgumentParser(description="Build the DE0 multirom Flash image.")
     ap.add_argument("-o", "--output", default="DE1ROMs.bin", help="output image")
     ap.add_argument("--rom-dir", action="append", dest="rom_dirs",
-                    help="ROM search directory (repeatable)")
+                    help="extra ROM search dir, ADDED to the defaults (repeatable)")
     args = ap.parse_args()
 
-    rom_dirs = args.rom_dirs or DEFAULT_ROM_DIRS
+    # --rom-dir ADDS to the defaults rather than replacing them
+    rom_dirs = DEFAULT_ROM_DIRS + (args.rom_dirs or [])
 
     # 0xFF matches erased Flash, so unwritten slots look genuinely empty.
     image = bytearray(b"\xFF" * IMAGE_SIZE)
