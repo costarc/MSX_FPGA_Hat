@@ -99,44 +99,40 @@
 -- Nextor, a diagnostic ROM and the games. See README.md for the full tables.
 --
 --   SW(9)    - Board mode select. Picks ONE of two complete, mutually
---              exclusive designs; there is no silent mode.
+--              exclusive designs; there is no silent mode any more.
 --                '0' = SDMapper mode (Nextor + Memory Mapper + SD + sub-slot
---                      expansion). Responds to /SLTSL memory access (ROM,
---                      RAM/mapper, and the slot-expansion register at FFFF)
---                      AND decodes the mapper I/O ports (FC-FF).
+--                      expansion - this file's original design). Responds to
+--                      /SLTSL memory access (ROM, RAM/mapper, and the slot-
+--                      expansion register at FFFF) AND decodes the mapper I/O
+--                      ports (FC-FF).
 --                '1' = Multirom mode. Switch-selected cartridge from Flash,
 --                      game index on SW(4:0) - plain / ASCII16 / Konami4.
---                      ROM, RAM/mapper, SD, the FFFF register and the FC-FF
---                      ports are all inert here.
---
---   In SDMapper mode (SW(9)='0'):
---     SW(8)  - '0' = boot Nextor from SDMAPPER.ROM at Flash 0x000000
---              '1' = boot a MapperTest diagnostic ROM instead
---     SW(1)  - which diagnostic, when SW(8)='1':
---                '0' = testmapper  (measures the mapper's REAL size)
---                '1' = ffffstress  (FFFFh sub-slot register, dropped vs
---                                   corrupt - the regression test for the
---                                   address capture)
---     SW(0)  - write protect. '1' protects the card, '0' is normal
---              read/write. Reaches the driver as SD_STATUS bit 3 and sets
---              the read-only flag in LUN_INFO. This is the ONLY meaningful
---              write-protect on this board: a full-size SD card's slider is
---              mechanical and read by the socket, and microSD has none.
---     SW(7:2) - no function.
---
---   In multirom mode (SW(9)='1'):
---     SW(4:0) - game index 0-23 (24-31 fall back to 0).
---
---   Card presence is NOT a switch: it is hardwired present. If no card is
---   inserted the driver's own init fails and reports an error, which is
---   better information than a switch that can be set wrong.
---
---   REMOVED 2026-08-23: the SRAM built-in self test that used to run on
---   SW(4). It proved the SRAM and addon board were good independently of the
---   MSX, which is what pushed the hunt upstream to the address capture where
---   the real bug was. No longer needed now that the mapper works. Preserved
---   on branch 'sram-bist' and tag 'sram-bist-before-removal'; restore with
---     git checkout sram-bist -- '<this file>'
+--                      Validated on hardware. ROM, RAM/mapper, SD, the FFFF
+--                      register and the FC-FF ports are all inert here.
+--   SW(8)    - SDMapper mode only: ROM image select.
+--                '0' = Nextor, SDMAPPER.ROM at Flash 0x000000
+--                '1' = MapperTest, SW(3:0) picks one of 16 slots at 0x040000
+--   SW(7)    - SDMapper mode only: '1' disables the SD register window
+--              (7B00-7B08), so no WAIT_n can ever be asserted. Set this when
+--              running the MapperTest ROMs - it keeps everything except ROM
+--              and the RAM mapper off the bus.
+--   SW(4)    - '1' runs the SRAM built-in self test over 256KB. Entirely
+--              internal to the FPGA and works with the MSX powered OFF.
+--              Results on LEDG(9)=done, LEDG(8)=pass, HEX3..0=mismatch count.
+--              Keep SW(9)='1' so the cart stays off the MSX bus.
+--   SW(4:0)  - Multirom mode: game index 0-23 (24-31 fall back to 0).
+--   SW(3:0)  - SDMapper mode with SW(8)='1': MapperTest ROM index 0-15.
+--              Slot 8 is 'testmapper', the most informative one - it measures
+--              how many mapper segments the MSX can actually see.
+--   SW(5)    - Selects the BIST byte lane when SW(4)='1'; free otherwise.
+--   SW(6)    - Unused/free. (Briefly held a Canon V-8 workaround that exposed
+--              RAM without a sub-slot check; removed 2026-08-22 as non-
+--              compliant. SW(8)'s old meaning, a RAM-mapper disable gate, was
+--              removed the same day - the mapper now always tracks SW(9).)
+--   SW(2)    - SD card 1 (onboard microSD) write-protect flag, reported to
+--              software via the status register.
+--   SW(0)    - SD card 1 (onboard microSD) present flag. This board has no
+--              physical card-detect sensing, so presence is set manually.
 --
 -- NOTE: in SDMapper mode the FC-FF ports are ALWAYS claimed - they follow
 -- SW(9) and can no longer be switched off. On a machine with its own Memory
@@ -344,7 +340,22 @@ architecture bevioural of SDMapper_TOP is
 	signal s_rst_filter	: std_logic_vector(6 downto 0) := (others => '0');
 
 	-- ------------------------------------------------------------------------
+	-- SRAM self-test (BIST), SW(4). See the BIST process near the SRAM pins.
 	-- ------------------------------------------------------------------------
+	type bist_state_t is (B_IDLE, B_WR_SET, B_WR_PULSE, B_WR_END,
+	                      B_RD_SET, B_RD_SAMPLE, B_NEXT, B_DONE);
+	signal bist_state  : bist_state_t := B_IDLE;
+	signal bist_addr   : std_logic_vector(18 downto 0) := (others => '0');
+	signal bist_dq     : std_logic_vector(7 downto 0) := (others => '0');
+	signal bist_drive  : std_logic := '0';
+	signal bist_we_n   : std_logic := '1';
+	signal bist_oe_n   : std_logic := '1';
+	signal bist_ce_n   : std_logic := '1';
+	signal bist_phase  : std_logic := '0';
+	signal bist_errors : std_logic_vector(15 downto 0) := (others => '0');
+	signal bist_done   : std_logic := '0';
+	signal bist_wait   : std_logic_vector(2 downto 0) := (others => '0');
+	signal bist_key_meta, bist_key_sync : std_logic := '0';
 
 	-- ------------------------------------------------------------------------
 	-- Self-timed SRAM write for the MSX side - see the process below.
@@ -442,7 +453,7 @@ architecture bevioural of SDMapper_TOP is
 	-- PROVEN: the drops are writes where the FFFFh window NEVER OPENED - the
 	-- captured address was not FFFFh. Window fragmentation measured exactly
 	-- 0000 on hardware, so exp_slot and its 4-clock filter are cleared.
-	constant AMUX_SETTLE_CLOCKS : integer := 1;
+	signal AMUX_SETTLE_CLOCKS : integer range 1 to 4 := 1;
 	signal   settle_cnt         : integer range 0 to 7 := 0;
 
 	-- ------------------------------------------------------------------------
@@ -1078,6 +1089,11 @@ begin
 	-- failure"); this makes that impossible rather than order-dependent.
 	-- MULTIROM: a plain cartridge is NOT sub-slot expanded, so the FFFF
 	-- subslot register must not exist at all in that mode.
+	AMUX_SETTLE_CLOCKS <= 1 when SW(6 downto 5) = "00" else
+	                      2 when SW(6 downto 5) = "01" else
+	                      3 when SW(6 downto 5) = "10" else
+	                      4;
+
 	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' and s_legacy_en = '1' else '0';
 
 	-- The qualifiers exp_slot uses for its write and read windows at FFFFh.
@@ -1643,11 +1659,7 @@ begin
 	-- which only stays a clean concatenation if the region base is 256KB
 	-- aligned. The region is 16 x 16KB = 256KB, ending exactly where the
 	-- plain games begin at 0x080000.
-	-- Test ROM select is SW(1) alone - only two diagnostics are flashed, at
-	-- slots 0 and 1. The index still lands in Flash address bits 17:14, so
-	-- this stays a pure concatenation with no adder.
-	--     SW(1)=0 -> testmapper      SW(1)=1 -> ffffstress
-	s_flashbase <= "00000" & '1' & "000" & SW(1) & "00000000000000"
+	s_flashbase <= "00000" & '1' & SW(3 downto 0) & "00000000000000"
 	                   when SW(8) = '1' else
 	               x"000000";		-- FlashRAM address for the Nextor Operating System
 
@@ -1736,10 +1748,7 @@ begin
 	-- not detected" yet CALL FDISK showed a bogus 16GB card, because it was
 	-- interpreting ROM bytes as register values. Exactly the failure the
 	-- 2026-08-15 note above warns about.
-	-- SW(7) no longer gates this. The window only answers when
-	-- rom_bank1_q = 7, and the diagnostic ROMs are plain 16KB images that
-	-- never touch the bank register, so it stays inert for them anyway.
-	s_sdbridge_cs_s <= '1' when s_addr_valid = '1'
+	s_sdbridge_cs_s <= '1' when SW(7) = '0' and s_addr_valid = '1'
                         and s_sltsl_rom_en = '1' 
                         and rom_bank1_q = "111" 
                         and s_A(15 downto 8) = x"7B" 
@@ -1885,16 +1894,8 @@ begin
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
 		wait_n_o			=> s_sdbridge_wait_n_o,
-		-- Card presence is no longer a switch: it is always reported present.
-		-- If no card is actually inserted the driver's own init fails and
-		-- reports an error, which is better information than a switch that
-		-- can simply be set wrong.
-		card_present_i	=> '1',
-		-- SW(0) = write protect. ON protects, OFF is normal read/write. This
-		-- is the ONLY meaningful write-protect on this board: a full-size SD
-		-- card's slider is mechanical and read by the socket, and microSD has
-		-- no slider at all.
-		write_protect_i=> SW(0),
+		card_present_i	=> SW(0),
+		write_protect_i=> SW(2),
 		reg_dout			=> sd_reg_dout,
 		sd_dout			=> sd_data_dout,
 		sd_rd_en			=> sd_data_rd_en,
@@ -2085,15 +2086,214 @@ begin
 
 	s_sram_full_addr <= s_mem_page_seg & s_A(13 downto 0);	-- 5 + 14 = 19 bits = 512K
 
-	SRAM_ADDR <= wr_addr_q when wr_busy = '1' else
+	-- ------------------------------------------------------------------------
+	-- SRAM BUILT-IN SELF TEST (2026-08-16), enabled by SW(4)='1'.
+	--
+	-- Switch testing isolated the remaining instability to the RAM subsystem
+	-- (mapper off = stable and boots; mapper on = hangs, in either byte-lane
+	-- position). But every RAM test so far ran THROUGH the MSX, the slot
+	-- expander and Nextor, so a dead or miswired SRAM and a logic bug look
+	-- identical. This takes the MSX out of the loop: the FPGA drives the SRAM
+	-- itself, writes a pattern across 256KB, reads it back and counts errors.
+	--
+	-- Use: set SW(4)='1' and power on. Keep SW(9)='1' so the cart stays off the
+	-- MSX bus while testing. Then read:
+	--   HEX3:HEX0 = mismatch count (0000 = SRAM and its wiring are good)
+	--   LEDG(9)   = test finished
+	--   LEDG(8)   = PASS (finished with zero mismatches)
+	-- SW(5) still selects the byte lane, so running this in both positions also
+	-- settles which lane is physically wired.
+	--
+	-- The pattern is address-derived (low byte XOR high byte), so stuck ADDRESS
+	-- lines fail the test as well as stuck data lines - a constant pattern
+	-- would pass even with the address bus completely dead.
+	-- ------------------------------------------------------------------------
+	-- NOTE on the BIST's reset source: it deliberately does NOT use s_reset.
+	-- s_reset includes the MSX's RESET_n line, and with the MSX powered OFF
+	-- that line sits low - which held the whole design, and therefore this
+	-- test, in permanent reset. Since the entire point is to exercise the SRAM
+	-- with the MSX out of the loop, the BIST resets from KEY(0) alone.
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			bist_key_meta <= not KEY(0);
+			bist_key_sync <= bist_key_meta;
+
+			if bist_key_sync = '1' then
+				bist_state  <= B_IDLE;
+				bist_addr   <= (others => '0');
+				bist_phase  <= '0';
+				bist_errors <= (others => '0');
+				bist_done   <= '0';
+				bist_drive  <= '0';
+				bist_we_n   <= '1';
+				bist_oe_n   <= '1';
+				bist_ce_n   <= '1';
+				bist_wait   <= (others => '0');
+			else
+				case bist_state is
+
+					when B_IDLE =>
+						bist_drive <= '0';
+						bist_we_n  <= '1';
+						bist_oe_n  <= '1';
+						bist_ce_n  <= '1';
+						if SW(4) = '1' and bist_done = '0' then
+							bist_addr   <= (others => '0');
+							bist_phase  <= '0';
+							bist_errors <= (others => '0');
+							bist_state  <= B_WR_SET;
+						end if;
+
+					when B_WR_SET =>
+						bist_ce_n  <= '0';
+						bist_oe_n  <= '1';
+						bist_drive <= '1';
+						bist_dq    <= bist_addr(7 downto 0) xor bist_addr(15 downto 8);
+						bist_state <= B_WR_PULSE;
+
+					when B_WR_PULSE =>
+						bist_we_n  <= '0';
+						bist_state <= B_WR_END;
+
+					when B_WR_END =>
+						bist_we_n  <= '1';
+						bist_state <= B_NEXT;
+
+					when B_RD_SET =>
+						bist_drive <= '0';
+						bist_ce_n  <= '0';
+						bist_oe_n  <= '0';
+						bist_wait  <= "010";
+						bist_state <= B_RD_SAMPLE;
+
+					when B_RD_SAMPLE =>
+						if bist_wait /= "000" then
+							bist_wait <= bist_wait - 1;
+						else
+							if SRAM_DQ /= (bist_addr(7 downto 0) xor bist_addr(15 downto 8)) then
+								bist_errors <= bist_errors + 1;
+							end if;
+							bist_state <= B_NEXT;
+						end if;
+
+					when B_NEXT =>
+						bist_we_n <= '1';
+						bist_oe_n <= '1';
+						if bist_addr = "1111111111111111111" then
+							bist_addr <= (others => '0');
+							if bist_phase = '0' then
+								bist_phase <= '1';
+								bist_state <= B_RD_SET;
+							else
+								bist_state <= B_DONE;
+							end if;
+						else
+							bist_addr <= bist_addr + 1;
+							if bist_phase = '0' then
+								bist_state <= B_WR_SET;
+							else
+								bist_state <= B_RD_SET;
+							end if;
+						end if;
+
+					when B_DONE =>
+						bist_done  <= '1';
+						bist_drive <= '0';
+						bist_ce_n  <= '1';
+						bist_oe_n  <= '1';
+						bist_we_n  <= '1';
+
+				end case;
+			end if;
+		end if;
+	end process;
+
+	-- ------------------------------------------------------------------------
+	-- SELF-TIMED SRAM WRITE (2026-08-16).
+	--
+	-- The SRAM BIST passes with zero errors across 256KB, so the memory and its
+	-- wiring are good - yet the mapper corrupts data when the MSX drives it.
+	-- The difference is the write timing.
+	--
+	-- The MSX path used to be purely combinational:
+	--     SRAM_WE_N <= '0' when s_mem_wr_en = '1' else '1';
+	--     SRAM_DQ   <= D   when s_mem_wr_en = '1' else (others => 'Z');
+	-- Both terms come from the same signal, so at the end of a write /WE rises
+	-- and the data bus goes high-Z in the SAME instant. An asynchronous SRAM
+	-- latches on the RISING edge of /WE and needs data held AFTER it (tDH);
+	-- here the hold time is zero, so the chip can capture floating garbage.
+	-- That is intermittent by nature and corrupts precisely what Nextor stores
+	-- in mapper RAM - matching "mapper off = stable, mapper on = corruption".
+	--
+	-- The BIST does it correctly (data driven -> /WE low -> /WE high -> data
+	-- released) and passes, which is the evidence this timing is the issue.
+	-- The MSX write is now self-timed the same way: on a qualified write the
+	-- address and data are captured, then a clean /WE pulse is issued with the
+	-- data driven throughout and released only afterwards. The MSX write window
+	-- (~1us) is far longer than this sequence (~120ns), so it always completes
+	-- well inside the bus cycle.
+	-- ------------------------------------------------------------------------
+	process(CLOCK_50)
+	begin
+		if rising_edge(CLOCK_50) then
+			if s_reset = '1' then
+				wr_req_meta <= '0';
+				wr_req_sync <= '0';
+				wr_busy     <= '0';
+				wr_served   <= '0';
+				wr_cnt      <= (others => '0');
+				wr_we_n     <= '1';
+				wr_drive    <= '0';
+			else
+				wr_req_meta <= s_mem_wr_en;
+				wr_req_sync <= wr_req_meta;
+
+				-- One write per bus cycle: re-arm only once the request drops.
+				if wr_req_sync = '0' then
+					wr_served <= '0';
+				end if;
+
+				if wr_busy = '0' then
+					wr_we_n  <= '1';
+					wr_drive <= '0';
+					if wr_req_sync = '1' and wr_served = '0' then
+						wr_addr_q <= s_sram_full_addr(17 downto 0);
+						wr_data_q <= D;
+						wr_drive  <= '1';	-- data out first, before /WE
+						wr_busy   <= '1';
+						wr_served <= '1';
+						wr_cnt    <= "000";
+					end if;
+				else
+					wr_cnt <= wr_cnt + 1;
+					case wr_cnt is
+						when "000"  => wr_we_n <= '1';	-- address/data setup
+						when "001"  => wr_we_n <= '0';	-- /WE low
+						when "010"  => wr_we_n <= '0';
+						when "011"  => wr_we_n <= '1';	-- /WE high, data STILL driven
+						when others =>                 	-- hold time satisfied
+							wr_we_n  <= '1';
+							wr_drive <= '0';
+							wr_busy  <= '0';
+					end case;
+				end if;
+			end if;
+		end if;
+	end process;
+
+	SRAM_ADDR <= bist_addr(17 downto 0) when SW(4) = '1'  else
+	             wr_addr_q   when wr_busy = '1' else
 	             s_sram_full_addr(17 downto 0);
 	-- SRAM byte lane, driven by address bit 18 (restored 2026-08-16).
 	--
 	-- The chip is 256K x 16; UB_N/LB_N choose which byte of the addressed word
 	-- is driven. With both byte lanes tied to the same 8 FPGA data pins, this
 	-- gives 512K byte-wide locations: bit 18 picks the lane, bits 17:0 pick the
-	SRAM_UB_N <= not s_sram_full_addr(18);
-	SRAM_LB_N <= s_sram_full_addr(18);
+	-- word. In BIST mode the test drives the same scheme from its own counter
+	-- so it exercises both lanes.
+	SRAM_UB_N <= not bist_addr(18) when SW(4) = '1' else not s_sram_full_addr(18);
+	SRAM_LB_N <= bist_addr(18)     when SW(4) = '1' else s_sram_full_addr(18);
 	-- s_addr_valid gate (2026-08-13): SRAM_WE_N used to be driven straight
 	-- from WR_n, so the write strobe reached the chip while s_A was still the
 	-- mid-capture chimera (new low byte + previous cycle's high byte, see the
@@ -2102,16 +2302,21 @@ begin
 	-- the chip is not even selected with an unsettled address.
 	-- 0xFFFF excluded here too (see s_mem_rd_en/s_mem_wr_en above): the chip is
 	-- not even selected for the subslot register's address.
-	SRAM_CE_N <= '0' when wr_busy = '1' else
+	SRAM_CE_N <= bist_ce_n when SW(4) = '1'  else
+	             '0'       when wr_busy = '1' else
 	             not (s_sltsl_ram_en and s_addr_valid and not s_ffff_slt);
 	-- Outputs must stay disabled for the whole self-timed write, otherwise
 	-- the SRAM would drive against our data.
-	SRAM_OE_N <= '1' when wr_busy = '1' else
+	SRAM_OE_N <= bist_oe_n when SW(4) = '1'  else
+	             '1'       when wr_busy = '1' else
 	             RD_n;
-	SRAM_WE_N <= wr_we_n when wr_busy = '1' else
+	SRAM_WE_N <= bist_we_n when SW(4) = '1'  else
+	             wr_we_n   when wr_busy = '1' else
 	             '1';
 
-	SRAM_DQ <= wr_data_q when wr_drive = '1' else
+	SRAM_DQ <= bist_dq         when (SW(4) = '1' and bist_drive = '1') else
+	           (others => 'Z') when SW(4) = '1'                         else
+	           wr_data_q       when wr_drive = '1'                      else
 	           (others => 'Z');
 
 	-- ------------------------------------------------------------------------
@@ -2289,15 +2494,17 @@ begin
 	-- error_o(15 downto 8) is still readable by software at SD_ERRHI.
 	-- SW(6)='1' shows the count of FFFFh write windows this design recognised
 	-- (see dbg_ffff_wr_cnt) so it can be compared with what ffffstress thinks
-	-- it wrote.
+	-- it wrote. SW(4) (BIST) still takes priority.
 	-- KEY(1) held shows the count of FFFFh writes we FAILED to recognise
 	-- (windows that never opened); released shows the normal SD counter.
 	-- KEY(2) held -> FFFFh READ  windows opened
 	-- KEY(1) held -> FFFFh WRITE windows opened
 	-- neither      -> normal SD/exp_reg display
-	HEXDIGIT0 <= dbg_bad_cnt(3 downto 0) when KEY(2) = '0' else
+	HEXDIGIT0 <= bist_errors(3 downto 0)   when SW(4) = '1' else
+	             dbg_bad_cnt(3 downto 0) when KEY(2) = '0' else
 	             dbg_bad_addr(3 downto 0)  when KEY(1) = '0' else dbg_sd_data_cnt(3 downto 0);
-	HEXDIGIT1 <= dbg_bad_cnt(7 downto 4) when KEY(2) = '0' else
+	HEXDIGIT1 <= bist_errors(7 downto 4)   when SW(4) = '1' else
+	             dbg_bad_cnt(7 downto 4) when KEY(2) = '0' else
 	             dbg_bad_addr(7 downto 4)  when KEY(1) = '0' else dbg_sd_data_cnt(7 downto 4);
 	-- HEX3:HEX2 now shows SD_DEBUG (register 9) - the last trace marker the
 	-- driver wrote. The error code has read 00 on every recent run, whereas
@@ -2312,13 +2519,17 @@ begin
 	-- subslot routing this register controls. Expect a stable, sensible value
 	-- (each 2-bit field selects a subslot per page); garbage or a value that
 	-- changes when it should not is the fault.
-	HEXDIGIT2 <= dbg_bad_cnt(11 downto 8) when KEY(2) = '0' else
+	HEXDIGIT2 <= bist_errors(11 downto 8)  when SW(4) = '1' else
+	             dbg_bad_cnt(11 downto 8) when KEY(2) = '0' else
 	             dbg_bad_addr(11 downto 8)  when KEY(1) = '0' else dbg_exp_reg(3 downto 0);
-	HEXDIGIT3 <= dbg_bad_cnt(15 downto 12) when KEY(2) = '0' else
+	HEXDIGIT3 <= bist_errors(15 downto 12) when SW(4) = '1' else
+	             dbg_bad_cnt(15 downto 12) when KEY(2) = '0' else
 	             dbg_bad_addr(15 downto 12)  when KEY(1) = '0' else dbg_exp_reg(7 downto 4);
 
-	LEDG(9)          <= s_rom_subslot_ever_q;
-	LEDG(8)          <= s_ram_subslot_ever_q;
+	LEDG(9)          <= bist_done when SW(4) = '1' else s_rom_subslot_ever_q;
+	LEDG(8)          <= '1' when (SW(4) = '1' and bist_done = '1' and bist_errors = x"0000") else
+	                    '0' when SW(4) = '1'                                                else
+	                    s_ram_subslot_ever_q;
 	LEDG(7 downto 4) <= not slt_exp_n;
 	LEDG(3)          <= dbg_sd_ever_accessed;
 	LEDG(2)          <= dbg_sd_init_done;
