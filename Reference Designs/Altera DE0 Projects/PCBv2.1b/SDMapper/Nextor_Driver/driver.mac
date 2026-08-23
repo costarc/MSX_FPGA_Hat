@@ -478,11 +478,28 @@ DEV_INFO_STRING:
 	pop	bc
 
 	ld	a,b
+	cp	1
+	jr	z,DEV_INFO_MANUF
 	cp	2
-	jr	nz,DEV_INFO_ERR2	;only "device name" (index 2) is provided
+	jr	z,DEV_INFO_DEVNAME
+	jr	DEV_INFO_ERR2		;3 = serial number, not available
 
+DEV_INFO_MANUF:
+	ld	de,MANUF_S
+	ld	bc,MANUF_LEN
+	jr	DEV_INFO_COPY
+
+DEV_INFO_DEVNAME:
 	ld	de,DEVNAME_S
 	ld	bc,DEVNAME_LEN
+
+	;BUG FIX: ldir copies (HL)->(DE), and on entry HL is the DESTINATION
+	;buffer while DE has just been loaded with the SOURCE string - the wrong
+	;way round. It copied the blank buffer onto the ROM string (a no-op) and
+	;left the caller's buffer full of spaces, so FDISK printed the device
+	;number followed by 64 blanks: "1." and nothing else. Swap them first.
+DEV_INFO_COPY:
+	ex	de,hl			;HL = source string, DE = destination buffer
 	ldir
 	xor	a
 	ret
@@ -554,10 +571,22 @@ LUN_INFO:
 	ld	(ix+0),0		;block device
 	ld	(ix+1),0		;sector size = 512
 	ld	(ix+2),2
-	ld	(ix+3),0		;total sectors: not available
+	;Total sectors, 32-bit little-endian across (ix+3)..(ix+6).
+	;
+	;This MUST be non-zero. FDISK refuses to partition a logical unit whose
+	;size it does not know and reports "there are no suitable logical units
+	;available in the device" - the card still enumerates, so it looks
+	;detected but cannot be partitioned or booted from.
+	;
+	;0x02000000 = 33,554,432 sectors x 512 = 16GB. It is HARDCODED: the FPGA
+	;bridge exposes SD_DATA/SD_STATUS/SD_ERRLO/SD_ERRHI only, with no capacity
+	;register, and the XESS core runs the SD protocol internally so CMD9
+	;(SEND_CSD) is not reachable from here. This is why FDISK always shows a
+	;16GB card whatever is actually inserted.
+	ld	(ix+3),0
 	ld	(ix+4),0
 	ld	(ix+5),0
-	ld	(ix+6),0
+	ld	(ix+6),2
 	ld	(ix+7),0		;not removable, not read-only, not a floppy
 	ld	(ix+8),0		;cylinders = 0 (not applicable)
 	ld	(ix+9),0
@@ -627,9 +656,15 @@ NOCARD_S:
 FAIL_S:
 	db	"SD card initialization failed - check HEX/LEDG",13,10,0
 
+;DEV_INFO strings. Nextor gives a 64-byte buffer, blank-padded by the caller
+;above, so these need no terminator and must not exceed 64 characters.
 DEVNAME_S:
 	db	"SDMapper V2.1b XESS SD Card"
 DEVNAME_LEN	equ	$-DEVNAME_S
+
+MANUF_S:
+	db	"Ronivon Costa"
+MANUF_LEN	equ	$-MANUF_S
 
 
 ;-----------------------------------------------------------------------------

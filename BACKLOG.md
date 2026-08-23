@@ -97,6 +97,37 @@ Build details are in
 
 ---
 
+## Report the REAL SD card identity and capacity
+
+**Status:** open. Needs an FPGA change, not just a driver change.
+
+Nextor and FDISK can show a card's manufacturer, product name and true size;
+other interfaces (e.g. fbelavenuto's sdmapperv2) do this. We cannot, and the
+blocker is hardware:
+
+- `sdcard_xess.vhd` has **no CID or CSD support at all** - it never issues CMD9
+  (SEND_CSD) or CMD10 (SEND_CID), and runs the SD protocol internally.
+- `sdcard_bridge.vhd` exposes only `SD_DATA`, `SD_ADDR0-3`, `SD_CMD`,
+  `SD_STATUS`, `SD_ERRLO/HI` - no capacity or identity register.
+
+So `LUN_INFO` hardcodes 16GB (`0x02000000` sectors), which is why FDISK always
+reports a 16GB card whatever is inserted. sdmapperv2 can do it because its
+driver bit-bangs raw SPI and can issue any command; ours delegates to a hardware
+core that only does block read/write.
+
+To fix:
+1. Extend the XESS core with CMD9/CMD10, or add a small state machine that
+   issues them at init.
+2. Expose the 16-byte responses through new bridge registers.
+3. In `driver.mac`, decode CSD for capacity (`LUN_INFO` total sectors) and CID
+   for the product name (`DEV_INFO` index 2).
+
+Worth doing beyond cosmetics: a wrong capacity means FDISK will happily create a
+partition table larger than a small card, which would fail at the far end of the
+medium rather than at partition time.
+
+---
+
 ## Fix the write bug in Nextor
 
 **Status:** open — reported 2026-08-23, details not yet captured.
