@@ -1,11 +1,13 @@
 # SDMapper build tools
 
-Two separate things live here:
-
 | File | Purpose |
 |---|---|
 | `build_multirom.py` | Assembles the 2.5 MB **Flash image** the DE0 is programmed with |
-| `Nextor-2.1.2.base.dat` | The Nextor kernel base — an **input** to building `SDMAPPER.ROM` |
+| `build_sdmapper_rom.sh` | Rebuilds `SDMAPPER.ROM`. **Verified byte-identical**; run under Debian WSL |
+| `Nextor-2.1.2.base.dat` | Nextor kernel base — input to `SDMAPPER.ROM` |
+| `driver.bin` | The disk driver bank — input to `SDMAPPER.ROM` |
+| `mapper.bin` | The 4-byte ASCII16 bank-switch routine — input to `SDMAPPER.ROM` |
+| `SDMAPPER.ROM` | The built output, committed so the Flash image can be rebuilt |
 
 ---
 
@@ -38,39 +40,65 @@ maps it with `s_flashbase = 0x000000` and the ASCII16 bank registers at
 
 ## 2. Building `SDMAPPER.ROM`
 
-### What is missing, precisely
+### The three input files
 
-The build tooling is all here — `mknexrom` and `Nextor-2.1.2.base.dat` — and
-half the driver side is solved too. What is missing is one file:
+| File | Size | What it is |
+|---|---|---|
+| `Nextor-2.1.2.base.dat` | 114688 (7 banks) | The Nextor kernel — DOS1/DOS2, FAT, everything hardware-independent. **Identical for every Nextor cartridge.** Byte `0xFE` holds the bank count (7), which is how `mknexrom` knows where the driver goes. Produced by `make base` in the Nextor tree |
+| `driver.bin` | 16336 (`0x3FD0`) | The disk driver — **the only hardware-specific code**. Becomes bank 7 at `0x1C000`. Starts `41 42` (`AB`), signature `NEXTOR_DRIVER` at `+0x100`, then a jump table, then code. Talks to our registers: `ld a,(7B06h)` polls `SD_STATUS`, `ld (7B00h),a` pushes `SD_DATA`. Ends at `0x3FD0`, where the reserved mapper slot begins |
+| `mapper.bin` | 4 | `32 00 60 C9` = `ld (6000h),a` / `ret` — the bank-switch routine. `mknexrom` stamps it into a reserved 48-byte slot at address `0x7FD0` of **every** bank, so whichever bank is live can switch away, plus one at file offset `0x07DC`. `0x6000` is the ASCII16 bank-1 register; an ASCII8 cartridge would use a different address |
 
 ```
-mknexrom nextor_base.dat SDMAPPER.ROM /d:<MISSING>.bin /m:<have this>.bin
+base (7 banks)                    driver.bin            mapper.bin
+bank 0 ─┐                                                   |
+  ...   +- kernel, unchanged ---------------------+      stamped at
+bank 6 -+                                         |      0x7FD0 in
+                                                  v      every bank
+bank 7  <-------- appended as the driver bank -- 0x1C000
+
+= 131072 bytes / 8 banks / "AB"
 ```
 
-- **`/m:` — solved.** `drivers/StandaloneASCII16/chgbnk.mac` is the correct
-  bank-switching code: this cartridge is ASCII16, with its bank registers at
-  6000–67FF / 7000–77FF.
-- **`/d:` — missing.** The disk driver, i.e. the hardware-specific code that
-  drives *this* cartridge's SD register window at 7B00–7B08 (visible only when
-  `rom_bank1_q = 7`). `mknexrom` cannot synthesise this; it only embeds a `.bin`
-  you supply.
+**base = the OS, driver = the storage hardware, mapper = the ROM-banking
+hardware.** Only the last two know anything about this board.
 
-The Nextor tree has drivers for `SunriseIDE`, `StandaloneASCII8`,
-`StandaloneASCII16`, `MegaFlashRomSD`, `Flashjacks` and `OCM` — none targets
-that interface.
+### Rebuilding it
 
-So `SDMAPPER.ROM` is not unrecreatable in principle, it is **unbuildable from
-what is in these repositories**. Two routes to fixing that:
+```bash
+wsl -d Debian
+cd "/mnt/c/.../PCBv2.1b/SDMapper/Tools"
+./build_sdmapper_rom.sh
+```
 
-1. **Obtain Belavenuto's SD Mapper driver source.** This design descends from
-   his SD Mapper, and that project is open source, so the driver that matches
-   the 7B00–7B08 register convention already exists somewhere.
-2. **Write `DRIVER.MAC` for the interface.** `MegaFlashRomSD` is the closest
-   model — also an SD-card driver on a Flash cartridge.
+The script runs `mknexrom`, normalises the padding, checks the size and `AB`
+signature, and compares against the existing `SDMAPPER.ROM`. **Verified
+2026-08-23: the rebuild is byte-identical.**
 
-Until one of those happens, the committed `SDMAPPER.ROM` in this folder is the
-only copy. It was recovered from the Flash image before that scratch folder was
-deleted; it is tracked with `git add -f` because `*.rom` is gitignored.
+Two traps it handles, both of which cost time to find:
+
+- `mknexrom` treats any argument beginning with `/` as a DOS-style switch, so
+  **absolute Linux paths break it**. The script keeps every path relative.
+- `mknexrom` fills the leftover mapper-area bytes with `0x00`; the original ROM
+  has `0xFF` there. Without normalising, the rebuild differs in exactly
+  9 x 44 = 396 pure padding bytes. Debian WSL has no `python3`, so this is done
+  with `dd`.
+
+### What is still missing: the driver SOURCE
+
+The build is reproducible, but `driver.bin` is a **binary extracted from the
+working ROM** — its source has never been in this repository. So the ROM can be
+*rebuilt* but not *modified*.
+
+That matters for the open Nextor write bug: if the fault is in the driver rather
+than the VHDL, it cannot be fixed without either recovering the source or
+disassembling the binary (the driver code sits around `0x1C180`-`0x1C4C0` in the
+ROM image).
+
+Note the driver is **bespoke to our register map**, confirmed by scanning the
+ROM: 12 x `ld a,(7B06h)` and `ld (7B00h),a`, and *zero* references to `7FF0` or
+`7FF1`. So `fbelavenuto/msxsdmapperv2`'s `DRIVER.ASM` is **not** a drop-in — it
+expects raw SPI at `7B00`-`7EFF` with control at `7FF0` and a timer at `7FF1`,
+which this FPGA does not decode. Adopting it would mean changing both halves.
 
 ### Toolchain
 
