@@ -56,7 +56,7 @@ SD_ADDR1	equ	7B02h	;W: block address bits 15:8
 SD_ADDR2	equ	7B03h	;W: block address bits 23:16
 SD_ADDR3	equ	7B04h	;W: block address bits 31:24 (SDHC card - block number, not byte address)
 SD_CMD		equ	7B05h	;W: bit7=reset pulse, bit1=write pulse, bit0=read pulse, bit2=continue
-SD_STATUS	equ	7B06h	;R: bit0=busy, bit1=error, bit2=present(hardwired 1), bit3=write-protect, bit4=timeout, bit5=ready
+SD_STATUS	equ	7B06h	;R: b0=busy b1=error b2=present(always 1) b3=wprot b4=timeout b5=byte-ready b6=INIT DONE
 SD_ERRLO	equ	7B07h	;R: SdCardCtrl's error_o(7:0), for diagnostics
 SD_ERRHI	equ	7B08h	;R: SdCardCtrl's error_o(15:8), for diagnostics
 
@@ -70,13 +70,20 @@ SDSTAT_ERROR	equ	1
 SDSTAT_PRESENT	equ	2
 SDSTAT_WPROT	equ	3
 SDSTAT_TIMEOUT	equ	4
-;Bit 5 = sd_ready: the XESS core completed CMD0/CMD8/ACMD41 successfully, i.e.
-;a card is genuinely present AND initialised. This is the ONLY trustworthy
-;"is there a usable card" signal. SDSTAT_PRESENT (bit 2) comes from
-;card_present_i, which SDMapper_Top.vhd hardwires to '1' - the board has no
-;card-detect sensing - so it is ALWAYS set and must never be used to decide
-;whether a card exists.
+;Bit 5 = sd_ready. WARNING: this is a per-BYTE transfer handshake
+;(rx_ready_q or tx_ready_q in sdcard_bridge.vhd), NOT an init-status bit. It
+;reads 0 whenever no transfer is in progress, so it must never be used to ask
+;"is there a card" - doing so made every path report no card, always.
 SDSTAT_READY	equ	5
+;Bit 6 = init_done: sticky, set once SdCardCtrl reaches WAIT_FOR_HOST_RW, i.e.
+;the card genuinely completed CMD0/CMD8/ACMD41. THIS is the "is there a usable
+;card" signal. Added to SD_STATUS on 2026-08-23; before that it existed in the
+;bridge but was wired only to LEDG(2) and invisible to software.
+;
+;Note SDSTAT_PRESENT (bit 2) is NOT usable for this: it comes from
+;card_present_i, which SDMapper_Top.vhd hardwires to '1' since the board has no
+;card-detect sensing, so it is always set.
+SDSTAT_INITDONE	equ	6
 
 M_SDSTAT_BUSY		equ	(1 SHL SDSTAT_BUSY)
 M_SDSTAT_ERROR		equ	(1 SHL SDSTAT_ERROR)
@@ -224,7 +231,7 @@ DRV_INIT_WAIT_OUTER:
 	ld	b,0
 DRV_INIT_WAIT:
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_READY,a
+	bit	SDSTAT_INITDONE,a
 	jr	nz,DRV_INIT_WAITDONE	;ready - stop waiting
 	ld	c,0
 DRV_INIT_WAIT_INNER:
@@ -242,7 +249,7 @@ DRV_INIT_WAITDONE:
 	;equates). No card, or a card that failed to initialise, both land here
 	;and must return cleanly so Nextor hands control back and the MSX
 	;carries on booting.
-	bit	SDSTAT_READY,c
+	bit	SDSTAT_INITDONE,c
 	jr	z,DRV_INIT_NOCARD
 
 	bit	SDSTAT_BUSY,c
@@ -357,7 +364,7 @@ DEV_RW:
 	;DEV_STATUS reporting the device unavailable is not enough on its own -
 	;Nextor may still issue a read - so the transfer path needs its own guard.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_READY,a
+	bit	SDSTAT_INITDONE,a
 	jp	z,DEV_RW_NOTREADY
 
 	ld	a,b
@@ -586,7 +593,7 @@ DEV_STATUS:
 	;issued a read, and the machine HUNG at boot. Testing sd_ready instead
 	;makes Nextor skip the device and carry on booting.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_READY,a
+	bit	SDSTAT_INITDONE,a
 	jr	z,DEV_STATUS_NA
 	ld	a,(SD_STATUS)
 	bit	SDSTAT_ERROR,a
@@ -624,7 +631,7 @@ LUN_INFO:
 	;perfectly healthy 16GB block device with nothing in the slot, which is
 	;how a missing card ended up being read from at all.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_READY,a
+	bit	SDSTAT_INITDONE,a
 	jr	z,LUN_INFO_ERR
 
 	push	hl

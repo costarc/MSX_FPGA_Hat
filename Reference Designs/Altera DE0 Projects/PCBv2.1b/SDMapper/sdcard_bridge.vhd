@@ -817,7 +817,16 @@ begin
 	               sd_addr1_q when reg_addr_i = "0010" else
 	               sd_addr2_q when reg_addr_i = "0011" else
 	               sd_addr3_q when reg_addr_i = "0100" else
-	               "00" & sd_ready_s & timeout_flag_q & write_protect_i & card_present_i & error_flag_s & xess_busy_s when reg_addr_i = "0110" else
+	               -- bit6 = init_done_q (2026-08-23): sticky "SdCardCtrl reached
+	               -- WAIT_FOR_HOST_RW at least once", i.e. the card genuinely
+	               -- initialised. This is the ONLY bit here that answers "is
+	               -- there a usable card". It was previously wired only to
+	               -- LEDG(2) and invisible to software, which is why the driver
+	               -- had to fall back on a manual switch - and why using bit5
+	               -- (sd_ready) for it failed: that is a per-BYTE transfer
+	               -- handshake (rx_ready_q or tx_ready_q), which reads 0
+	               -- whenever no transfer is in progress.
+	               '0' & init_done_q & sd_ready_s & timeout_flag_q & write_protect_i & card_present_i & error_flag_s & xess_busy_s when reg_addr_i = "0110" else
 	               xess_error_s(7 downto 0)  when reg_addr_i = "0111" else
 	               xess_error_s(15 downto 8) when reg_addr_i = "1000" else
 	               (others => '0');
