@@ -11,8 +11,8 @@ SDMapper_Top.vhd's MULTIROM section.
     ---------
     0x000000  128KB   System ROM (SDMAPPER.ROM) - fixed, boots Nextor
     0x020000  128KB   reserved / free
-    0x040000  256KB   MapperTest diagnostic ROMs - 16 slots x 16KB
-                      (SW(9)=0, SW(8)=1, SW(3:0) selects)
+    0x040000  256KB   MapperTest diagnostic ROMs - 16 slots x 16KB, 2 used
+                      (SW(9)=0, SW(8)=1, SW(1) selects)
     0x080000  512KB   PLAIN games   - 16 slots x 32KB   -> game index 0-15
     0x100000 1024KB   ASCII16 games -  4 slots x 256KB  -> game index 16-19
     0x200000  512KB   Konami4 games -  4 slots x 128KB  -> game index 20-23
@@ -79,42 +79,27 @@ IMAGE_SIZE   = KONAMI8_BASE + 4 * KONAMI8_SLOT   # 0x280000 = 2.5MB
 # --- system ROM --------------------------------------------------------------
 SYSTEM_ROM = "SDMAPPER.ROM"
 
-# --- MapperTest diagnostic ROMs: SW(9)=0, SW(8)=1, SW(3:0) selects ----------
-# Only two are kept. The rest were built to chase the stale-address bug that was
-# fixed on 2026-08-23; their job is done, and they were actively misleading -
-# maptest, page0test, both soak tests and testramrom all passed continuously for
-# weeks while Nextor could not boot. They write a value and read it straight
-# back, and when the FPGA fails to recognise an access it does not drive D at
-# all, so the Z80 reads the floating bus, which still holds the value just
-# written. They cannot see that class of fault.
+# --- MapperTest diagnostic ROMs: SW(9)=0, SW(8)=1, SW(1) selects ------------
+# Only two are kept. The rest were built to chase the stale-address bug fixed on
+# 2026-08-23; their job is done, and they were actively misleading - maptest,
+# page0test, both soak tests and testramrom all passed continuously for weeks
+# while Nextor could not boot. They write a value and read it straight back, and
+# when the FPGA fails to recognise an access it does not drive D at all, so the
+# Z80 reads the floating bus, which still holds the value just written. They
+# cannot see that class of fault.
 #
 # The dropped ROMs are still in MapperTest/ and in git - they are simply not
-# flashed. Re-add one by putting it back in the list below.
+# flashed. Re-add one by putting it back in this list.
 #
-# SLOT CHOICE MATTERS. In SDMapper mode SW(0) is the SD card-present flag and
-# SW(2) is write-protect, so using those as the ROM selector would toggle the
-# card flags at the same time. Slots 0 and 8 differ only in SW(3), which has no
-# other job - so SW(3) alone picks the test ROM and SW(2:0) stay free:
-#
-#     SW(3)=0  ->  testmapper     SW(3)=1  ->  ffffstress
-#
-# This also needs NO change to SDMapper_Top.vhd: the existing decode already
-# maps SW(3:0) onto bits 17:14 of the Flash address.
+#     SW(1)=0 -> testmapper      SW(1)=1 -> ffffstress
 TEST_ROMS = [
-    ("testmapper.rom",   16 * KB),   # 0 - SW(3)=0. Measures the mapper's REAL
+    ("testmapper.rom",   16 * KB),   # 0 - SW(1)=0. Measures the mapper's REAL
                                      #     size rather than assuming it, then
                                      #     writes 00/FF/AA/55 over every
                                      #     detected segment. Port FEh / page 2
                                      #     only, so it is safe on any machine
                                      #     and sizes third-party mappers too.
-    None,                            # 1-7 empty
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    ("ffffstress.rom",   16 * KB),   # 8 - SW(3)=1. KEEP THIS ONE. It is the
+    ("ffffstress.rom",   16 * KB),   # 1 - SW(1)=1. KEEP THIS ONE. It is the
                                      #     only test that ever caught a real
                                      #     bug here: it distinguishes DROPPED
                                      #     from CORRUPT writes to FFFFh, and
@@ -247,7 +232,7 @@ def main():
     print(f"  0x{SYSTEM_BASE:06X}  system  {SYSTEM_ROM}"
           f"{'' if sys_len else '   *** MISSING ***'}")
     print()
-    print("  MAPPERTEST ROMS (SW(9)=0, SW(8)=1, SW(3:0) selects)")
+    print("  MAPPERTEST ROMS (SW(9)=0, SW(8)=1, SW(1) selects)")
     print("  slot  flash      size   rom")
     for idx, addr, name, expected, actual in tests:
         mark = "" if actual is not None else "   *** MISSING ***"

@@ -453,7 +453,7 @@ architecture bevioural of SDMapper_TOP is
 	-- PROVEN: the drops are writes where the FFFFh window NEVER OPENED - the
 	-- captured address was not FFFFh. Window fragmentation measured exactly
 	-- 0000 on hardware, so exp_slot and its 4-clock filter are cleared.
-	signal AMUX_SETTLE_CLOCKS : integer range 1 to 4 := 1;
+	constant AMUX_SETTLE_CLOCKS : integer := 1;
 	signal   settle_cnt         : integer range 0 to 7 := 0;
 
 	-- ------------------------------------------------------------------------
@@ -1089,11 +1089,6 @@ begin
 	-- failure"); this makes that impossible rather than order-dependent.
 	-- MULTIROM: a plain cartridge is NOT sub-slot expanded, so the FFFF
 	-- subslot register must not exist at all in that mode.
-	AMUX_SETTLE_CLOCKS <= 1 when SW(6 downto 5) = "00" else
-	                      2 when SW(6 downto 5) = "01" else
-	                      3 when SW(6 downto 5) = "10" else
-	                      4;
-
 	s_ffff_slt    <= '1' when s_A = x"FFFF" and s_addr_valid = '1' and s_legacy_en = '1' else '0';
 
 	-- The qualifiers exp_slot uses for its write and read windows at FFFFh.
@@ -1659,7 +1654,11 @@ begin
 	-- which only stays a clean concatenation if the region base is 256KB
 	-- aligned. The region is 16 x 16KB = 256KB, ending exactly where the
 	-- plain games begin at 0x080000.
-	s_flashbase <= "00000" & '1' & SW(3 downto 0) & "00000000000000"
+	-- Test ROM select is SW(1) alone - only two diagnostics are flashed, at
+	-- slots 0 and 1. The index still lands in Flash address bits 17:14, so
+	-- this stays a pure concatenation with no adder.
+	--     SW(1)=0 -> testmapper      SW(1)=1 -> ffffstress
+	s_flashbase <= "00000" & '1' & "000" & SW(1) & "00000000000000"
 	                   when SW(8) = '1' else
 	               x"000000";		-- FlashRAM address for the Nextor Operating System
 
@@ -1748,7 +1747,10 @@ begin
 	-- not detected" yet CALL FDISK showed a bogus 16GB card, because it was
 	-- interpreting ROM bytes as register values. Exactly the failure the
 	-- 2026-08-15 note above warns about.
-	s_sdbridge_cs_s <= '1' when SW(7) = '0' and s_addr_valid = '1'
+	-- SW(7) no longer gates this. The window only answers when
+	-- rom_bank1_q = 7, and the diagnostic ROMs are plain 16KB images that
+	-- never touch the bank register, so it stays inert for them anyway.
+	s_sdbridge_cs_s <= '1' when s_addr_valid = '1'
                         and s_sltsl_rom_en = '1' 
                         and rom_bank1_q = "111" 
                         and s_A(15 downto 8) = x"7B" 
@@ -1894,8 +1896,16 @@ begin
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
 		wait_n_o			=> s_sdbridge_wait_n_o,
-		card_present_i	=> SW(0),
-		write_protect_i=> SW(2),
+		-- Card presence is no longer a switch: it is always reported present.
+		-- If no card is actually inserted the driver's own init fails and
+		-- reports an error, which is better information than a switch that
+		-- can simply be set wrong.
+		card_present_i	=> '1',
+		-- SW(0) = write protect. ON protects, OFF is normal read/write. This
+		-- is the ONLY meaningful write-protect on this board: a full-size SD
+		-- card's slider is mechanical and read by the socket, and microSD has
+		-- no slider at all.
+		write_protect_i=> SW(0),
 		reg_dout			=> sd_reg_dout,
 		sd_dout			=> sd_data_dout,
 		sd_rd_en			=> sd_data_rd_en,
