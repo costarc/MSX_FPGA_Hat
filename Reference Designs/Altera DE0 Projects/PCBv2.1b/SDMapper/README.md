@@ -72,28 +72,27 @@ Indices 24–31 fall back to slot 0.
 Set `SW(7)=1` as well, so the SD register window is off and nothing else of ours
 is on the bus.
 
-| `SW(3:0)` | ROM | What it tests |
+| `SW(3)` | ROM | What it does |
 |:---:|---|---|
-| 0 | `maptest` | Segment integrity **and aliasing** — writes all 32 segments, *then* re-reads all of them |
-| 1 | `testramrom` | RAM/ROM interaction |
-| 2 | `testramrom2` | RAM/ROM interaction, variant |
-| 3 | `porttest` | FCh–FFh segment registers |
-| 4 | `page0test` | Page 0 visibility |
-| 5 | `soaktest` | Sustained soak |
-| 6 | `soaktest_ei` | Sustained soak, interrupts enabled |
-| 7 | `ffffstress` | FFFF sub-slot-select stress |
-| **8** | **`testmapper`** | **Empirical mapper size + `00`/`FF`/`AA`/`55` patterns** |
+| `0` | **`testmapper`** | Measures the mapper's **real** size rather than assuming it — fingerprints segments and counts how many hold a distinct value before aliasing — then writes `00`/`FF`/`AA`/`55` over each one. Touches only port FEh / page 2, so it cannot disturb its own code or stack, and it sizes third-party mappers correctly too |
+| `1` | **`ffffstress`** | Hammers the FFFFh sub-slot register and classifies every failure as **dropped** or **corrupt**. Keep this one: it is the only test here that ever caught a real bug, and it is the regression test for the address-capture path |
 
-**Start with slot 8 (`testmapper`).** It measures the mapper's real size rather
-than trusting the register width — fingerprinting up to 256 segments and counting
-how many hold a distinct value before aliasing — then fills each detected segment
-with `00`/`FF` (stuck-at faults) and `AA`/`55` (adjacent-bit coupling). It writes
-only port FEh / page 2, never FCh/FDh/FFh, so it cannot disturb its own execution
-page or the stack, and it sizes third-party mappers correctly too.
+Only `SW(3)` changes between them — `SW(2:0)` keep their normal jobs (`SW(0)`
+card-present, `SW(2)` write-protect), so selecting a test never disturbs the SD
+card flags.
 
-`maptest` (slot 0) is the other high-value one: its aliasing check writes *every*
-segment before re-reading *any*, so overlapping segments are caught. A
-write-then-immediately-read test would pass a badly aliased mapper.
+> The other seven diagnostics (`maptest`, `testramrom`, `testramrom2`,
+> `porttest`, `page0test`, `soaktest`, `soaktest_ei`) are **no longer flashed**.
+> They were built to chase the stale-address bug fixed on 2026-08-23, and they
+> were actively misleading: all of them passed continuously for weeks while
+> Nextor could not boot. They write a value and read it straight back, and when
+> the FPGA fails to recognise an access it does not drive `D` at all — so the
+> Z80 reads the floating bus, which still holds the value just written. They are
+> blind to that whole class of fault by construction.
+>
+> They remain in `MapperTest/` and in git; re-add one by putting it back in
+> `TEST_ROMS` in `Tools/build_multirom.py`. No FPGA change is needed — the
+> 16-slot map at `0x040000` is unchanged.
 
 ### SRAM BIST — `SW(4)=1`
 

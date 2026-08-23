@@ -54,24 +54,50 @@ IMAGE_SIZE   = KONAMI8_BASE + 4 * KONAMI8_SLOT   # 0x280000 = 2.5MB
 # --- system ROM --------------------------------------------------------------
 SYSTEM_ROM = "SDMAPPER.ROM"
 
-# --- MapperTest diagnostic ROMs: SW(2:0) selects, with SW(9)=0 and SW(8)=1 --
-# These run with the RAM mapper and sub-slot expansion LIVE, which is the whole
-# point - they exercise the path the FPGA-side SRAM BIST cannot reach:
-# MSX bus -> A_MUX capture -> exp_slot subslot -> segment registers -> SRAM.
+# --- MapperTest diagnostic ROMs: SW(9)=0, SW(8)=1, SW(3:0) selects ----------
+# Only two are kept. The rest were built to chase the stale-address bug that was
+# fixed on 2026-08-23; their job is done, and they were actively misleading -
+# maptest, page0test, both soak tests and testramrom all passed continuously for
+# weeks while Nextor could not boot. They write a value and read it straight
+# back, and when the FPGA fails to recognise an access it does not drive D at
+# all, so the Z80 reads the floating bus, which still holds the value just
+# written. They cannot see that class of fault.
+#
+# The dropped ROMs are still in MapperTest/ and in git - they are simply not
+# flashed. Re-add one by putting it back in the list below.
+#
+# SLOT CHOICE MATTERS. In SDMapper mode SW(0) is the SD card-present flag and
+# SW(2) is write-protect, so using those as the ROM selector would toggle the
+# card flags at the same time. Slots 0 and 8 differ only in SW(3), which has no
+# other job - so SW(3) alone picks the test ROM and SW(2:0) stay free:
+#
+#     SW(3)=0  ->  testmapper     SW(3)=1  ->  ffffstress
+#
+# This also needs NO change to SDMapper_Top.vhd: the existing decode already
+# maps SW(3:0) onto bits 17:14 of the Flash address.
 TEST_ROMS = [
-    ("maptest.rom",      16 * KB),   # 0 - segment integrity + aliasing
-    ("testramrom.rom",   16 * KB),   # 1
-    ("testramrom2.rom",  16 * KB),   # 2
-    ("porttest.rom",     16 * KB),   # 3 - FCh-FFh segment registers
-    ("page0test.rom",    16 * KB),   # 4
-    ("soaktest.rom",     16 * KB),   # 5
-    ("soaktest_ei.rom",  16 * KB),   # 6
-    ("ffffstress.rom",   16 * KB),   # 7 - FFFF subslot-select stress
-    ("testmapper.rom",   16 * KB),   # 8 - empirical mapper SIZE detection +
-                                     #     00/FF/AA/55 patterns over every
+    ("testmapper.rom",   16 * KB),   # 0 - SW(3)=0. Measures the mapper's REAL
+                                     #     size rather than assuming it, then
+                                     #     writes 00/FF/AA/55 over every
                                      #     detected segment. Port FEh / page 2
                                      #     only, so it is safe on any machine
-                                     #     and also sizes third-party mappers.
+                                     #     and sizes third-party mappers too.
+    None,                            # 1-7 empty
+    None,
+    None,
+    None,
+    None,
+    None,
+    None,
+    ("ffffstress.rom",   16 * KB),   # 8 - SW(3)=1. KEEP THIS ONE. It is the
+                                     #     only test that ever caught a real
+                                     #     bug here: it distinguishes DROPPED
+                                     #     from CORRUPT writes to FFFFh, and
+                                     #     that distinction is what located the
+                                     #     stale-address fault. It is the
+                                     #     regression test for the sub-slot
+                                     #     path - if the address capture breaks
+                                     #     again, this is what will say so.
 ]
 
 # --- plain (non-mapped) games: slot index -> (filename, expected size) --------
@@ -135,7 +161,10 @@ def find_rom(name, rom_dirs):
 def place(image, base, slot_size, entries, rom_dirs, label, missing, oversize):
     """Write each entry into its slot, zero-padded. Returns a report list."""
     rows = []
-    for idx, (name, expected) in enumerate(entries):
+    for idx, entry in enumerate(entries):
+        if entry is None:          # deliberately empty slot - left as 0xFF
+            continue
+        name, expected = entry
         addr = base + idx * slot_size
         path = find_rom(name, rom_dirs)
         if path is None:
