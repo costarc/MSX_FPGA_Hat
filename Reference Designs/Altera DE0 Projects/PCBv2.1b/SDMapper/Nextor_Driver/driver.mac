@@ -56,7 +56,7 @@ SD_ADDR1	equ	7B02h	;W: block address bits 15:8
 SD_ADDR2	equ	7B03h	;W: block address bits 23:16
 SD_ADDR3	equ	7B04h	;W: block address bits 31:24 (SDHC card - block number, not byte address)
 SD_CMD		equ	7B05h	;W: bit7=reset pulse, bit1=write pulse, bit0=read pulse, bit2=continue
-SD_STATUS	equ	7B06h	;R: b0=busy b1=error b2=present(always 1) b3=wprot b4=timeout b5=byte-ready b6=INIT DONE
+SD_STATUS	equ	7B06h	;R: b0=busy b1=error b2=present(SW0) b3=wprot(SW2) b4=timeout b5=byte-ready
 SD_ERRLO	equ	7B07h	;R: SdCardCtrl's error_o(7:0), for diagnostics
 SD_ERRHI	equ	7B08h	;R: SdCardCtrl's error_o(15:8), for diagnostics
 
@@ -75,15 +75,10 @@ SDSTAT_TIMEOUT	equ	4
 ;reads 0 whenever no transfer is in progress, so it must never be used to ask
 ;"is there a card" - doing so made every path report no card, always.
 SDSTAT_READY	equ	5
-;Bit 6 = init_done: sticky, set once SdCardCtrl reaches WAIT_FOR_HOST_RW, i.e.
-;the card genuinely completed CMD0/CMD8/ACMD41. THIS is the "is there a usable
-;card" signal. Added to SD_STATUS on 2026-08-23; before that it existed in the
-;bridge but was wired only to LEDG(2) and invisible to software.
-;
-;Note SDSTAT_PRESENT (bit 2) is NOT usable for this: it comes from
-;card_present_i, which SDMapper_Top.vhd hardwires to '1' since the board has no
-;card-detect sensing, so it is always set.
-SDSTAT_INITDONE	equ	6
+;NOTE: sdcard_bridge.vhd has an init_done_q signal that IS a genuine "card
+;initialised" flag, but it is wired only to LEDG(2) and is NOT in SD_STATUS.
+;Exposing it needs an FPGA change - see BACKLOG.md. Until then SDSTAT_PRESENT
+;(bit 2 = card_present_i = SW(0), a manual switch) is what we have.
 
 M_SDSTAT_BUSY		equ	(1 SHL SDSTAT_BUSY)
 M_SDSTAT_ERROR		equ	(1 SHL SDSTAT_ERROR)
@@ -231,8 +226,8 @@ DRV_INIT_WAIT_OUTER:
 	ld	b,0
 DRV_INIT_WAIT:
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
-	jr	nz,DRV_INIT_WAITDONE	;ready - stop waiting
+	bit	SDSTAT_BUSY,a
+	jr	z,DRV_INIT_WAITDONE	;no longer busy - stop waiting
 	ld	c,0
 DRV_INIT_WAIT_INNER:
 	dec	c
@@ -249,7 +244,7 @@ DRV_INIT_WAITDONE:
 	;equates). No card, or a card that failed to initialise, both land here
 	;and must return cleanly so Nextor hands control back and the MSX
 	;carries on booting.
-	bit	SDSTAT_INITDONE,c
+	bit	SDSTAT_PRESENT,c
 	jr	z,DRV_INIT_NOCARD
 
 	bit	SDSTAT_BUSY,c
@@ -351,21 +346,22 @@ DEV_RW:
 	cp	1
 	jp	nz,DEV_RW_BADDEV
 
-	;Fail fast if there is no usable card.
-	;
-	;BUG (2026-08-23): nothing checked this, so with no card inserted we fell
-	;straight into the 512-byte SD_DATA loop below. SD_DATA is WAIT_n-gated,
-	;so every byte stalls the Z80 until the bridge's ~10ms timeout - about 5
-	;seconds per sector, and Nextor retries. On hardware that looked like a
-	;hang on a blue screen: the driver had already printed "SD Card not
-	;detected" and returned, but the machine still never reached its internal
-	;Apps ROM because the first read pinned it here.
-	;
-	;DEV_STATUS reporting the device unavailable is not enough on its own -
-	;Nextor may still issue a read - so the transfer path needs its own guard.
+	;Pre-transfer state checks. Doing these BEFORE touching SD_DATA matters:
+	;SD_DATA is WAIT_n-gated, so entering the transfer loop with a card that
+	;cannot respond stalls the Z80 for ~10ms PER BYTE - about 5s per sector,
+	;with Nextor retrying. That looks exactly like a hang.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
+	bit	SDSTAT_PRESENT,a
 	jp	z,DEV_RW_NOTREADY
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_BUSY,a
+	jp	nz,DEV_RW_NOTREADY
+	ld	a,(SD_ERRLO)
+	or	a
+	jp	nz,DEV_RW_ERRHARD
+	ld	a,(SD_ERRHI)
+	or	a
+	jp	nz,DEV_RW_ERRHARD
 
 	ld	a,b
 	or	a
@@ -378,24 +374,28 @@ DEV_RW:
 DEV_RW_HASCOUNT:
 	push	de
 	pop	ix			;ix -> 4-byte sector number
-	ld	a,(ix+0)
-	ld	(SD_ADDR0),a
-	ld	a,(ix+1)
-	ld	(SD_ADDR1),a
-	ld	a,(ix+2)
-	ld	(SD_ADDR2),a
-	ld	a,(ix+3)
-	ld	(SD_ADDR3),a
-
+	ld	e,0			;E = sector index within this transfer
+	ld	c,b			;C = requested count, for the B fixup on exit
 	pop	af			;Cy = r/w flag again
 	jr	c,DEV_RW_DOWRITE
 
 ;--- READ ---
-
-	ld	a,SD_CMD_READ
-	ld	(SD_CMD),a
+;
+;ONE COMPLETE SINGLE-BLOCK COMMAND PER SECTOR: recompute the address as
+;base+E, issue the command, WAIT for the core, then move 512 bytes.
+;
+;The previous version issued one command, then used SD_CMD_CONTINUE for the
+;remaining sectors, and never waited at all - it read SD_DATA immediately
+;after writing SD_CMD. Disassembling the known-good binary showed DEV_RW is
+;228 bytes there against 175 here; this structure is the difference.
 
 DEV_RW_RLOOP:
+	call	SD_SETADDR
+	ld	a,SD_CMD_READ
+	ld	(SD_CMD),a
+	call	SD_WAIT
+	jp	c,DEV_RW_ERR
+
 	push	bc
 	ld	bc,512
 DEV_RW_RBYTE:
@@ -410,27 +410,31 @@ DEV_RW_RBYTE:
 
 	ld	a,(SD_STATUS)
 	and	M_SDSTAT_FAIL
-	jr	nz,DEV_RW_ERR
+	jp	nz,DEV_RW_ERR
 
-	djnz	DEV_RW_RNEXT
+	inc	e			;next sector
+	djnz	DEV_RW_RLOOP
+
+	ld	b,c			;B = sectors transferred, which Nextor expects.
+					;Falling out of djnz leaves B=0 - the old code
+					;returned that, reporting nothing transferred.
 	xor	a
 	ret
-DEV_RW_RNEXT:
-	ld	a,SD_CMD_READ+SD_CMD_CONTINUE
-	ld	(SD_CMD),a
-	jr	DEV_RW_RLOOP
 
 ;--- WRITE ---
 
 DEV_RW_DOWRITE:
 	ld	a,(SD_STATUS)
 	bit	SDSTAT_WPROT,a
-	jr	nz,DEV_RW_WPROTERR
-
-	ld	a,SD_CMD_WRITE
-	ld	(SD_CMD),a
+	jp	nz,DEV_RW_WPROTERR
 
 DEV_RW_WLOOP:
+	call	SD_SETADDR
+	ld	a,SD_CMD_WRITE
+	ld	(SD_CMD),a
+	call	SD_WAIT
+	jp	c,DEV_RW_ERR
+
 	push	bc
 	ld	bc,512
 DEV_RW_WBYTE:
@@ -445,15 +449,79 @@ DEV_RW_WBYTE:
 
 	ld	a,(SD_STATUS)
 	and	M_SDSTAT_FAIL
-	jr	nz,DEV_RW_ERR
+	jp	nz,DEV_RW_ERR
 
-	djnz	DEV_RW_WNEXT
+	inc	e
+	djnz	DEV_RW_WLOOP
+
+	ld	b,c
 	xor	a
 	ret
-DEV_RW_WNEXT:
-	ld	a,SD_CMD_WRITE+SD_CMD_CONTINUE
-	ld	(SD_CMD),a
-	jr	DEV_RW_WLOOP
+
+;-----------------------------------------------------------------------------
+;
+; Set SD_ADDR0-3 to the 32-bit sector number at (IX) plus E.
+;
+; The working driver recomputes the full address for EVERY sector instead of
+; using the core's continue mode, so each sector is an independent single-block
+; command. Only A and the flags are modified - E, BC, HL and IX survive.
+
+SD_SETADDR:
+	ld	a,(ix+0)
+	add	a,e
+	ld	(SD_ADDR0),a
+	ld	a,(ix+1)
+	adc	a,0
+	ld	(SD_ADDR1),a
+	ld	a,(ix+2)
+	adc	a,0
+	ld	(SD_ADDR2),a
+	ld	a,(ix+3)
+	adc	a,0
+	ld	(SD_ADDR3),a
+	ret
+
+;-----------------------------------------------------------------------------
+;
+; Wait for the core to be ready to move the first byte of a block.
+;
+; MUST be called after every SD_CMD write. SD_STATUS bit 5 is the per-BYTE
+; transfer handshake - "a prefetched byte is available, or the core can accept
+; a write byte" - so it is exactly right here, and exactly WRONG as an answer
+; to "is a card present", which is how a whole session was lost.
+;
+; Exit: Cy=0 ready, Cy=1 on error or timeout. Budget is 8 x 256 polls with a
+; 256-iteration delay between them, matching the known-good binary.
+
+SD_WAIT:
+	push	bc
+	push	de
+	ld	d,8
+SD_WAIT_OUTER:
+	ld	b,0
+SD_WAIT_POLL:
+	ld	a,(SD_STATUS)
+	bit	SDSTAT_READY,a
+	jr	nz,SD_WAIT_OK
+	and	M_SDSTAT_FAIL
+	jr	nz,SD_WAIT_FAIL
+	ld	c,0
+SD_WAIT_DLY:
+	dec	c
+	jr	nz,SD_WAIT_DLY
+	djnz	SD_WAIT_POLL
+	dec	d
+	jr	nz,SD_WAIT_OUTER
+SD_WAIT_FAIL:
+	pop	de
+	pop	bc
+	scf
+	ret
+SD_WAIT_OK:
+	pop	de
+	pop	bc
+	or	a
+	ret
 
 ;--- Error handling ---
 
@@ -470,6 +538,13 @@ DEV_RW_ERR:
 	ret
 DEV_RW_ERR_NRDY:
 	ld	a,.NRDY
+	ld	b,0
+	ret
+
+	;Reached with the entry "push af" still on the stack - balance it.
+DEV_RW_ERRHARD:
+	pop	af
+	ld	a,.DISK
 	ld	b,0
 	ret
 
@@ -593,7 +668,7 @@ DEV_STATUS:
 	;issued a read, and the machine HUNG at boot. Testing sd_ready instead
 	;makes Nextor skip the device and carry on booting.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
+	bit	SDSTAT_PRESENT,a
 	jr	z,DEV_STATUS_NA
 	ld	a,(SD_STATUS)
 	bit	SDSTAT_ERROR,a
@@ -631,7 +706,7 @@ LUN_INFO:
 	;perfectly healthy 16GB block device with nothing in the slot, which is
 	;how a missing card ended up being read from at all.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
+	bit	SDSTAT_PRESENT,a
 	jr	z,LUN_INFO_ERR
 
 	push	hl
@@ -655,28 +730,15 @@ LUN_INFO:
 	ld	(ix+4),0
 	ld	(ix+5),0
 	ld	(ix+6),2
-	;Feature flags (Driver Development Guide):
-	;  bit0 = removable, bit1 = read only, bit2 = floppy,
-	;  bit3 = exclude from automapping
+	;Feature flags: bit0 removable, bit1 read only, bit2 floppy,
+	;bit3 no automapping.
 	;
-	;Bit 1 now follows SD_STATUS bit 3, which SDMapper_Top.vhd drives from
-	;SW(2). This byte used to be hardcoded to 0, so the switch reached the
-	;register and NOTHING ever read it - SW(2) did nothing at all.
-	;
-	;The switch is the only write-protect available on this hardware. A
-	;full-size SD card's slider is purely mechanical, read by a switch in the
-	;socket - the card has no electrical knowledge of it - and microSD, which
-	;is what this board takes, has no slider at all. The CSD register does
-	;carry PERM_WRITE_PROTECT/TMP_WRITE_PROTECT, but reading it needs CMD9,
-	;which the XESS core never issues, and those bits are effectively always
-	;zero on consumer cards anyway.
-	ld	a,(SD_STATUS)
-	and	00001000b		;bit3 = write protect
-	ld	a,0
-	jr	z,LUN_INFO_FLAGS
-	ld	a,00000010b		;bit1 = medium is read only
-LUN_INFO_FLAGS:
-	ld	(ix+7),a
+	;DEFERRED 2026-08-23: driving bit 1 from SD_STATUS bit 3 (SW(2) on this
+	;core) is correct and is in BACKLOG.md, but it adds a switch dependency -
+	;with SW(2) ON, FDISK refuses to partition, which is easy to misread as a
+	;DEV_RW failure. Left at 0 so this build tests ONE thing: the DEV_RW
+	;rewrite.
+	ld	(ix+7),0
 	ld	(ix+8),0		;cylinders = 0 (not applicable)
 	ld	(ix+9),0
 	ld	(ix+10),0		;heads = 0
