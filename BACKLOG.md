@@ -50,6 +50,31 @@ header calls the raw-SPI protocol "now abandoned".
 `github.com/Konamiman/Nextor` (already cloned at `Dev/github/Nextor`) supplies
 the kernel, base and `mknexrom`, but contains no SD Mapper driver either.
 
+### Settled 2026-08-23 by scanning the ROM binary
+
+Hypothesis tested: *could the undecoded `7FF0`/`7FF1` be the cause of the Nextor
+write bug?* Scanned the 128KB `SDMAPPER.ROM` for both register maps:
+
+```
+7FF0 (SPICTRL/SPISTATUS) :  0 hits in the whole ROM
+7FF1 (TIMERREG)          :  0 hits
+
+7B06 (our SD_STATUS)     : 15 hits, including 12 x  ld a,(7B06h)
+7B00 (our SD_DATA)       : 10 hits, including       ld (7B00h),a
+```
+
+**Answer: no.** The driver never references `7FF0`/`7FF1`, so the missing decode
+cannot cause anything — nothing asks for it. Our FPGA decode is complete for the
+driver we actually have.
+
+This also confirms the driver is **bespoke to our register map**, not the stock
+fbelavenuto one, so route 1 below means replacing BOTH halves, not just adopting
+a driver.
+
+The driver code sits around **`0x1C180`–`0x1C4C0`** in the ROM image, so it can
+be disassembled from there if the source is never recovered — which is a real
+option for chasing the write bug.
+
 ### Two routes
 
 1. **Adopt fbelavenuto's driver and change the FPGA to match it** — implement
