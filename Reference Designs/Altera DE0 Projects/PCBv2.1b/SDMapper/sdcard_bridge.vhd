@@ -271,6 +271,18 @@ architecture rtl of sdcard_bridge is
 	signal marker_q        : std_logic_vector(7 downto 0) := (others => '0');	-- SD_DEBUG (reg 9)
 	signal data_cnt_q      : unsigned(7 downto 0) := (others => '0');	-- completed SD_DATA transfers (diagnostic, free-running/wrapping)
 	signal init_done_q     : std_logic := '0';	-- sticky: busy_o has gone low at least once (init finished)
+	-- MEDIUM-CHANGE LATCH (2026-08-24). Set when init_done_q RISES, i.e. an
+	-- initialisation sequence has just completed - at power-on, and again after
+	-- any SD_CMD reset pulse, which is what happens when a card is swapped and
+	-- the driver re-initialises. It is the closest thing to card-change
+	-- detection this board can offer: there is no physical card-detect sensing.
+	--
+	-- Sticky until the driver acknowledges it by writing SD_CMD bit 3, so a
+	-- change cannot be missed between polls. Surfaces as SD_STATUS bit 7 and
+	-- lets DEV_STATUS return 2 ("available, changed") exactly once, which is
+	-- what tells Nextor to discard cached FAT/directory data.
+	signal init_done_prev_q: std_logic := '0';
+	signal changed_q       : std_logic := '0';
 
 	-- Register-read mux
 	signal reg_rdata_s   : std_logic_vector(7 downto 0);
@@ -496,6 +508,8 @@ begin
 				last_tx_q        <= (others => '0');
 				last_rx_q        <= (others => '0');
 				init_done_q      <= '0';
+				init_done_prev_q <= '0';
+				changed_q        <= '1';	-- first init after reset counts as a change
 				-- NOTE: data_cnt_q is deliberately NOT cleared here. This reset
 				-- also fires on the driver's SD_CMD software-reset pulse, which
 				-- DRV_INIT issues on every boot - clearing the counter there
@@ -507,6 +521,16 @@ begin
 				-- unfreeze" but lets the driver observe the flag first.
 				if cs_rising_pulse = '1' and wr_n_i = '0' and reg_addr_i = "0101" then
 					timeout_flag_q <= '0';
+				end if;
+
+				init_done_prev_q <= init_done_q;
+				if init_done_q = '1' and init_done_prev_q = '0' then
+					changed_q <= '1';	-- an init sequence just completed
+				end if;
+				-- Driver acknowledges via SD_CMD bit 3 (write-1-to-clear).
+				if cs_rising_pulse = '1' and wr_n_i = '0' and reg_addr_i = "0101"
+				   and data_bus_i(3) = '1' then
+					changed_q <= '0';
 				end if;
 
 				if xess_busy_s = '0' then
@@ -817,7 +841,14 @@ begin
 	               sd_addr1_q when reg_addr_i = "0010" else
 	               sd_addr2_q when reg_addr_i = "0011" else
 	               sd_addr3_q when reg_addr_i = "0100" else
-	               "00" & sd_ready_s & timeout_flag_q & write_protect_i & card_present_i & error_flag_s & xess_busy_s when reg_addr_i = "0110" else
+	               -- bit7 = changed_q  : medium-change latch, cleared by writing
+	               --                     SD_CMD bit 3 (see the declaration)
+	               -- bit6 = init_done_q: the card genuinely completed
+	               --                     CMD0/CMD8/ACMD41. THIS is "is there a
+	               --                     usable card" - bit 2 is card_present_i,
+	               --                     a manual switch, and bit 5 is a
+	               --                     per-BYTE transfer handshake.
+	               changed_q & init_done_q & sd_ready_s & timeout_flag_q & write_protect_i & card_present_i & error_flag_s & xess_busy_s when reg_addr_i = "0110" else
 	               xess_error_s(7 downto 0)  when reg_addr_i = "0111" else
 	               xess_error_s(15 downto 8) when reg_addr_i = "1000" else
 	               (others => '0');
