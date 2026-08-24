@@ -6,6 +6,60 @@ it cannot be used as a reference.
 
 ---
 
+## Card detection without SW(0) — do it in the FPGA, NOT the driver
+
+**Status:** open. Attempted 2026-08-24 the wrong way and reverted; the right
+approach is recorded here.
+
+### The approach
+
+Do **not** change the driver. It reads `SD_STATUS` bit 2 and should carry on
+doing so forever. Change what drives that bit:
+
+```vhdl
+card_present_i => SW(0),          -- today: the operator asserting a card exists
+card_present_i => <init_done>,    -- wanted: the SD core reporting one works
+```
+
+`init_done_q` in `sdcard_bridge.vhd` is a genuine card-detect signal — set once
+the core completes CMD0/CMD8/ACMD41. `LEDG(2)` carries it and is confirmed ON
+with a card inserted, OFF without.
+
+Two big advantages:
+
+- **Zero flash writes to test.** Only the bitstream changes, and that goes over
+  JTAG into volatile config memory. The ROM is never rebuilt or reflashed.
+- **One variable.** Same driver, same instruction, same bit — only the source
+  changes. A failure then points at the signal, not at driver code.
+
+### What was tried and failed
+
+Exposing `init_done_q` as a NEW bit (SD_STATUS bit 6) and repointing the driver
+to read it. Reduced to the absolute minimum — one equate plus four
+`bit SDSTAT_PRESENT` -> `bit SDSTAT_INITDONE`, driver size unchanged at 809
+bytes, one read-only line of VHDL, Quartus reporting BETTER setup slack
+(12.62ns vs 11.96ns) and identical hold slack (0.358ns).
+
+**The MSX still rebooted.** Reading bit 6 instead of bit 2, in the same
+instruction on the same register, should not be able to do that.
+
+### Leading hypothesis — test this first
+
+**`SW(0)` is a static DC level. `init_done_q` is not** — it comes from the SD
+core's clock domain and is never synchronised into the register-read path. Reading
+an unsynchronised cross-domain signal onto the Z80 data bus can go metastable,
+which would look exactly like random reboots.
+
+So when revisiting: **put a two-flop synchroniser on `init_done_q`** before it
+reaches the status mux, then drive `card_present_i` from the synchronised
+version. If that fixes it, the whole episode is explained.
+
+Also not ruled out: the documented aliasing hazard (`SD_STATUS` lives at
+`7B00`-`7B0F` INSIDE ROM address space, so any stray access looks like a
+register access), and hold slack of 0.358ns leaving no margin for a re-fit.
+
+---
+
 ## DONE 2026-08-23: write protect works, both halves
 
 `SW(2)` -> `write_protect_i` -> `SD_STATUS` bit 3, and both consumers are
