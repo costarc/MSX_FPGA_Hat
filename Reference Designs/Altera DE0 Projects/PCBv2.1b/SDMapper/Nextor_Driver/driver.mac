@@ -56,7 +56,7 @@ SD_ADDR1	equ	7B02h	;W: block address bits 15:8
 SD_ADDR2	equ	7B03h	;W: block address bits 23:16
 SD_ADDR3	equ	7B04h	;W: block address bits 31:24 (SDHC card - block number, not byte address)
 SD_CMD		equ	7B05h	;W: bit7=reset pulse, bit1=write pulse, bit0=read pulse, bit2=continue
-SD_STATUS	equ	7B06h	;R: b0=busy b1=error b2=present(SW0) b3=wprot(SW2) b4=timeout b5=byte-ready
+SD_STATUS	equ	7B06h	;R: b0=busy b1=error b2=present(init_done) b3=wprot(SW0) b4=timeout b5=byte-ready
 SD_ERRLO	equ	7B07h	;R: SdCardCtrl's error_o(7:0), for diagnostics
 SD_ERRHI	equ	7B08h	;R: SdCardCtrl's error_o(15:8), for diagnostics
 
@@ -75,10 +75,18 @@ SDSTAT_TIMEOUT	equ	4
 ;reads 0 whenever no transfer is in progress, so it must never be used to ask
 ;"is there a card" - doing so made every path report no card, always.
 SDSTAT_READY	equ	5
-;NOTE: sdcard_bridge.vhd has an init_done_q signal that IS a genuine "card
-;initialised" flag, but it is wired only to LEDG(2) and is NOT in SD_STATUS.
-;Exposing it needs an FPGA change - see BACKLOG.md. Until then SDSTAT_PRESENT
-;(bit 2 = card_present_i = SW(0), a manual switch) is what we have.
+;SDSTAT_PRESENT (bit 2) IS REAL CARD DETECTION as of 2026-08-24. The core drives
+;it from sdcard_bridge.vhd's init_done_q - SdCardCtrl having actually completed
+;CMD0/CMD8/ACMD41 - not from a switch. Insert a card and it reads 1, remove one
+;and it reads 0, with no operator action.
+;
+;So: test bit 2 and nothing else. Do NOT try to improve on it by also checking
+;BUSY or the error registers. DEV_STATUS and LUN_INFO are called by Nextor at
+;ANY time, including mid-transfer, and a BUSY test there makes the device vanish
+;underneath it - tried 2026-08-24, caused reboots and hangs. See BACKLOG.md.
+;
+;What drives bit 2 is a CORE decision. If it ever needs to change, change the
+;core; this driver should not need editing again.
 
 M_SDSTAT_BUSY		equ	(1 SHL SDSTAT_BUSY)
 M_SDSTAT_ERROR		equ	(1 SHL SDSTAT_ERROR)

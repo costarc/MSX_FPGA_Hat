@@ -1894,8 +1894,10 @@ begin
 		wr_n_i			=> WR_n,
 		rd_n_i			=> RD_n,
 		wait_n_o			=> s_sdbridge_wait_n_o,
-		card_present_i	=> SW(0),
-		write_protect_i=> SW(2),
+		-- No card_present_i: SD_STATUS bit 2 now comes from the bridge's own
+		-- init_done_q (the SD core reporting a card it actually initialised),
+		-- so SW(0) is no longer a card-present gate.
+		write_protect_i=> SW(0),
 		reg_dout			=> sd_reg_dout,
 		sd_dout			=> sd_data_dout,
 		sd_rd_en			=> sd_data_rd_en,

@@ -35,8 +35,14 @@ are mutually exclusive — neither can touch the bus while the other owns it.
 | `SW(7)` | SD register window **on** | SD register window **off** |
 | `SW(4)` | Normal | **SRAM BIST** (see below) |
 | `SW(3:0)` | — | MapperTest ROM index, when `SW(8)=1` |
-| `SW(2)` | SD write-protect flag reported to software | |
-| `SW(0)` | SD card-present flag reported to software | |
+| `SW(0)` | SD writes allowed | SD **write-protected** (Nextor refuses writes) |
+| `SW(2)` | *(unused — was write-protect)* | |
+
+**Card presence is no longer a switch.** `SD_STATUS` bit 2 is driven from the SD
+core's own `init_done_q`, so the card is detected for real: insert one and it is
+found, remove it and Nextor reports "SD Card not detected" and boots on.
+`LEDG(2)` shows the same signal. `SW(0)` used to be the card-present gate and is
+now free for write protect; booting with it ON works normally.
 
 The RAM mapper and its FCh–FFh ports are always live in this mode — they follow
 `SW(9)` and cannot be switched off independently.
@@ -77,9 +83,9 @@ is on the bus.
 | `0` | **`testmapper`** | Measures the mapper's **real** size rather than assuming it — fingerprints segments and counts how many hold a distinct value before aliasing — then writes `00`/`FF`/`AA`/`55` over each one. Touches only port FEh / page 2, so it cannot disturb its own code or stack, and it sizes third-party mappers correctly too |
 | `1` | **`ffffstress`** | Hammers the FFFFh sub-slot register and classifies every failure as **dropped** or **corrupt**. Keep this one: it is the only test here that ever caught a real bug, and it is the regression test for the address-capture path |
 
-Only `SW(3)` changes between them — `SW(2:0)` keep their normal jobs (`SW(0)`
-card-present, `SW(2)` write-protect), so selecting a test never disturbs the SD
-card flags.
+Only `SW(3)` changes between them — `SW(0)` keeps its normal job (SD write
+protect), so selecting a test never disturbs the SD card flags. Card presence is
+detected in hardware and is not switch-controlled at all.
 
 > The other seven diagnostics (`maptest`, `testramrom`, `testramrom2`,
 > `porttest`, `page0test`, `soaktest`, `soaktest_ei`) are **no longer flashed**.

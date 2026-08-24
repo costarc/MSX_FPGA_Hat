@@ -6,33 +6,46 @@ it cannot be used as a reference.
 
 ---
 
-## Card detection without SW(0) — do it in the FPGA, NOT the driver
+## DONE 2026-08-24: real card detection, SW(0) freed for write protect
 
-**Status:** open. Attempted 2026-08-24 the wrong way and reverted; the right
-approach is recorded here.
+**Status:** working on hardware. Boots with a card, reports "not detected"
+without one, and `SW(0)` now drives write protect (verified: Nextor refuses to
+write, copies fail, and the machine still boots normally with it ON).
 
-### The approach
+### What worked — one line, in the bridge, driver untouched
 
-Do **not** change the driver. It reads `SD_STATUS` bit 2 and should carry on
-doing so forever. Change what drives that bit:
+`SD_STATUS` bit 2 keeps meaning "card present" to the Nextor driver. Only its
+*source* changed, inside `sdcard_bridge.vhd`'s read mux:
 
 ```vhdl
-card_present_i => SW(0),          -- today: the operator asserting a card exists
-card_present_i => <init_done>,    -- wanted: the SD core reporting one works
+-- was:  ... & write_protect_i & card_present_i & error_flag_s & xess_busy_s
+"00" & sd_ready_s & timeout_flag_q & write_protect_i & init_done_q & error_flag_s & xess_busy_s
+   when reg_addr_i = "0110" else
 ```
 
-`init_done_q` in `sdcard_bridge.vhd` is a genuine card-detect signal — set once
-the core completes CMD0/CMD8/ACMD41. `LEDG(2)` carries it and is confirmed ON
-with a card inserted, OFF without.
+`init_done_q` is set once SdCardCtrl completes CMD0/CMD8/ACMD41 — a genuine
+card-detect, not an operator assertion. The `card_present_i` port then had no
+remaining use and **was removed** from both the entity and the top-level
+instantiation. `write_protect_i` moved to `SW(0)`; `SW(2)` is now free.
 
-Two big advantages:
+**No driver change. No ROM rebuild. No flash write.** Only the bitstream.
 
-- **Zero flash writes to test.** Only the bitstream changes, and that goes over
-  JTAG into volatile config memory. The ROM is never rebuilt or reflashed.
-- **One variable.** Same driver, same instruction, same bit — only the source
-  changes. A failure then points at the signal, not at driver code.
+### Why this fits better than it looks
 
-### What was tried and failed
+`init_done_q` is cleared by the software reset that `DRV_INIT` pulses on every
+boot, so it re-detects per boot rather than latching once at power-on — and
+`DRV_INIT`'s existing 1.8s wait-for-`BUSY`-to-clear is exactly the window in
+which it re-asserts. The driver already waits for the right thing.
+
+### Do it IN THE BRIDGE, not via the port map
+
+The obvious-looking version — `card_present_i => <init_done>` in the top-level
+port map — is worse: `init_done_q` is internal to the bridge and only leaves it
+via `dbg_init_done_o` (→ `LEDG(2)`), so that route needs a round trip out of the
+component and back in. Editing the mux where the signal already lives avoids it
+entirely. Fixating on the port map is what delayed finding this.
+
+### Attempt 1 (failed): expose init_done_q as a new status bit
 
 Exposing `init_done_q` as a NEW bit (SD_STATUS bit 6) and repointing the driver
 to read it. Reduced to the absolute minimum — one equate plus four
@@ -43,20 +56,90 @@ bytes, one read-only line of VHDL, Quartus reporting BETTER setup slack
 **The MSX still rebooted.** Reading bit 6 instead of bit 2, in the same
 instruction on the same register, should not be able to do that.
 
-### Leading hypothesis — test this first
+### Attempt 2 (failed): one shared CHK_CARD routine in the driver
 
-**`SW(0)` is a static DC level. `init_done_q` is not** — it comes from the SD
-core's clock domain and is never synchronised into the register-read path. Reading
-an unsynchronised cross-domain signal onto the Z80 data bus can go metastable,
-which would look exactly like random reboots.
+Reasoning at the time: four routines — `DRV_INIT`, `DEV_RW`, `DEV_STATUS`,
+`LUN_INFO` — each rolled their own "is the card usable" check and they had
+drifted; with bit 2 hardwired `'1'` (Attempt 2 was done on top of that broken
+core) `LUN_INFO` appeared to have no real check at all. So: factor the verified
+`DRV_INIT` sequence into one `CHK_CARD` routine and call it from all four.
 
-So when revisiting: **put a two-flop synchroniser on `init_done_q`** before it
-reaches the status mux, then drive `card_present_i` from the synchronised
-version. If that fixes it, the whole episode is explained.
+Note the premise was doubly wrong — with `SW(0)` restored as the gate,
+`LUN_INFO`'s `SDSTAT_PRESENT` test is a genuine check, and the error registers
+`CHK_CARD` would have added are not a valid detector anyway (see above).
 
-Also not ruled out: the documented aliasing hazard (`SD_STATUS` lives at
-`7B00`-`7B0F` INSIDE ROM address space, so any stray access looks like a
+Assembled clean, `driver.bin` 794 bytes. **On hardware: three auto-reboots, then
+the Apps ROM, then a reboot, then a hang on a blue screen.** Reverted.
+
+**Why it failed — the premise was wrong.** The four checks are not accidentally
+inconsistent. Part of the variation is load-bearing:
+
+| Routine | When Nextor calls it | Tolerates transient `BUSY`? |
+|---|---|---|
+| `DRV_INIT` | once, after a reset pulse + 1.8s wait | yes — nothing else running |
+| `DEV_RW` | before a transfer it owns | yes — `BUSY` genuinely blocks it |
+| `DEV_STATUS` | any time, **including mid-I/O** | **NO** — must not fail transiently |
+| `LUN_INFO` | enumeration, any time | **NO** — same |
+
+`CHK_CARD` tested `PRESENT` + `BUSY` + errors, so it silently **added a `BUSY`
+test to `DEV_STATUS`**, which never had one. Nextor asking "is the device there?"
+while the card was mid-transfer now got "no", and the device vanished underneath
+it. That is exactly the unpredictable reboot/hang signature observed.
+
+**Lesson:** one shared predicate cannot serve both halves of that table. Do not
+re-attempt the refactor.
+
+### Why the failures happened — the common thread
+
+Both attempts tried to make the **driver** answer a question it has no stable
+input for. Everything it can read is either a manual switch (`PRESENT`, before
+this change) or transient (`BUSY`, `ERROR`, `READY`). A driver-side card-detect
+therefore either fails transiently (Attempt 2) or, with the switch removed and
+nothing put in its place, destabilises the machine.
+
+It was always a hardware gap, and it was closed in hardware — by giving bit 2 a
+real source, so all four routines test `SDSTAT_PRESENT` and the question becomes
+trivial. No shared routine, no `BUSY` test, no error-register reads.
+
+### CORRECTED: the clock-domain theory was wrong
+
+This file previously named an unsynchronised clock crossing on `init_done_q` as
+the leading suspect for Attempt 1's reboots, and recommended a two-flop
+synchroniser. **That was wrong.** `init_done_q` is set in a process clocked by
+`clock_i` — the same domain as the register mux. There is no crossing, and no
+synchroniser was needed; the working fix uses the signal directly.
+
+Attempt 1's reboots are therefore still unexplained. They are also now moot: the
+difference was that Attempt 1 changed the *driver* as well (new bit 6, four
+`bit SDSTAT_PRESENT` -> `bit SDSTAT_INITDONE`), so the ROM and bitstream had to
+agree — and that is a known recurring failure mode on this board. The working
+change touches one artefact only.
+
+Still on the shelf, never ruled out: the documented aliasing hazard (`SD_STATUS`
+lives at `7B00`-`7B0F` INSIDE ROM address space, so any stray access looks like a
 register access), and hold slack of 0.358ns leaving no margin for a re-fit.
+
+---
+
+## NOT A BUG 2026-08-24: "write protect ON hangs the machine at boot"
+
+Briefly recorded here as a real defect. It was not one.
+
+The observation was genuine — with write protect asserted the MSX hung while
+NEXTOR.SYS loaded — but it was **collateral from the broken
+`card_present_i => '1'` core it was tested on**, not from write protect. Once bit
+2 was driven from `init_done_q`, the same switch ON boots normally *and* correctly
+refuses writes (copies fail in Nextor, as intended).
+
+Two wrong conclusions were drawn from it, both worth not repeating:
+
+- that `LUN_INFO` reporting the medium read-only (`ld (ix+7),00000010b`) was
+  upsetting Nextor's boot. It is not — that flag is fine.
+- that `SW(0)` carrying write protect was a "footgun" because operators habitually
+  set it ON. It is not; ON is a perfectly normal, working state.
+
+**Lesson:** a symptom observed on a knowingly-broken core is not evidence about
+anything else. Re-test on a good core before opening a defect.
 
 ---
 
@@ -104,13 +187,18 @@ Still deferred, each wanting its own build and hardware test:
 
 ---
 
-## Make SDMAPPER.ROM buildable from source
+## DONE 2026-08-23: SDMAPPER.ROM is buildable from source — reference notes
 
-**Status:** open.
+**Status:** resolved (see the DONE entry above). The source was recovered from
+the Nextor fork's history, not reconstructed. Kept below because the register-map
+comparison and the ROM scan are still the reference for anyone touching the
+driver or considering route 1.
 
-`SDMAPPER.ROM` currently exists only as a binary, recovered from a Flash image.
-It cannot be rebuilt from what is in these repositories — but it is not
-unrecreatable in principle, and the gap is exactly one file.
+### The problem as it stood
+
+`SDMAPPER.ROM` existed only as a binary, recovered from a Flash image.
+It could not be rebuilt from what was in these repositories — but it was not
+unrecreatable in principle, and the gap was exactly one file.
 
 ```
 mknexrom nextor_base.dat SDMAPPER.ROM /d:<MISSING>.bin /m:<have this>.bin
@@ -200,8 +288,9 @@ Build details are in
 **Status:** open, deliberately deferred.
 
 `LUN_INFO` byte +7 bit 0 means "the medium is removable". We currently leave it
-**0**, even though an SD card arguably *is* removable and the driver already
-declares `DRV_HOTPLUG equ 1`.
+**0**, even though an SD card arguably *is* removable. Note the driver declares
+`DRV_HOTPLUG equ 0` (this file previously claimed `1` — it is `0`), so there is
+no hot-plug support to build on either.
 
 It was left out on purpose rather than overlooked: setting it changes Nextor's
 medium-change handling, and stacking that onto a design that had only just

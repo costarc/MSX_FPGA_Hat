@@ -41,9 +41,12 @@
 --   6  SD_STATUS (R)   - bit0: busy_o (SdCardCtrl is mid-operation)
 --                        bit1: (error_o /= 0) - SdCardCtrl stalled on an
 --                          error, needs a SD_CMD bit7 reset to recover
---                        bit2: card present (SW(0), same convention as
---                          the abandoned SPI design)
---                        bit3: write-protect (SW(2), same convention)
+--                        bit2: card present - driven by init_done_q, i.e.
+--                          SdCardCtrl has actually completed CMD0/CMD8/
+--                          ACMD41 on a real card. This was SW(0), a manual
+--                          switch; the Nextor driver tests this bit and
+--                          must keep seeing a REAL signal here.
+--                        bit3: write-protect (SW(0))
 --                        bit4: sticky bridge-timeout flag (see SD_DATA) -
 --                          cleared automatically on the next SD_CMD write
 --   7  SD_ERRLO  (R)   - error_o(7 downto 0), for diagnostics
@@ -77,8 +80,13 @@ entity sdcard_bridge is
 		wr_n_i			: in    std_logic;
 		rd_n_i			: in    std_logic;
 		wait_n_o			: out   std_logic;
-		card_present_i	: in    std_logic;		-- SW(0)
-		write_protect_i: in    std_logic;		-- SW(2)
+		-- NOTE: there was a card_present_i input here, wired to SW(0) - a
+		-- manual switch, not real detection. SD_STATUS bit 2 is now driven
+		-- from init_done_q instead (see the reg_rdata_s mux), which is the
+		-- SD core actually reporting a working card, so the port had no
+		-- remaining use and was removed. Do NOT reintroduce it: bit 2 is
+		-- what the Nextor driver tests, and it must stay a real signal.
+		write_protect_i: in    std_logic;
 		-- Register-read data, for the top level's D-bus mux. reg_dout is
 		-- the immediate/combinational content of SD_STATUS/SD_ERRLO/
 		-- SD_ERRHI (top level qualifies when to actually mux it onto D,
@@ -817,7 +825,7 @@ begin
 	               sd_addr1_q when reg_addr_i = "0010" else
 	               sd_addr2_q when reg_addr_i = "0011" else
 	               sd_addr3_q when reg_addr_i = "0100" else
-	               "00" & sd_ready_s & timeout_flag_q & write_protect_i & card_present_i & error_flag_s & xess_busy_s when reg_addr_i = "0110" else
+	               "00" & sd_ready_s & timeout_flag_q & write_protect_i & init_done_q & error_flag_s & xess_busy_s when reg_addr_i = "0110" else
 	               xess_error_s(7 downto 0)  when reg_addr_i = "0111" else
 	               xess_error_s(15 downto 8) when reg_addr_i = "1000" else
 	               (others => '0');
