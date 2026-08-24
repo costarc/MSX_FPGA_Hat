@@ -22,11 +22,9 @@ DRV_START:
 ;Driver type: 0 for drive-based, 1 for device-based
 DRV_TYPE	equ	1
 
-;Hot-plug support. There is no physical card-detect sensing on this board, but
-;the bridge now latches "an init sequence completed" (SD_STATUS bit 7), which
-;covers the case that matters: a card swapped and re-initialised. DEV_STATUS
-;reports that as 2 = "available, changed" exactly once.
-DRV_HOTPLUG	equ	1
+;Hot-plug devices support: this board has no physical card-detect sensing,
+;so no real hot-plug support.
+DRV_HOTPLUG	equ	0
 
 DEBUG	equ	0
 
@@ -58,7 +56,7 @@ SD_ADDR1	equ	7B02h	;W: block address bits 15:8
 SD_ADDR2	equ	7B03h	;W: block address bits 23:16
 SD_ADDR3	equ	7B04h	;W: block address bits 31:24 (SDHC card - block number, not byte address)
 SD_CMD		equ	7B05h	;W: bit7=reset pulse, bit1=write pulse, bit0=read pulse, bit2=continue
-SD_STATUS	equ	7B06h	;R: b0=busy b1=err b2=present(SW0) b3=wprot(SW2) b4=timeout b5=byte-ready b6=INIT DONE b7=CHANGED
+SD_STATUS	equ	7B06h	;R: b0=busy b1=error b2=present(SW0) b3=wprot(SW2) b4=timeout b5=byte-ready
 SD_ERRLO	equ	7B07h	;R: SdCardCtrl's error_o(7:0), for diagnostics
 SD_ERRHI	equ	7B08h	;R: SdCardCtrl's error_o(15:8), for diagnostics
 
@@ -66,7 +64,6 @@ SD_CMD_RESET	equ	80h
 SD_CMD_READ		equ	01h
 SD_CMD_WRITE	equ	02h
 SD_CMD_CONTINUE	equ	04h
-SD_CMD_ACKCHG	equ	08h	;write-1-to-clear the medium-change latch
 
 SDSTAT_BUSY		equ	0
 SDSTAT_ERROR	equ	1
@@ -78,17 +75,10 @@ SDSTAT_TIMEOUT	equ	4
 ;reads 0 whenever no transfer is in progress, so it must never be used to ask
 ;"is there a card" - doing so made every path report no card, always.
 SDSTAT_READY	equ	5
-;Bit 6 = init_done: sticky, set once SdCardCtrl completes CMD0/CMD8/ACMD41.
-;THIS is the real "is there a usable card" signal. Do NOT use bit 2 for that:
-;it is card_present_i, a manual switch (SW(0)), and it is always whatever the
-;switch says. Do not use bit 5 either - that is a per-BYTE transfer handshake
-;and reads 0 whenever no transfer is running.
-SDSTAT_INITDONE	equ	6
-;Bit 7 = changed: set when an init sequence completes (power-on, or after a
-;reset pulse - which is what happens when a card is swapped and the driver
-;re-initialises). Sticky until acknowledged with SD_CMD_ACKCHG, so a change
-;cannot be missed between polls. Lets DEV_STATUS return 2 exactly once.
-SDSTAT_CHANGED	equ	7
+;NOTE: sdcard_bridge.vhd has an init_done_q signal that IS a genuine "card
+;initialised" flag, but it is wired only to LEDG(2) and is NOT in SD_STATUS.
+;Exposing it needs an FPGA change - see BACKLOG.md. Until then SDSTAT_PRESENT
+;(bit 2 = card_present_i = SW(0), a manual switch) is what we have.
 
 M_SDSTAT_BUSY		equ	(1 SHL SDSTAT_BUSY)
 M_SDSTAT_ERROR		equ	(1 SHL SDSTAT_ERROR)
@@ -236,8 +226,8 @@ DRV_INIT_WAIT_OUTER:
 	ld	b,0
 DRV_INIT_WAIT:
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
-	jr	nz,DRV_INIT_WAITDONE	;card initialised - stop waiting
+	bit	SDSTAT_BUSY,a
+	jr	z,DRV_INIT_WAITDONE	;no longer busy - stop waiting
 	ld	c,0
 DRV_INIT_WAIT_INNER:
 	dec	c
@@ -254,7 +244,7 @@ DRV_INIT_WAITDONE:
 	;equates). No card, or a card that failed to initialise, both land here
 	;and must return cleanly so Nextor hands control back and the MSX
 	;carries on booting.
-	bit	SDSTAT_INITDONE,c
+	bit	SDSTAT_PRESENT,c
 	jr	z,DRV_INIT_NOCARD
 
 	bit	SDSTAT_BUSY,c
@@ -361,7 +351,7 @@ DEV_RW:
 	;cannot respond stalls the Z80 for ~10ms PER BYTE - about 5s per sector,
 	;with Nextor retrying. That looks exactly like a hang.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
+	bit	SDSTAT_PRESENT,a
 	jp	z,DEV_RW_NOTREADY
 	ld	a,(SD_STATUS)
 	bit	SDSTAT_BUSY,a
@@ -678,25 +668,13 @@ DEV_STATUS:
 	;issued a read, and the machine HUNG at boot. Testing sd_ready instead
 	;makes Nextor skip the device and carry on booting.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
+	bit	SDSTAT_PRESENT,a
 	jr	z,DEV_STATUS_NA
 	ld	a,(SD_STATUS)
 	bit	SDSTAT_ERROR,a
 	jr	nz,DEV_STATUS_NA
 
-	;Report a medium change exactly ONCE, then acknowledge it so the next
-	;call says "unchanged". Returning 2 is what makes Nextor discard cached
-	;FAT and directory data - without it, swapping cards can write the old
-	;card's structures onto the new one.
-	ld	a,(SD_STATUS)
-	bit	SDSTAT_CHANGED,a
-	jr	z,DEV_STATUS_UNCHANGED
-	ld	a,SD_CMD_ACKCHG
-	ld	(SD_CMD),a
-	ld	a,2			;available, CHANGED
-	ret
-DEV_STATUS_UNCHANGED:
-	ld	a,1			;available, unchanged
+	ld	a,1
 	ret
 DEV_STATUS_NA:
 	xor	a
@@ -728,7 +706,7 @@ LUN_INFO:
 	;perfectly healthy 16GB block device with nothing in the slot, which is
 	;how a missing card ended up being read from at all.
 	ld	a,(SD_STATUS)
-	bit	SDSTAT_INITDONE,a
+	bit	SDSTAT_PRESENT,a
 	jr	z,LUN_INFO_ERR
 
 	push	hl
@@ -768,10 +746,6 @@ LUN_INFO:
 	jr	z,LUN_INFO_FLAGS
 	ld	a,00000010b		;bit1 = medium is read only
 LUN_INFO_FLAGS:
-	or	00000001b		;bit0 = medium is REMOVABLE - an SD card is,
-					;and DEV_STATUS can now report a change, so
-					;Nextor can act on it rather than caching
-					;the old card's FAT over the new one.
 	ld	(ix+7),a
 	ld	(ix+8),0		;cylinders = 0 (not applicable)
 	ld	(ix+9),0
