@@ -6,6 +6,19 @@ Interface for MSX computers with level shift conversion to 3.3v. Allow MSX to us
 THIS IS WORKING IN PROGRESS. THE BOARD IS BEING TESTED, AND REFERENCE DESIGNS CREATED. ROM and RAM reference designs work well, but as of now I was not able to implement a stable SD Card interface.
 
 
+## 📖 The Book
+
+This project is **Chapter 10, "MSX FPGA Hat"**, in a book:
+
+**Chips, Code, and Cartridges: Turn Curiosity into Creation with 13 Hands-On Projects, from 8-bit Classics to FPGAs**
+
+It walks through thirteen of my own hardware and software projects, from 8-bit classics to FPGAs, for beginners and curious makers. Each chapter explains how one project works and how to build it, with colour diagrams and real code from its repository.
+
+### 👉 [Get the book on Amazon](https://link.amazon/B013Yaq9y)
+
+<sub>As an Amazon Associate, the author earns from qualifying purchases. Buying through this link
+supports these projects at no extra cost to you.</sub>
+
 # Technical Description of the Interface
 The interface connects the computer BUS to the FPGA GPIOs, using the flat cable.
 The interface should be connected to JP2 of DE1, which corresponds to GPIO_1. This is the GPIO used in all the reference designs in this project. To use JP1 (GPIO_0), all pins must be remapped for the projects.
